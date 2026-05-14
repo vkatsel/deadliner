@@ -1,0 +1,40 @@
+name: lint
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  conflict-markers:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject merge-conflict markers
+        run: |
+          if git --no-pager grep -nE '^(<<<<<<<|=======|>>>>>>>) ' -- ':!**/*.md'; then
+              echo "::error::merge-conflict markers found"
+              exit 1
+          fi
+
+  pr-title-convention:
+    runs-on: ubuntu-24.04
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Verify PR title matches naming convention
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          # Allowed shapes:
+          #   [<namespace>] W<N> @<member> — <summary>
+          #   [<namespace>] feat: <short>
+          #   [<namespace>] stage<N>-v<M>: <short>
+          if echo "$TITLE" | grep -qE '^\[[a-z0-9-]+\] (W[1-8] @[a-zA-Z0-9-]+|feat:|fix:|docs:|refactor:|chore:|stage[1-4]-v[0-9]+:)'; then
+              echo "OK: $TITLE"
+          else
+              echo "::error::PR title does not match convention. Expected one of:"
+              echo "  [<namespace>] W<N> @<member> — <summary>"
+              echo "  [<namespace>] feat: <short>"
+              echo "  [<namespace>] stage<N>-v<M>: <short>"
+              echo "  See course_pack/process/repo_architecture.md §Naming conventions"
+              exit 1
+          fi
