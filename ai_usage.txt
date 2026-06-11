@@ -1,0 +1,12 @@
+# AI Usage Notes — Architect Role (Stage 1)
+
+During Stage 1 consolidation, we utilized the AI in the "Architect" role to help merge our individual W2-W4 PRDs and Design Docs into a cohesive MVP architecture.
+
+## Orchestration Discipline
+1. **Prompting for Consolidation:** We fed the AI our individual W3/W4 artifacts (from ofedkevych, vkatsel, surovytsky1vadym-1) and asked it to propose an architecture that integrates Moodle and Google Classroom aggregation with a push-to-Google-Calendar feature.
+2. **Reviewing the Design:** The AI proposed several potential paths, including a local database state manager and a background daemon.
+3. **Rejecting Over-builds:**
+   - **Rejected Design 1 (SQLite Event Sourcing):** The AI suggested using SQLite to build a robust event sourcing engine that tracks Moodle event states locally before pushing them to GCal. We explicitly rejected this as an over-build. It would introduce complex schema migrations and local state drift risks for a simple CLI tool.
+   - **Rejected Design 2 (Background Daemon):** The AI proposed running the tool as a background process (cron daemon) for continuous syncing. We rejected this because a background process masking network errors or auth failures leads to silent bugs, violating our P0 NFRs. We enforced a strictly stateless, invoked-on-demand CLI architecture. 
+
+The AI was then instructed to finalize the `docs/design_doc.md` using the stateless `MoodleFetcher`, `ClassroomFetcher`, and `CalendarGateway` entities, avoiding any `Manager` or `Helper` anti-patterns.
