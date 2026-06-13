@@ -70,7 +70,7 @@ def format_assignment(assignment: Assignment, now: datetime, local_tz: timezone)
     """
     Returns a single formatted string for CLI output.
     Inputs: Assignment object, current datetime, target timezone.
-    Outputs: Formatted string (e.g. '[moodle] Math due 00:00 (midnight cutoff)').
+    Outputs: Formatted string with the due date/time anchored at end-of-line, e.g. '[moodle] Math (midnight cutoff) — 2026-06-01 00:00'. The trailing timestamp is a parseable datetime, so a date embedded in a course name cannot be mistaken for the due date.
     Errors: Raises ValueError if the Assignment lacks a valid timezone.
     """
 ```
@@ -94,6 +94,7 @@ def format_assignment(assignment: Assignment, now: datetime, local_tz: timezone)
 | `fetch_moodle` | Integration / Contract | `tests/test_moodle_fetcher.py` (Mocking HTTP responses via `responses` or `responses` library to test `AuthError` and invalid data skipping) |
 | `fetch_classroom` | Integration / Contract | `tests/test_classroom_fetcher.py` (Mocking the Google API client) |
 | `format_assignment` | Unit (Pure Function) | `tests/test_formatter.py` (Passing fixed UTC datetimes and `Europe/Kyiv` timezone to verify "midnight cutoff" strings) |
+| `CalendarGateway.push_events` | Integration | `tests/test_gateway.py` (Mocking the Google Calendar endpoints to verify payload structure without mutating real calendars) |
 
 ## §7 Rejected designs
 **Local SQLite Event Sourcing Engine**
