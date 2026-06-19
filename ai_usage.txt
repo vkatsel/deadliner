@@ -1,3 +1,7 @@
+# =====================================================
+# ====================== STAGE 1 ======================
+# =====================================================
+
 Student name:           The team AI USAGE
 Submission:             Stage 1 — PRD + Design
 Submission date:        2026-06-13
@@ -59,3 +63,51 @@ he resulting artefacts reflect my and my team's actual design decisions, with th
 
 This week's ai_usage.txt covers:
   [X] Stage 1 Session
+
+
+# =====================================================
+# ====================== STAGE 2 ======================
+# =====================================================
+
+Student name:           Vadym Katsel
+Submission:             Stage 2 — Tests
+Submission date:        2026-06-19
+Practice repo PR:       N/A
+Greenfield repo:        https://github.com/CS460-SEP-2026/greenfield
+Team (if any):          Team team-typed-aura (ofedkevych, surovytsky1vadym-1, vkatsel)
+
+## Session 2 — Stage 2 Test Scaffolding and CI Setup
+
+Track:          GREENFIELD
+AI role:        Pair-Programmer / Test-Generator
+Tool & model:   Gemini 3.1 Pro (High)
+Chat link:      no public link, prompt below
+Date & time:    2026-06-19 23:30
+
+### Goal (1-2 sentences)
+Format the Stage 2 requirements, distribute tasks among the team members based on their Stage 1 expertise, set up the CI pipeline, and generate the initial TDD scaffolding (red tests) for US-01.
+
+### Prompt (verbatim or final-iteration if you iterated)
+Analyze the Stage 2 requirements and our team's past contributions to propose a task breakdown. Then, set up the GitHub Actions CI workflow and generate the automated tests for US-01 (Moodle & Classroom fetching). Ensure the tests are fully meaningful with real assertions (similar to the provided Go test example) but fail cleanly as stubs, adhering to the strict Stage 2 TDD rules.
+
+### Verification — how I checked
+- [X] Ran the code / command
+- [X] Read the cited file/line and confirmed AI's claim
+- [X] Re-prompted with a counter-example
+- [ ] Looked up referenced API / library version
+- [ ] Asked a classmate / instructor
+
+### What I kept
+- The GitHub Actions CI workflow (`test.yml`).
+- The separation of US-01 into two separate test files (`test_moodle_fetcher.py` and `test_classroom_fetcher.py`) to properly match the API signatures in the design doc.
+
+### What I discarded and why
+- **Pipeline Overreach:** I modified the AI's generated GitHub Actions CI workflow, changing its trigger from a wildcard `**` to explicitly track only the relevant team branches (`team-typed-aura/stage2` and `team-typed-aura/main`).
+- **Wrong Test Surface:** I rejected the AI's initial attempt to test an abstract `DeadlinerCLI.fetch()` method, forcing it to look at our `design_doc.md` and rewrite the tests specifically for the `fetch_moodle` and `fetch_classroom` functions.
+- **Lazy Assertions:** I criticized the AI for writing "lazy" tests full of "TODO" comments. A proper Stage 2 TDD test must contain real assertions even if the implementation is a stub. I provided a Go colleague's test as a counter-example, forcing the AI to rewrite the Python tests with real `assert` statements so they fail correctly on the implementation stub rather than being empty shells.
+
+### Outcome (1 sentence)
+Saved time on boilerplate and CI setup, but required firm orchestration to ensure the generated tests met the "real assertions but failing" TDD standard.
+
+---
+# (Teammates: add your sessions below this line)

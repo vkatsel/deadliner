@@ -9,28 +9,26 @@
 
 ## 0. Metadata
 
-| Field | Value |
-|---|---|
-| Project | <Name> |
-| Linked PRD version | `docs/PRD.md` v<n> |
-| Linked design doc | `docs/design_doc.md` v<n> |
-| Branch | `<namespace>/stage2` (no tag — branch name is the indicator) |
-| Test framework | <pytest / JUnit 5 / vitest / XCTest / GoogleTest> |
-| CI workflow | `.github/workflows/<name>.yml` — link to the first CI run (red is expected at Stage 2) |
+| Field              | Value                                           |
+| ------------------ | ----------------------------------------------- |
+| Project            | Deadliner                                       |
+| Linked PRD version | `docs/PRD.md` v1                                |
+| Linked design doc  | `docs/design_doc.md` v1                         |
+| Branch             | `team-typed-aura/stage2`                        |
+| Test framework     | `pytest`                                        |
+| CI workflow        | `.github/workflows/test.yml` — [Link to CI Run] |
 
 ---
 
 ## 1. Test strategy (1 paragraph)
 
-Two sentences on what you test and what you do **not** test. Examples:
-- "I test the `Importer` and `Reporter` via unit tests; the CLI via subprocess integration tests; I do not test argparse itself or the stdlib `csv` module."
-- "Stage 2 ships failing tests by design — all P0 tests fail with informative messages. They turn green incrementally in W6-W8."
+We test the core fetchers (`MoodleFetcher`, `ClassroomFetcher`) and the domain logic (`DeadlineFormatter`, CLI) via isolated unit and integration tests to ensure they handle edge cases like timezone cutoffs and auth failures. We explicitly do not test the internals of the `requests` library, the Google API client, or the standard `argparse` module. The suite is shipped TDD-first (red), meaning all components are currently stubs that fail loudly with informative messages.
 
 ---
 
 ## 2. Test inventory
 
-A flat list of every test file and every test case. Use the AAA pattern: name communicates *Arrange / Act / Assert* intent.
+A flat list of every test file and every test case. Use the AAA pattern: name communicates _Arrange / Act / Assert_ intent.
 
 ### Test naming convention
 
@@ -38,14 +36,13 @@ A flat list of every test file and every test case. Use the AAA pattern: name co
 
 ### Inventory
 
-| # | Test file | Test name | Type (unit / integ / e2e) | Status at Stage-2 (red / green) |
-|---|---|---|---|---|
-| 1 | `tests/test_importer.py` | `test_importer_one_row_returns_one_txn` | unit | red |
-| 2 | `tests/test_importer.py` | `test_importer_empty_file_returns_empty_list` | unit | red |
-| 3 | `tests/test_importer.py` | `test_importer_malformed_row_raises_typed_error` | unit | red |
-| 4 | `tests/test_importer.py` | `test_importer_utf8_bom_handled` | unit | red |
-| 5 | `tests/test_reporter.py` | `test_reporter_by_category_sums_amounts` | unit | red |
-| 6 | `tests/test_cli.py` | `test_cli_import_then_report_end_to_end` | integration | red |
+| #   | Test file                         | Test name                                                   | Type        | Status |
+| --- | --------------------------------- | ----------------------------------------------------------- | ----------- | ------ |
+| 1   | `tests/test_moodle_fetcher.py`    | `test_fetch_moodle_valid_token_returns_assignments`         | integration | red    |
+| 2   | `tests/test_moodle_fetcher.py`    | `test_fetch_moodle_empty_calendar_returns_empty_list`       | integration | red    |
+| 3   | `tests/test_classroom_fetcher.py` | `test_fetch_classroom_valid_oauth_returns_assignments`      | integration | red    |
+| 4   | `tests/test_classroom_fetcher.py` | `test_fetch_classroom_no_active_courses_returns_empty_list` | integration | red    |
+| 5   | `TBD (teammate)`                  | `TBD (teammate)`                                            | unit        | red    |
 
 > Stage 2 awards **5 points** for "Test plan covers P0 including invalid input and empty-argument edge cases." Edge-case coverage = empty, one-element, max-realistic-size, malformed input, missing required arg.
 
@@ -55,13 +52,12 @@ A flat list of every test file and every test case. Use the AAA pattern: name co
 
 Every P0 user story from `PRD.md §3.1` must map to **at least one** test in §2. **This is the rubric.**
 
-| PRD requirement (ID) | Tests covering it (numbers from §2) |
-|---|---|
-| US-P0-1 (user imports CSV → sees total) | 1, 6 |
-| US-P0-2 (empty CSV → no error, empty report) | 2 |
-| US-P0-3 (malformed CSV → typed error) | 3 |
-| US-P0-4 (UTF-8 BOM tolerated) | 4 |
-| US-P0-5 (report grouped by category) | 5 |
+| PRD requirement (ID)                         | Tests covering it (numbers from §2) |
+| -------------------------------------------- | ----------------------------------- |
+| US-01 (connect Moodle and Classroom & empty) | 1, 2, 3, 4                          |
+| US-02 (list deadlines sorted ascending)      | TBD (teammate)                      |
+| US-03 (distinguish 00:00 from 23:59)         | TBD (teammate)                      |
+| US-04 (exit non-zero on connector failure)   | TBD (teammate)                      |
 
 > If a P0 story has zero tests, either add a test or downgrade the requirement to P1. Don't leave it unmapped.
 
@@ -82,33 +78,46 @@ A short list of the "boring but important" cases. Mine these from your Mini #1 /
 
 ---
 
-## 5. What I am explicitly *not* testing (and why)
+## 5. What I am explicitly _not_ testing (and why)
 
-| Skipped surface | Reason |
-|---|---|
-| Stdlib `csv` module internals | Owned by Python stdlib team, not me |
-| argparse error messages verbatim | Brittle to library upgrades |
-| Performance for >1M rows | Out of NFR scope; P0 targets 10k rows |
+| Skipped surface                  | Reason                                |
+| -------------------------------- | ------------------------------------- |
+| Stdlib `csv` module internals    | Owned by Python stdlib team, not me   |
+| argparse error messages verbatim | Brittle to library upgrades           |
+| Performance for >1M rows         | Out of NFR scope; P0 targets 10k rows |
 
 ---
 
 ## 6. CI / runner setup
 
-- **Test runner**: `<pytest>` invoked by `<make test>` / `<npm test>` / etc.
-- **CI workflow**: link to `.github/workflows/<name>.yml`.
-- **Green-CI evidence**: link to the workflow run where all *scaffolding* tests are present and fail with informative messages (red CI is expected at Stage 2 — see §7).
-- **Pre-commit hook** (optional this week, mandatory by W7): runs lint + test before commit.
+- **Test runner**: `pytest` invoked by `pytest -v tests/`.
+- **CI workflow**: `.github/workflows/test.yml`.
+- **Green-CI evidence**: The CI run on GitHub Actions correctly executes the suite and shows all P0 tests failing with informative messages (red CI).
+- **Pre-commit hook**: Not configured yet (mandatory by W7).
 
 ---
 
-## 7. "Tests fail cleanly with informative messages" — Stage-2 rubric clarification
+## 7. Manual test cases (Part C)
 
-At Stage 2, all P0 tests are expected to be **red**. Grading checks that:
-- Each red test prints a clear failure message — *not* `AssertionError: assert False`.
-- The failure message names the missing behaviour (e.g., `AssertionError: Importer.import not implemented yet`).
-- A `pytest -v` run lists every test by name without crashing the collector.
+### US-01: Happy Path (Data exists)
 
-This is the discipline of TDD: write the test red, with a message that tells future-you (or your team-mate) what implementation is missing.
+| Field               | Description                                                                                            |
+| ------------------- | ------------------------------------------------------------------------------------------------------ |
+| **Title**           | US-01 — Fetch combined list from Moodle and Classroom                                                  |
+| **Preconditions**   | Valid tokens in `~/.deadliner/credentials.json`. Both platforms have at least 1 active assignment.     |
+| **Steps**           | 1. Run `deadliner fetch` in the terminal.                                                              |
+| **Expected Result** | Stdout prints a combined list of deadlines. Each line has the tag `[moodle]` or `[classroom]`.         |
+| **Actual Result**   | `[TBD by execution]`                                                                                   |
+
+### US-01: Edge Case (Empty Account)
+
+| Field               | Description                                                                                            |
+| ------------------- | ------------------------------------------------------------------------------------------------------ |
+| **Title**           | US-01 — Handle empty accounts without crashing                                                         |
+| **Preconditions**   | Valid tokens present. Moodle account has 0 active assignments.                                         |
+| **Steps**           | 1. Run `deadliner fetch` in the terminal.                                                              |
+| **Expected Result** | Exit code 0; stdout explicitly shows `0 upcoming deadlines found`; no traceback or errors are thrown.  |
+| **Actual Result**   | `[TBD by execution]`                                                                                   |
 
 ---
 
