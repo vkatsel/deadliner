@@ -110,4 +110,55 @@ Analyze the Stage 2 requirements and our team's past contributions to propose a 
 Saved time on boilerplate and CI setup, but required firm orchestration to ensure the generated tests met the "real assertions but failing" TDD standard.
 
 ---
+
+# Session 3 — US-02 & US-03 Test Scaffolding
+
+Student name: ofedkevych
+Submission: Stage 2 — Tests (US-02 sorting, US-03 midnight cutoff)
+Submission date: 2026-06-23
+
+Track: GREENFIELD
+AI role: Pair-Programmer / Test-Generator
+Tool & model: Claude Sonnet 4.6
+Date & time: 2026-06-23
+
+## Goal
+Generate TDD scaffolding for US-02 (sorted deadline list) and US-03 (midnight cutoff
+distinction) against the `format_assignment` and `sort_assignments` stubs defined in
+design_doc.md §3.
+
+## Prompt (verbatim)
+"Generate pytest tests for format_assignment(assignment, now, local_tz) and
+sort_assignments(assignments) that fail cleanly with AssertionError messages.
+Cover: (1) 21:00 UTC = 00:00 Kyiv shows midnight cutoff, (2) 23:59 local does NOT,
+(3) empty shortname fallback, (4) sort ascending, (5) tiebreak by course+title,
+(6) empty list, (7) single item."
+
+## Verification — how I checked
+- [X] Ran the code / command
+- [X] Read the cited file/line and confirmed AI's claim
+- [X] Re-prompted with a counter-example
+
+## What I kept
+- The ZoneInfo injection pattern (pass local_tz explicitly so tests never depend
+  on the machine's system timezone — directly from the milenayer W4 peer review).
+- The tiebreak test with three items where two share both due_utc and course — the
+  edge case that ArseniiKlimenko flagged in W3 review and that made it into US-02 AC.
+
+## What I discarded and why
+- **Tautological timezone test:** AI initially proposed
+  `assert format_assignment(...) == format_assignment(...)` to "verify consistency."
+  This asserts nothing about behavior — if the stub always raises, both sides raise
+  identically. Replaced with a concrete string assertion on "midnight cutoff".
+- **Mock-heavy sort test:** AI proposed mocking `datetime.now()` inside
+  `sort_assignments`. The function takes no `now` parameter — sort is purely
+  structural (by field values). Mocking the clock here tests nothing real and adds
+  a dependency on `unittest.mock` for no reason. Replaced with plain list comparison.
+
+## Outcome
+8 tests in test_formatter.py, all failing with informative AssertionError messages.
+No imports from a non-existent source module — stubs defined inline following
+vkatsel's established pattern in test_moodle_fetcher.py.
+
 # (Teammates: add your sessions below this line)
+---
