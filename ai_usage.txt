@@ -160,5 +160,65 @@ Cover: (1) 21:00 UTC = 00:00 Kyiv shows midnight cutoff, (2) 23:59 local does NO
 No imports from a non-existent source module — stubs defined inline following
 vkatsel's established pattern in test_moodle_fetcher.py.
 
-# (Teammates: add your sessions below this line)
 ---
+
+# Session 4 — US-04 Auth-Error Tests + Stage 2 Administration
+
+Student name: surovytsky1vadym-1
+Submission: Stage 2 — Tests (US-04 connector auth failure)
+Submission date: 2026-06-23
+
+Track: GREENFIELD
+AI role: Pair-Programmer / Test-Generator
+Tool & model: Claude Opus 4.8
+Date & time: 2026-06-23
+
+## Goal
+Add the US-04 auth-failure tests to the existing moodle/classroom fetcher files
+(invalid token must fail loudly, never silently return an empty list), wire US-04
+into the test plan's inventory + traceability, and close out the Stage 2 admin
+(contribution block, sign-offs, CI red-for-the-right-reason check).
+
+## Prompt (verbatim)
+"Add US-04 tests to test_moodle_fetcher.py and test_classroom_fetcher.py: an
+invalid/revoked token must raise AuthError (design_doc §3), and an auth failure
+must not be indistinguishable from a healthy empty account (Mini #1 anti-pattern).
+Keep them red for the right reason against the existing stubs. Then map US-04 in
+the test plan and refresh CONTRIBUTIONS."
+
+## Verification — how I checked
+- [X] Ran the code / command (pytest -v on both fetcher files)
+- [X] Confirmed all tests fail with AssertionError from the stub, not an import/
+      collector crash — the collector lists every test by name
+- [X] Read design_doc §3 and confirmed AuthError is the contracted error type
+- [X] Confirmed US-04 now maps to tests 13–16 in the traceability matrix
+
+## What I kept
+- The AuthError-raising tests tied directly to design_doc §3's contract, so the
+  red reason is "AuthError behaviour not implemented" rather than a broken test.
+- A second moodle test asserting the auth failure does NOT collapse into an empty
+  list — this is the exact Mini #1 "silent 200 OK" regression PRD §5 commits to
+  avoiding, so it earns its place as a distinct edge.
+
+## What I discarded and why
+- **Tautological / unreachable assertion:** the AI first proposed
+  `with pytest.raises(AuthError): result = fetch_moodle(...); assert result is None`
+  — putting the call AND a follow-up assertion inside the `pytest.raises` block.
+  The assertion after the raising call is unreachable (the exception fires first),
+  so it asserts nothing. I kept only the form where the raising call is the last
+  statement in the block, so the test actually pins "AuthError is raised."
+- **Over-mocked HTTP test:** the AI also proposed mocking `requests.get` to return
+  a fake 401 response object and asserting on the mock's call args. At Stage 2 there
+  is no HTTP client wired yet and no production code — mocking a library we haven't
+  integrated tests the mock, not our contract, and would couple the test to an
+  implementation detail (that we use `requests`) the design doc doesn't mandate.
+  Rejected in favour of asserting the contracted AuthError directly on the stub.
+
+## Outcome
+4 US-04 tests added (2 moodle, 2 classroom), all failing cleanly with the stub's
+informative AssertionError; US-04 mapped in §2/§3/§7; CI is red for the right reason.
+
+# ====================== TRACK COVERAGE CHECK (Stage 2) ======================
+  [X] US-01 — vkatsel (Session 2)
+  [X] US-02 / US-03 — ofedkevych (Session 3)
+  [X] US-04 + administration — surovytsky1vadym-1 (Session 4)

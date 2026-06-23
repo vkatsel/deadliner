@@ -50,6 +50,10 @@ A flat list of every test file and every test case. Use the AAA pattern: name co
 | 10 | tests/test_formatter.py | test_sort_assignments_identical_due_dates_tiebreak_by_course_then_title  | unit | red |
 | 11 | tests/test_formatter.py | test_sort_assignments_empty_list_returns_empty                           | unit | red |
 | 12 | tests/test_formatter.py | test_sort_assignments_single_item_returns_unchanged                      | unit | red |
+| 13 | `tests/test_moodle_fetcher.py`    | `test_fetch_moodle_invalid_token_raises_auth_error`            | integration | red |
+| 14 | `tests/test_moodle_fetcher.py`    | `test_fetch_moodle_invalid_token_does_not_return_empty_list`   | integration | red |
+| 15 | `tests/test_classroom_fetcher.py` | `test_fetch_classroom_revoked_oauth_raises_auth_error`         | integration | red |
+| 16 | `tests/test_classroom_fetcher.py` | `test_fetch_classroom_missing_access_token_raises_auth_error`  | integration | red |
 
 > Stage 2 awards **5 points** for "Test plan covers P0 including invalid input and empty-argument edge cases." Edge-case coverage = empty, one-element, max-realistic-size, malformed input, missing required arg.
 
@@ -64,7 +68,7 @@ Every P0 user story from `PRD.md §3.1` must map to **at least one** test in §2
 | US-01 (connect Moodle and Classroom & empty) | 1, 2, 3, 4                          |
 | US-02 (list deadlines sorted ascending)    | 9, 10, 11, 12 |
 | US-03 (distinguish 00:00 from 23:59)       | 5, 6, 7, 8    |
-| US-04 (exit non-zero on connector failure) | TBD (teammate 2) |
+| US-04 (exit non-zero on connector failure) | 13, 14, 15, 16 |
 
 > If a P0 story has zero tests, either add a test or downgrade the requirement to P1. Don't leave it unmapped.
 
@@ -88,6 +92,8 @@ A short list of the "boring but important" cases. Mine these from your Mini #1 /
 - Two deadlines with identical `due_utc` — sort order is deterministic across repeated calls
 - Empty assignment list passed to sort — returns empty list without raising
 - Single-item list passed to sort — returns the same item unchanged
+- Invalid / revoked auth token — raises `AuthError`, never returns an empty list (Mini #1 silent-200 anti-pattern)
+- OAuth credentials dict missing its `access_token` field — treated as an auth failure, not as "no courses"
 
 ---
 
@@ -151,8 +157,7 @@ A short list of the "boring but important" cases. Mine these from your Mini #1 /
 | **Title**          | US-02 — Two deadlines with the same due time appear in consistent order    |
 | **Preconditions**  | Two assignments in different courses set to the exact same due time.       |
 | **Steps**          | 1. Run `deadliner fetch` twice in a row.                                   |
-| **Expected Result**| Both runs produce the same order. 
-                     | the assignment from the alphabetically earlier course appears first. |
+| **Expected Result**| Both runs produce the same order; the assignment from the alphabetically earlier course appears first. |
 | **Actual Result**  | [TBD by execution]                                                          |
 
 ### US-03: Happy Path (Midnight cutoff labeled)
@@ -160,8 +165,7 @@ A short list of the "boring but important" cases. Mine these from your Mini #1 /
 | Field              | Description                                                                 |
 |--------------------|-----------------------------------------------------------------------------|
 | **Title**          | US-03 — A 00:00 local-time deadline is labeled "midnight cutoff"            |
-| **Preconditions**  | A Moodle assignment is set to due at 21:00 UTC (= 00:00 Europe/Kyiv).       | 
-                     | System timezone is Europe/Kyiv.                                             |
+| **Preconditions**  | A Moodle assignment is set to due at 21:00 UTC (= 00:00 Europe/Kyiv). System timezone is Europe/Kyiv. |
 | **Steps**          | 1. Run `deadliner fetch`.                                                   |
 | **Expected Result**| The deadline line shows `00:00` and contains the text `midnight cutoff`.    |
 | **Actual Result**  | [TBD by execution]                                                          |
@@ -175,9 +179,29 @@ A short list of the "boring but important" cases. Mine these from your Mini #1 /
 | **Steps**          | 1. Run `deadliner fetch`.                                                   |
 | **Expected Result**| The line shows `23:59`. The text "midnight cutoff" does NOT appear.         |
 | **Actual Result**  | [TBD by execution]                                                          |
---- 
+
+### US-04: Happy Path (Connector failure is loud)
+
+| Field               | Description                                                                                            |
+| ------------------- | ------------------------------------------------------------------------------------------------------ |
+| **Title**           | US-04 — An invalid Moodle token causes a loud non-zero exit                                             |
+| **Preconditions**   | `~/.deadliner/credentials.json` contains an invalid or revoked Moodle token. Classroom token may be valid. |
+| **Steps**           | 1. Run `deadliner fetch` in the terminal. 2. Inspect stderr and the shell exit code (`echo $?`).        |
+| **Expected Result** | Exit code is non-zero; stderr contains `auth error`; no `[moodle]` lines are printed. The failure is never swallowed into an empty-but-successful run. |
+| **Actual Result**   | `[TBD by execution]`                                                                                   |
+
+### US-04: Edge Case (Auth failure not masked as empty)
+
+| Field               | Description                                                                                            |
+| ------------------- | ------------------------------------------------------------------------------------------------------ |
+| **Title**           | US-04 — A revoked token must not look like a healthy-but-empty account                                  |
+| **Preconditions**   | Moodle token is revoked (would 401). The account otherwise has zero assignments anyway.                 |
+| **Steps**           | 1. Run `deadliner fetch`. 2. Compare behaviour against the US-01 empty-account case.                    |
+| **Expected Result** | Exit is non-zero with an `auth error` on stderr — distinct from the US-01 empty case, which exits 0 with `0 upcoming deadlines found`. The two outcomes are never conflated (Mini #1 anti-pattern). |
+| **Actual Result**   | `[TBD by execution]`                                                                                   |
+---
 
 ## 8. Sign-off
 - Reviewed and ran scaffolding locally — ofedkevych, 2026-06-23
-Solo: "Reviewed alone, <date>."
-Team: each member confirms they reviewed and ran the test scaffolding locally.
+- Reviewed and ran scaffolding locally — vkatsel, 2026-06-23
+- Reviewed and ran scaffolding locally — surovytsky1vadym-1, 2026-06-23

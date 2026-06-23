@@ -58,3 +58,20 @@ Below is an exhaustive list of peer review comments (W2–W4), grouped by team m
 | W3 PR [#76](https://github.com/CS460-SEP-2026/greenfield/pull/76): @nvytska "Open Question needs clarification because it mixes two ideas... caching and stateless execution" | Applied (fully) | During consolidation, we entirely discarded the caching idea in favor of stateless execution, removing the conflict. |
 | W2 PR [#46](https://github.com/CS460-SEP-2026/greenfield/pull/46): @kdeneshchuk "S-05 has words like reliable and reusable... move them to NFR with concrete numbers" | Applied (fully) | All subjective characteristics were moved to NFR §4 as measurable metrics (e.g., 'under 5 seconds'). |
 | W2 PR [#46](https://github.com/CS460-SEP-2026/greenfield/pull/46): @ysobko "Main feature test should assert key fields" | Applied (fully) | Applied to the API contracts. |
+
+---
+
+## C.1 (Stage 2) — Contribution block
+
+This stage turned the Stage 1 P0 contracts into a TDD-first test suite (red, with informative messages) plus the test plan and CI. Ownership spans the test plan and the suite, with distinct stories per member.
+
+| Team Member | Stage 2 Ownership & Contribution |
+|---|---|
+| **vkatsel** | **Infrastructure + US-01.** Configured `pytest`, authored the CI workflow `.github/workflows/test.yml`, wrote `test_plan.md` §0 (metadata) and §1 (strategy). Created `tests/test_moodle_fetcher.py` and `tests/test_classroom_fetcher.py` with the US-01 happy-path and empty-list tests, the matching manual test, and the §3 traceability rows for US-01. |
+| **ofedkevych** | **US-02 + US-03.** Created `tests/test_formatter.py` (8 tests): midnight-cutoff vs 23:59 (US-03), course-shortname prefix and empty-shortname fallback, ascending sort, course+title tie-break, empty-list and single-item edges (US-02). Added the US-02/US-03 manual cases (§7), Inventory rows 5–12 (§2), traceability mappings (§3), and the §4/§5 edge-case and out-of-scope notes. |
+| **surovytsky1vadym-1** | **US-04 + Stage-2 administration.** Added the US-04 auth-failure tests to `tests/test_moodle_fetcher.py` and `tests/test_classroom_fetcher.py` (invalid/revoked token raises `AuthError`; auth failure must not return an empty list; missing OAuth `access_token` treated as auth failure). Added the US-04 manual cases (§7), Inventory rows 13–16 (§2), the US-04 traceability mapping (§3), and the US-04 edge cases (§4). Refreshed this Stage-2 contribution block, collected §8 sign-offs, and verified the CI run is red via `AssertionError` (missing behaviour) rather than a collector crash. |
+
+**Stage 2 signatures:**
+- This reflects my actual contribution — vkatsel, 2026-06-23
+- This reflects my actual contribution — ofedkevych, 2026-06-23
+- This reflects my actual contribution — surovytsky1vadym-1, 2026-06-23
