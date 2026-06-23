@@ -42,7 +42,14 @@ A flat list of every test file and every test case. Use the AAA pattern: name co
 | 2   | `tests/test_moodle_fetcher.py`    | `test_fetch_moodle_empty_calendar_returns_empty_list`       | integration | red    |
 | 3   | `tests/test_classroom_fetcher.py` | `test_fetch_classroom_valid_oauth_returns_assignments`      | integration | red    |
 | 4   | `tests/test_classroom_fetcher.py` | `test_fetch_classroom_no_active_courses_returns_empty_list` | integration | red    |
-| 5   | `TBD (teammate)`                  | `TBD (teammate)`                                            | unit        | red    |
+| 5  | tests/test_formatter.py | test_format_assignment_midnight_utc_kyiv_shows_midnight_cutoff           | unit | red |
+| 6  | tests/test_formatter.py | test_format_assignment_end_of_day_does_not_show_midnight_cutoff          | unit | red |
+| 7  | tests/test_formatter.py | test_format_assignment_includes_course_shortname_as_prefix               | unit | red |
+| 8  | tests/test_formatter.py | test_format_assignment_empty_course_shortname_shows_fallback             | unit | red |
+| 9  | tests/test_formatter.py | test_sort_assignments_out_of_order_returns_ascending                     | unit | red |
+| 10 | tests/test_formatter.py | test_sort_assignments_identical_due_dates_tiebreak_by_course_then_title  | unit | red |
+| 11 | tests/test_formatter.py | test_sort_assignments_empty_list_returns_empty                           | unit | red |
+| 12 | tests/test_formatter.py | test_sort_assignments_single_item_returns_unchanged                      | unit | red |
 
 > Stage 2 awards **5 points** for "Test plan covers P0 including invalid input and empty-argument edge cases." Edge-case coverage = empty, one-element, max-realistic-size, malformed input, missing required arg.
 
@@ -55,9 +62,9 @@ Every P0 user story from `PRD.md §3.1` must map to **at least one** test in §2
 | PRD requirement (ID)                         | Tests covering it (numbers from §2) |
 | -------------------------------------------- | ----------------------------------- |
 | US-01 (connect Moodle and Classroom & empty) | 1, 2, 3, 4                          |
-| US-02 (list deadlines sorted ascending)      | TBD (teammate)                      |
-| US-03 (distinguish 00:00 from 23:59)         | TBD (teammate)                      |
-| US-04 (exit non-zero on connector failure)   | TBD (teammate)                      |
+| US-02 (list deadlines sorted ascending)    | 9, 10, 11, 12 |
+| US-03 (distinguish 00:00 from 23:59)       | 5, 6, 7, 8    |
+| US-04 (exit non-zero on connector failure) | TBD (teammate 2) |
 
 > If a P0 story has zero tests, either add a test or downgrade the requirement to P1. Don't leave it unmapped.
 
@@ -75,16 +82,25 @@ A short list of the "boring but important" cases. Mine these from your Mini #1 /
 - File with European date format (`31/12/2026`)
 - File with quoted commas inside fields
 - Missing file path argument
+- Deadline at exactly 00:00 local time (midnight) must be labeled — not just "close to midnight"
+- Deadline at 23:59 local time must NOT receive the midnight cutoff label
+- Empty course shortname renders as `[Course ID: <id>]`, never as `[]`
+- Two deadlines with identical `due_utc` — sort order is deterministic across repeated calls
+- Empty assignment list passed to sort — returns empty list without raising
+- Single-item list passed to sort — returns the same item unchanged
 
 ---
 
 ## 5. What I am explicitly _not_ testing (and why)
 
-| Skipped surface                  | Reason                                |
-| -------------------------------- | ------------------------------------- |
-| Stdlib `csv` module internals    | Owned by Python stdlib team, not me   |
-| argparse error messages verbatim | Brittle to library upgrades           |
-| Performance for >1M rows         | Out of NFR scope; P0 targets 10k rows |
+| Skipped surface                           | Reason                                                       |
+| ------------------------------------------| ------------------------------------------------------------ |
+| Stdlib `csv` module internals             | Owned by Python stdlib team, not me                          |
+| argparse error messages verbatim          | Brittle to library upgrades                                  |
+| Performance for >1M rows                  | Out of NFR scope; P0 targets 10k rows                        |
+| `zoneinfo` / `ZoneInfo` DST transitions   | Stdlib correctness; we inject fixed offsets in tests         |
+| Actual Moodle API timezone field values   | Integration concern; unit tests use hardcoded UTC datetimes  |
+| Sort stability for >1000 items            | Out of P0 NFR scope; Python's sort is stable by spec         |
 
 ---
 
@@ -118,10 +134,50 @@ A short list of the "boring but important" cases. Mine these from your Mini #1 /
 | **Steps**           | 1. Run `deadliner fetch` in the terminal.                                                              |
 | **Expected Result** | Exit code 0; stdout explicitly shows `0 upcoming deadlines found`; no traceback or errors are thrown.  |
 | **Actual Result**   | `[TBD by execution]`                                                                                   |
+### US-02: Happy Path (Sorted list)
 
----
+| Field              | Description                                                                 |
+|--------------------|-----------------------------------------------------------------------------|
+| **Title**          | US-02 — Deadlines appear sorted by due date ascending                      |
+| **Preconditions**  | Valid Moodle token. At least 3 upcoming assignments across 2 courses, added to Moodle in non-chronological order. |
+| **Steps**          | 1. Run `deadliner fetch` in the terminal.                                  |
+| **Expected Result**| Output lines are in ascending due-date order. The earliest deadline appears first. Each line includes the course short name. |
+| **Actual Result**  | [TBD by execution]                                                          |
+
+### US-02: Edge Case (Identical timestamps)
+
+| Field              | Description                                                                 |
+|--------------------|-----------------------------------------------------------------------------|
+| **Title**          | US-02 — Two deadlines with the same due time appear in consistent order    |
+| **Preconditions**  | Two assignments in different courses set to the exact same due time.       |
+| **Steps**          | 1. Run `deadliner fetch` twice in a row.                                   |
+| **Expected Result**| Both runs produce the same order. 
+                     | the assignment from the alphabetically earlier course appears first. |
+| **Actual Result**  | [TBD by execution]                                                          |
+
+### US-03: Happy Path (Midnight cutoff labeled)
+
+| Field              | Description                                                                 |
+|--------------------|-----------------------------------------------------------------------------|
+| **Title**          | US-03 — A 00:00 local-time deadline is labeled "midnight cutoff"            |
+| **Preconditions**  | A Moodle assignment is set to due at 21:00 UTC (= 00:00 Europe/Kyiv).       | 
+                     | System timezone is Europe/Kyiv.                                             |
+| **Steps**          | 1. Run `deadliner fetch`.                                                   |
+| **Expected Result**| The deadline line shows `00:00` and contains the text `midnight cutoff`.    |
+| **Actual Result**  | [TBD by execution]                                                          |
+
+### US-03: Edge Case (23:59 not mislabeled)
+
+| Field              | Description                                                                 |
+|--------------------|-----------------------------------------------------------------------------|
+| **Title**          | US-03 — A 23:59 local-time deadline is NOT labeled midnight cutoff          |
+| **Preconditions**  | A Moodle assignment due at 20:59 UTC (= 23:59 Europe/Kyiv).                 |
+| **Steps**          | 1. Run `deadliner fetch`.                                                   |
+| **Expected Result**| The line shows `23:59`. The text "midnight cutoff" does NOT appear.         |
+| **Actual Result**  | [TBD by execution]                                                          |
+--- 
 
 ## 8. Sign-off
-
+- Reviewed and ran scaffolding locally — ofedkevych, 2026-06-23
 Solo: "Reviewed alone, <date>."
 Team: each member confirms they reviewed and ran the test scaffolding locally.
