@@ -1,6 +1,9 @@
+import logging
 import requests
 from datetime import datetime, timezone
 from src.deadliner.models import Assignment, AuthError
+
+logger = logging.getLogger(__name__)
 
 def fetch_moodle(base_url: str, token: str) -> list[Assignment]:
     url = f"{base_url.rstrip('/')}/webservice/rest/server.php"
@@ -10,33 +13,36 @@ def fetch_moodle(base_url: str, token: str) -> list[Assignment]:
         "moodlewsrestformat": "json",
     }
     
+    logger.info(f"Fetching Moodle deadlines from {base_url}")
     try:
         response = requests.get(url, params=params, timeout=10)
         response.raise_for_status()
     except requests.RequestException as e:
+        logger.error(f"Moodle connection failed: {e}")
         raise ConnectionError(f"Failed to connect to Moodle: {e}")
 
+    # Note: Moodle's REST API almost always returns HTTP 200 OK even for errors like invalid tokens.
+    # The actual error is embedded in the JSON body, which is why we must check "errorcode" manually.
     data = response.json()
-    
-    # Handle Moodle API errors
     if "exception" in data or "errorcode" in data:
         if data.get("errorcode") == "invalidtoken":
+            logger.error("Moodle token rejected by API")
             raise AuthError("token rejected")
+        logger.error(f"Moodle returned an error: {data}")
         raise AuthError(f"Moodle error: {data}")
 
     assignments = []
     for event in data.get("events", []):
         title = event.get("name", "Unknown Assignment")
         
-        # Moodle course info can be structured differently depending on the endpoint version
-        course_shortname = ""
         course = event.get("course")
-        if isinstance(course, dict):
-            course_shortname = course.get("shortname", "")
-        if not course_shortname:
-            course_shortname = event.get("coursename", "")
+        course_shortname = course.get("shortname", "") if isinstance(course, dict) else ""
             
-        due_timestamp = event.get("timestart", 0)
+        due_timestamp = event.get("timestart")
+        if not due_timestamp or due_timestamp == 0:
+            logger.warning(f"Skipping assignment '{title}' because timestart is missing or 0")
+            continue
+            
         due_utc = datetime.fromtimestamp(due_timestamp, tz=timezone.utc)
         url_link = event.get("url", "")
         
@@ -48,4 +54,5 @@ def fetch_moodle(base_url: str, token: str) -> list[Assignment]:
             url=url_link
         ))
         
+    logger.info(f"Successfully parsed {len(assignments)} Moodle assignments")
     return assignments

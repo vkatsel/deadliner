@@ -1,10 +1,17 @@
-#REMAKE!
-#!/bin/sh
-echo "Running pre-push hook..."
-make ci
-if [ $? -ne 0 ]; then
-    echo "CI failed! Push rejected."
+#!/usr/bin/env bash
+#
+# Versioned pre-push hook. Makes green un-skippable: a red CI blocks the push.
+# Installed (once per clone) with:  git config core.hooksPath .githooks
+#
+set -euo pipefail
+
+echo "pre-push: running 'make ci' before allowing push..."
+
+if ! make ci; then
+    echo >&2
+    echo "PUSH BLOCKED: 'make ci' is red. Fix it, then push again." >&2
+    echo "(To bypass in a genuine emergency: git push --no-verify)" >&2
     exit 1
 fi
-echo "CI passed! Push allowed."
-exit 0
+
+echo "pre-push: CI green — push allowed."
