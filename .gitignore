@@ -22,6 +22,11 @@ coverage.xml
 *.code-workspace
 .DS_Store
 
+# Service files (course assignments, team lists)
+_task.md
+team.md
+
+
 # Keys and Secrets
 *.pem
 *.key
