@@ -1,7 +1,7 @@
 import logging
 import requests
 from datetime import datetime, timezone
-from src.deadliner.models import Assignment, AuthError
+from deadliner.models import Assignment, AuthError
 
 logger = logging.getLogger(__name__)
 

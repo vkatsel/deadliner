@@ -1,7 +1,7 @@
 import pytest
 import responses
-from src.deadliner.models import Assignment, AuthError
-from src.deadliner.moodle_fetcher import fetch_moodle
+from deadliner.models import Assignment, AuthError
+from deadliner.moodle_fetcher import fetch_moodle
 
 # --- TESTS for US-01 (Fetch & Empty list) ---
 

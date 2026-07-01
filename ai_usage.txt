@@ -229,16 +229,16 @@ informative AssertionError; US-04 mapped in §2/§3/§7; CI is red for the right
 
 Student name:           vkatsel
 Submission:             Stage 3 — Implementation
-Submission date:        2026-07-__
+Submission date:        2026-07-01
 Practice repo PR:       N/A
 Greenfield repo:        https://github.com/CS460-SEP-2026/greenfield
 Team (if any):          Team team-typed-aura (ofedkevych, surovytsky1vadym-1, vkatsel)
 
-## Session 5 — Stage 3 Implementation (Component 1)
+## Session 6 — Stage 3 Implementation (Component 1)
 
 Track:          GREENFIELD
 AI role:        Pair-Programmer
-Tool & model:   Gemini (via IDE)
+Tool & model:   Gemini 3.1 Pro (High)
 Chat link:      no public link, prompt below
 Date & time:    2026-07-01
 
@@ -246,7 +246,7 @@ Date & time:    2026-07-01
 Implement the Moodle fetcher logic to pass the Stage 2 TDD tests (US-01, US-04), setup the `responses` library for mocking, and configure the Git hooks and Makefile pipeline based on best practices from our PRs.
 
 ### Prompt (verbatim or final-iteration if you iterated)
-"Давай виконаємо мою частинку. Реалізуй Moodle Fetcher і тести до нього. Також глянь мейкфайли та гітхукі з попередніх PR нашої групи, вибери найкращий варіант CI та хуку і запиши сюди. Не коміть службові файли."
+Давай виконаємо мою частинку. Реалізуй Moodle Fetcher і тести до нього. Також глянь мейкфайли та гітхукі з попередніх PR нашої групи, вибери найкращий варіант CI та хуку і запиши сюди.
 
 ### Verification — how I checked
 - [X] Ran the code / command
@@ -264,6 +264,26 @@ Implement the Moodle fetcher logic to pass the Stage 2 TDD tests (US-01, US-04),
 
 ### Outcome (1 sentence)
 Successfully implemented the Moodle API integration and robust CI pipeline, but required manual code review to fix logical fallbacks and prevent committing service files.
+
+## Session 7 (vkatsel)
+
+### Goal / Prompt
+Виникла помилка імпорту модулів під час запуску тестів: `Cannot find module src.deadliner.models`. Поясни, чому `pytest` та IDE по-різному визначають кореневу директорію для імпортів, і допоможи налаштувати правильний шлях.
+
+### Verification — how I checked
+- [X] Ran the code / command
+- [X] Read the cited file/line and confirmed AI's claim
+- [X] Re-prompted with a counter-example
+
+### What I kept
+- The updated imports (removed `src.` prefix to just `deadliner.models`).
+- Added `"src"` to `pythonpath` in `pyproject.toml` to fix the `pytest` runner.
+
+### What I discarded and why (MANDATORY FOR STAGE 3)
+- **Dynamic sys.path modification:** The AI initially proposed appending `src` directly via `sys.path.append('src')` in test files. I rejected this dynamic patching as an anti-pattern that complicates code maintenance, forcing it instead to properly configure `pythonpath` globally via `pyproject.toml`.
+
+### Outcome (1 sentence)
+Resolved a Python pathing issue by cleaning up absolute imports and properly configuring `pytest` to recognize the `src` directory as a module root.
 
 ---
 
