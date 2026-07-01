@@ -75,3 +75,16 @@ This stage turned the Stage 1 P0 contracts into a TDD-first test suite (red, wit
 - This reflects my actual contribution — vkatsel, 2026-06-23
 - This reflects my actual contribution — ofedkevych, 2026-06-23
 - This reflects my actual contribution — surovytsky1vadym-1, 2026-06-23
+
+## C.1 Stage 3 Contributions
+
+| Member | Contribution details |
+|---|---|
+| **vkatsel** | **[TODO: Add your contributions for Component 1 here]** |
+| **[Member 2]** | **[TODO: Add contributions here]** |
+| **[Member 3]** | **[TODO: Add contributions here]** |
+
+**Stage 3 signatures:**
+- This reflects my actual contribution — vkatsel, 2026-07-__
+- This reflects my actual contribution — [Name], 2026-07-__
+- This reflects my actual contribution — [Name], 2026-07-__

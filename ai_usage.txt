@@ -222,3 +222,46 @@ informative AssertionError; US-04 mapped in §2/§3/§7; CI is red for the right
   [X] US-01 — vkatsel (Session 2)
   [X] US-02 / US-03 — ofedkevych (Session 3)
   [X] US-04 + administration — surovytsky1vadym-1 (Session 4)
+
+# =====================================================
+# ====================== STAGE 3 ======================
+# =====================================================
+
+Student name:           vkatsel
+Submission:             Stage 3 — Implementation
+Submission date:        2026-07-__
+Practice repo PR:       N/A
+Greenfield repo:        https://github.com/CS460-SEP-2026/greenfield
+Team (if any):          Team team-typed-aura (ofedkevych, surovytsky1vadym-1, vkatsel)
+
+## Session 5 — Stage 3 Implementation (Component 1)
+
+Track:          GREENFIELD
+AI role:        Pair-Programmer
+Tool & model:   [TODO: e.g. Gemini 3.1 Pro]
+Chat link:      no public link, prompt below
+Date & time:    [TODO: date]
+
+### Goal (1-2 sentences)
+[TODO: Explain the goal of the session, e.g., Implement Moodle fetcher]
+
+### Prompt (verbatim or final-iteration if you iterated)
+[TODO: Insert prompt]
+
+### Verification — how I checked
+- [ ] Ran the code / command
+- [ ] Read the cited file/line and confirmed AI's claim
+- [ ] Re-prompted with a counter-example
+
+### What I kept
+[TODO: What did you keep from the AI suggestion?]
+
+### What I discarded and why (MANDATORY FOR STAGE 3)
+[TODO: Describe at least one AI proposal you rejected and explain WHY. E.g., over-built abstraction, wrong shortcut, needless dependency.]
+
+### Outcome (1 sentence)
+[TODO: Outcome]
+
+---
+
+[TODO: Other team members should copy the Session block above and add their own for Component 2 and Component 3]

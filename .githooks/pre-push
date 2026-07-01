@@ -1,0 +1,10 @@
+#REMAKE!
+#!/bin/sh
+echo "Running pre-push hook..."
+make ci
+if [ $? -ne 0 ]; then
+    echo "CI failed! Push rejected."
+    exit 1
+fi
+echo "CI passed! Push allowed."
+exit 0
