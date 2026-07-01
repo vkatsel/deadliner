@@ -238,29 +238,32 @@ Team (if any):          Team team-typed-aura (ofedkevych, surovytsky1vadym-1, vk
 
 Track:          GREENFIELD
 AI role:        Pair-Programmer
-Tool & model:   [TODO: e.g. Gemini 3.1 Pro]
+Tool & model:   Gemini (via IDE)
 Chat link:      no public link, prompt below
-Date & time:    [TODO: date]
+Date & time:    2026-07-01
 
 ### Goal (1-2 sentences)
-[TODO: Explain the goal of the session, e.g., Implement Moodle fetcher]
+Implement the Moodle fetcher logic to pass the Stage 2 TDD tests (US-01, US-04), setup the `responses` library for mocking, and configure the Git hooks and Makefile pipeline based on best practices from our PRs.
 
 ### Prompt (verbatim or final-iteration if you iterated)
-[TODO: Insert prompt]
+"Давай виконаємо мою частинку. Реалізуй Moodle Fetcher і тести до нього. Також глянь мейкфайли та гітхукі з попередніх PR нашої групи, вибери найкращий варіант CI та хуку і запиши сюди. Не коміть службові файли."
 
 ### Verification — how I checked
-- [ ] Ran the code / command
-- [ ] Read the cited file/line and confirmed AI's claim
-- [ ] Re-prompted with a counter-example
+- [X] Ran the code / command
+- [X] Read the cited file/line and confirmed AI's claim
+- [X] Re-prompted with a counter-example
 
 ### What I kept
-[TODO: What did you keep from the AI suggestion?]
+- The `requests` and `responses` implementation for the Moodle Fetcher.
+- The Git hook and `run_ci.sh` scripts based on the PR 286 template.
 
 ### What I discarded and why (MANDATORY FOR STAGE 3)
-[TODO: Describe at least one AI proposal you rejected and explain WHY. E.g., over-built abstraction, wrong shortcut, needless dependency.]
+- **Fallback duplication:** The AI initially duplicated the course name logic (`if not course_shortname: course_shortname = event.get("coursename")`). I rejected this as bad practice and forced it to strictly return `""` when missing, leaving fallback to the formatter.
+- **Service Files Tracking:** The AI attempted to commit internal service files (`_task.md`, `team.md`). I firmly rejected this and instructed it to remove them via `git rm --cached` and put them in `.gitignore`.
+- **Silent 0 timestarts:** The AI initially passed through missing `timestart` fields as 1970 timestamps. I forced it to add logging and explicitly skip (`continue`) assignments with `timestart = 0`.
 
 ### Outcome (1 sentence)
-[TODO: Outcome]
+Successfully implemented the Moodle API integration and robust CI pipeline, but required manual code review to fix logical fallbacks and prevent committing service files.
 
 ---
 
