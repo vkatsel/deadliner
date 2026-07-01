@@ -1,6 +1,9 @@
 from dataclasses import dataclass
 from datetime import datetime
 
+class AuthError(Exception):
+    """Raised when a connector rejects the supplied credentials."""
+
 @dataclass
 class Assignment:
     platform: str
