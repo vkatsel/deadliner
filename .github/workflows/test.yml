@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - "team-typed-aura/stage2"
+      - "team-typed-aura/stage3"
       - "team-typed-aura/main"
 
 jobs:
@@ -20,9 +21,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest
-          # pip install -e . # Uncomment when packaging is ready
+          pip install -r requirements.txt
 
-      - name: Run Pytest
-        run: |
-          pytest -v tests/
+      - name: Run CI checks
+        run: make ci

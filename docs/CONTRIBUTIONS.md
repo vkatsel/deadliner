@@ -81,10 +81,10 @@ This stage turned the Stage 1 P0 contracts into a TDD-first test suite (red, wit
 | Member | Contribution details |
 |---|---|
 | **vkatsel** | **Component 1 (Moodle Fetcher) & Tooling Config:** Implemented the `fetch_moodle` logic utilizing the `requests` library and parsing the Moodle REST API response. Configured `responses`-based HTTP mocks to ensure US-01 and US-04 tests pass. Set up the strict `pre-push` git hook and the native `make ci` pipeline using `run_ci.sh` wrapper. |
-| **[Member 2]** | **[TODO: Add contributions here]** |
+| **surovytsky1vadym-1** | **Component 2 (Classroom Fetcher):** Implemented `fetch_classroom` against the real Google Classroom REST API (`courses` + `courseWork` endpoints) using `requests`, mirroring the Moodle fetcher's style. Rewrote `test_classroom_fetcher.py` to import from `src` and mock both endpoints with `responses`, replacing the old magic-string-token stubs. Also added the missing `requirements.txt` and fixed `.github/workflows/test.yml` (added the `stage3` trigger branch, switched it to run `make ci`) so CI actually runs and has the dependencies it needs. |
 | **[Member 3]** | **[TODO: Add contributions here]** |
 
 **Stage 3 signatures:**
 - This reflects my actual contribution — vkatsel, 2026-07-01
-- This reflects my actual contribution — [Name], 2026-07-__
+- This reflects my actual contribution — surovytsky1vadym-1, 2026-07-04
 - This reflects my actual contribution — [Name], 2026-07-__

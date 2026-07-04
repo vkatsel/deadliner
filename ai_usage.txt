@@ -287,4 +287,38 @@ Resolved a Python pathing issue by cleaning up absolute imports and properly con
 
 ---
 
-[TODO: Other team members should copy the Session block above and add their own for Component 2 and Component 3]
+## Session 8 — Stage 3 Implementation (Component 2, surovytsky1vadym-1)
+
+Track:          GREENFIELD
+AI role:        Pair-Programmer
+Tool & model:   Claude Code (Sonnet 5)
+Chat link:      no public link, prompt below
+Date & time:    2026-07-04
+
+### Goal (1-2 sentences)
+Implement Component 2 (`fetch_classroom` + its tests), following the pattern already established by Component 1's Moodle fetcher, and check whether any tooling/CI gaps were blocking the whole team's `make ci`/pre-push pipeline.
+
+### Prompt (verbatim or final-iteration if you iterated)
+прочитай файл, що я тобі скинув, проаналізуй код, що є наразі по проекту і виконай частину participant 2. якщо тобі треба додаткові файли з інших репо - пиши
+
+### Verification — how I checked
+- [X] Ran the code / command
+- [X] Read the cited file/line and confirmed AI's claim
+- [X] Re-prompted with a counter-example
+
+### What I kept
+- `src/deadliner/classroom_fetcher.py`: `fetch_classroom` implemented via plain `requests` calls against the real Classroom REST API (`/courses`, `/courses/{id}/courseWork`), mirroring `moodle_fetcher.py`'s logging/error-handling style.
+- Rewritten `tests/test_classroom_fetcher.py` importing from `src` and mocking both endpoints with `responses`, matching `test_moodle_fetcher.py`'s approach.
+- New `requirements.txt` (`pytest`, `requests`, `responses`, `ruff`) and an updated `.github/workflows/test.yml` (added the `stage3` trigger branch, now runs `make ci` instead of a bare `pytest` subset).
+
+### What I discarded and why (MANDATORY FOR STAGE 3)
+- **`googleapiclient`/`google-auth` SDK:** Considered using Google's official client library, but discarded it — it isn't installed anywhere in the repo, the design doc only requires accepting an already-obtained OAuth credentials dict, and `moodle_fetcher.py` already established the precedent of calling the REST API directly with `requests` rather than pulling in a platform SDK.
+- **Keeping the old test stubs' magic-string-token branching:** The original `test_classroom_fetcher.py` decided pass/fail by inspecting literal substrings like `"revoked"` in the token, with no HTTP mocking at all. I rejected this because it can't exercise real API-response parsing; rewrote it with `@responses.activate` HTTP mocks instead, consistent with the Moodle tests.
+- **Reformatting `moodle_fetcher.py`/`test_moodle_fetcher.py`:** `ruff format --check` flags both files as needing reformatting (pre-existing, not introduced by this session). Left them untouched since they belong to Component 1 and weren't part of this task's scope — only ran `ruff format` on the new/changed classroom files.
+
+### Outcome (1 sentence)
+`fetch_classroom` and its 4 tests are implemented and green, `make ci` now only fails on the (separately owned, not-yet-implemented) Component 3 formatter tests, and CI is wired up to actually run on `stage3` with the dependencies it needs.
+
+---
+
+[TODO: Other team members should copy the Session block above and add their own for Component 3]
