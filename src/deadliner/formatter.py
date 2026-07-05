@@ -9,9 +9,9 @@ def format_assignment(assignment: Assignment, now: datetime, local_tz) -> str:
     local_due = assignment.due_utc.astimezone(local_tz)
 
     if assignment.course_shortname:
-        prefix = f"[{assignment.course_shortname}]"
+        prefix = f"[{assignment.course_shortname}] "
     else:
-        prefix = f"[Course ID: {assignment.title}]"
+        prefix = ""
 
     remaining = assignment.due_utc - now
     total_seconds = int(remaining.total_seconds())
@@ -23,7 +23,7 @@ def format_assignment(assignment: Assignment, now: datetime, local_tz) -> str:
         countdown = "overdue"
 
     time_str = local_due.strftime("%H:%M")
-    line = f"{prefix} {assignment.title} — {countdown} — {time_str}"
+    line = f"{prefix}{assignment.title} — {countdown} — {time_str}"
 
     if local_due.hour == 0 and local_due.minute == 0:
         line += " midnight cutoff"

@@ -46,7 +46,8 @@ def test_format_assignment_empty_course_shortname_shows_fallback():
 
     result = format_assignment(assignment, now, local_tz)
 
-    assert "[Course ID:" in result, f"Empty shortname must fall back to '[Course ID: ...]', got: {result!r}"
+    assert "[Course ID:" not in result, f"Should not use fallback prefix, got: {result!r}"
+    assert result.startswith("Mystery Assignment —"), f"Must start with title if no shortname, got: {result!r}"
 
 
 # --- TESTS for US-02 (sorted deadline list) ---

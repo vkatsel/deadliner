@@ -29,8 +29,8 @@ def fetch_classroom(oauth_credentials: dict) -> list[Assignment]:
         for work in coursework_data.get("courseWork", []):
             title = work.get("title", "Unknown Assignment")
             due_date = work.get("dueDate")
-            if not due_date:
-                logger.warning(f"Skipping courseWork '{title}' because it has no dueDate")
+            if not due_date or not due_date.get("year"):
+                logger.warning(f"Skipping courseWork '{title}' because it has no dueDate or year")
                 continue
             due_time = work.get("dueTime", {})
             due_utc = datetime(

@@ -5,7 +5,7 @@ from deadliner.models import AuthError
 
 
 def test_cli_exits_nonzero_on_auth_error(monkeypatch):
-    monkeypatch.setattr(cli, "_load_credentials", lambda: ("https://moodle.example.com", "tok"))
+    monkeypatch.setattr(cli, "_load_credentials", lambda: ("https://moodle.example.com", "tok", ""))
 
     def _raise_auth_error(base_url, token):
         raise AuthError("token rejected")
@@ -19,7 +19,7 @@ def test_cli_exits_nonzero_on_auth_error(monkeypatch):
 
 
 def test_cli_exits_nonzero_on_connection_error(monkeypatch):
-    monkeypatch.setattr(cli, "_load_credentials", lambda: ("https://moodle.example.com", "tok"))
+    monkeypatch.setattr(cli, "_load_credentials", lambda: ("https://moodle.example.com", "tok", ""))
 
     def _raise_connection_error(base_url, token):
         raise ConnectionError("Failed to connect to Moodle")
@@ -33,7 +33,7 @@ def test_cli_exits_nonzero_on_connection_error(monkeypatch):
 
 
 def test_cli_exits_nonzero_when_credentials_missing(monkeypatch):
-    monkeypatch.setattr(cli, "_load_credentials", lambda: ("", ""))
+    monkeypatch.setattr(cli, "_load_credentials", lambda: ("", "", ""))
 
     with pytest.raises(SystemExit) as exc_info:
         cli.main(["fetch"])

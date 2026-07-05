@@ -88,3 +88,12 @@ This stage turned the Stage 1 P0 contracts into a TDD-first test suite (red, wit
 - This reflects my actual contribution — vkatsel, 2026-07-01
 - This reflects my actual contribution — surovytsky1vadym-1, 2026-07-04
 - This reflects my actual contribution — ofedkevych, 2026-07-05
+
+## C.1 Stage 3 (W8) Polish Pass
+
+| Member | Contribution details |
+|---|---|
+| **vkatsel** | **W8 Polish Pass (Editor Role):** Orchestrated a deep code audit to uncover and fix a disconnected module (`classroom_fetcher` is now properly integrated into the CLI to fulfill P0 aggregation). Enforced design consistency by fixing a semantic bug in `formatter.py` and strictly rejecting AI's incorrect fallback logic. Rewrote the `README.md` for a `< 5 minute` run process and updated `ai_usage.txt`. |
+
+**W8 signatures:**
+- This reflects my actual contribution — vkatsel, 2026-07-05

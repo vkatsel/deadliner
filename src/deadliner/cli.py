@@ -12,28 +12,30 @@ from deadliner.models import AuthError
 CONFIG_PATH = Path.home() / ".deadliner.json"
 
 
-def _load_credentials() -> tuple[str, str]:
-    """Read Moodle credentials from env vars, falling back to ~/.deadliner.json.
+def _load_credentials() -> tuple[str, str, str]:
+    """Read Moodle and Google credentials from env vars, falling back to ~/.deadliner.json.
 
-    Env vars: DEADLINER_MOODLE_URL / DEADLINER_MOODLE_TOKEN.
-    Config file shape: {"moodle_base_url": "...", "moodle_token": "..."}.
+    Env vars: DEADLINER_MOODLE_URL / DEADLINER_MOODLE_TOKEN / DEADLINER_GOOGLE_TOKEN.
+    Config file shape: {"moodle_base_url": "...", "moodle_token": "...", "google_access_token": "..."}.
     """
     base_url = os.environ.get("DEADLINER_MOODLE_URL", "")
     token = os.environ.get("DEADLINER_MOODLE_TOKEN", "")
+    g_token = os.environ.get("DEADLINER_GOOGLE_TOKEN", "")
 
-    if (not base_url or not token) and CONFIG_PATH.exists():
+    if (not base_url or not token or not g_token) and CONFIG_PATH.exists():
         try:
             cfg = json.loads(CONFIG_PATH.read_text())
         except (OSError, ValueError):
             cfg = {}
         base_url = base_url or cfg.get("moodle_base_url", "")
         token = token or cfg.get("moodle_token", "")
+        g_token = g_token or cfg.get("google_access_token", "")
 
-    return base_url, token
+    return base_url, token, g_token
 
 
 def _cmd_fetch(args: argparse.Namespace) -> int:
-    base_url, token = _load_credentials()
+    base_url, token, g_token = _load_credentials()
     if not base_url or not token:
         print(
             "error: Moodle credentials not configured. "
@@ -43,14 +45,28 @@ def _cmd_fetch(args: argparse.Namespace) -> int:
         )
         return 2
 
+    from deadliner import classroom_fetcher
+
+    assignments = []
+
     try:
-        assignments = moodle_fetcher.fetch_moodle(base_url, token)
+        assignments.extend(moodle_fetcher.fetch_moodle(base_url, token))
     except AuthError as e:
-        print(f"error: authentication failed: {e}", file=sys.stderr)
+        print(f"error: moodle authentication failed: {e}", file=sys.stderr)
         return 1
     except ConnectionError as e:
-        print(f"error: {e}", file=sys.stderr)
+        print(f"error: moodle connection: {e}", file=sys.stderr)
         return 1
+
+    if g_token:
+        try:
+            assignments.extend(classroom_fetcher.fetch_classroom({"access_token": g_token}))
+        except AuthError as e:
+            print(f"error: classroom authentication failed: {e}", file=sys.stderr)
+            return 1
+        except ConnectionError as e:
+            print(f"error: classroom connection: {e}", file=sys.stderr)
+            return 1
 
     if not assignments:
         print("No upcoming deadlines.")
