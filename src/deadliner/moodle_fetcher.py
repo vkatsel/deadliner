@@ -5,6 +5,7 @@ from deadliner.models import Assignment, AuthError
 
 logger = logging.getLogger(__name__)
 
+
 def fetch_moodle(base_url: str, token: str) -> list[Assignment]:
     url = f"{base_url.rstrip('/')}/webservice/rest/server.php"
     params = {
@@ -12,7 +13,7 @@ def fetch_moodle(base_url: str, token: str) -> list[Assignment]:
         "wsfunction": "core_calendar_get_action_events_by_timesort",
         "moodlewsrestformat": "json",
     }
-    
+
     logger.info(f"Fetching Moodle deadlines from {base_url}")
     try:
         response = requests.get(url, params=params, timeout=10)
@@ -34,25 +35,21 @@ def fetch_moodle(base_url: str, token: str) -> list[Assignment]:
     assignments = []
     for event in data.get("events", []):
         title = event.get("name", "Unknown Assignment")
-        
+
         course = event.get("course")
         course_shortname = course.get("shortname", "") if isinstance(course, dict) else ""
-            
+
         due_timestamp = event.get("timestart")
         if not due_timestamp or due_timestamp == 0:
             logger.warning(f"Skipping assignment '{title}' because timestart is missing or 0")
             continue
-            
+
         due_utc = datetime.fromtimestamp(due_timestamp, tz=timezone.utc)
         url_link = event.get("url", "")
-        
-        assignments.append(Assignment(
-            platform="moodle",
-            course_shortname=course_shortname,
-            title=title,
-            due_utc=due_utc,
-            url=url_link
-        ))
-        
+
+        assignments.append(
+            Assignment(platform="moodle", course_shortname=course_shortname, title=title, due_utc=due_utc, url=url_link)
+        )
+
     logger.info(f"Successfully parsed {len(assignments)} Moodle assignments")
     return assignments
