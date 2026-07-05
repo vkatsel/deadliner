@@ -36,10 +36,10 @@ def _load_credentials() -> tuple[str, str, str]:
 
 def _cmd_fetch(args: argparse.Namespace) -> int:
     base_url, token, g_token = _load_credentials()
-    if not base_url or not token:
+    if not (base_url and token) and not g_token:
         print(
-            "error: Moodle credentials not configured. "
-            "Set DEADLINER_MOODLE_URL / DEADLINER_MOODLE_TOKEN "
+            "error: No credentials configured. "
+            "Set DEADLINER_MOODLE_URL / DEADLINER_MOODLE_TOKEN or google_access_token "
             f"or create {CONFIG_PATH}",
             file=sys.stderr,
         )
@@ -49,14 +49,15 @@ def _cmd_fetch(args: argparse.Namespace) -> int:
 
     assignments = []
 
-    try:
-        assignments.extend(moodle_fetcher.fetch_moodle(base_url, token))
-    except AuthError as e:
-        print(f"error: moodle authentication failed: {e}", file=sys.stderr)
-        return 1
-    except ConnectionError as e:
-        print(f"error: moodle connection: {e}", file=sys.stderr)
-        return 1
+    if base_url and token:
+        try:
+            assignments.extend(moodle_fetcher.fetch_moodle(base_url, token))
+        except AuthError as e:
+            print(f"error: moodle authentication failed: {e}", file=sys.stderr)
+            return 1
+        except ConnectionError as e:
+            print(f"error: moodle connection: {e}", file=sys.stderr)
+            return 1
 
     if g_token:
         try:
