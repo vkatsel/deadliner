@@ -321,4 +321,35 @@ Implement Component 2 (`fetch_classroom` + its tests), following the pattern alr
 
 ---
 
-[TODO: Other team members should copy the Session block above and add their own for Component 3]
+## Session 9 — Stage 3 Implementation (Component 3, ofedkevych)
+
+Track:          GREENFIELD
+AI role:        Pair-Programmer
+Tool & model:   Claude Code (Fable 5)
+Chat link:      no public link, prompt below
+Date & time:    2026-07-05
+
+### Goal (1-2 sentences)
+Implement Component 3 (formatter + CLI + tooling config): replace the `NotImplementedError` stubs in `src/deadliner/formatter.py`, rewire `tests/test_formatter.py` to import from `src`, build the `fetch` CLI with proper error exits, and add CLI integration tests.
+
+### Prompt (verbatim or final-iteration if you iterated)
+I'm working on a Python project called Deadliner... My component owns: formatter.py, cli.py, test_cli.py, pyproject.toml configuration... [full component brief with the 8 formatter test contracts, CLI requirements (fetch subcommand, AuthError/ConnectionError → stderr + non-zero exit), and hard constraints: absolute imports only, timezone conversion BEFORE midnight classification, sort must return a new list, no datetime.now() inside format_assignment, do not touch Components 1/2 files]
+
+### Verification — how I checked
+- [X] Ran the code / command (`pytest tests/ -v` — 19/19 green; `ruff check` + `ruff format --check` clean on all Component 3 files)
+- [X] Read the cited file/line and confirmed AI's claim (checked the astimezone() call comes before the hour/minute check; checked sorted() returns a new list)
+- [X] Verified the test bodies in test_formatter.py were unchanged from the Stage 2 red suite (only the stub definitions at the top were replaced with imports)
+
+### What I kept
+- `src/deadliner/formatter.py`: `format_assignment` converting `due_utc.astimezone(local_tz)` FIRST, then classifying local 00:00 as "midnight cutoff"; `[Course ID: <title>]` fallback for empty shortname; `Xd Yh` countdown computed from the injected `now` (deterministic, no wall-clock calls).
+- `sort_assignments` as a single `sorted()` keyed on `(due_utc, course_shortname, title)` — returns a new list.
+- `src/deadliner/cli.py`: stdlib `argparse` with a `fetch` subcommand, env-var credentials (`DEADLINER_MOODLE_URL`/`DEADLINER_MOODLE_TOKEN`) with a `~/.deadliner.json` fallback, and `AuthError`/`ConnectionError` both printing to stderr and exiting non-zero.
+- `tests/test_cli.py`: three `monkeypatch` tests pinning the failure contracts (auth error, connection error, missing credentials — all must `SystemExit` non-zero).
+
+### What I discarded and why (MANDATORY FOR STAGE 3)
+- **`click`/`typer` for the CLI:** The AI initially sketched the CLI with a third-party framework. Rejected — the design doc's CLI is one subcommand with zero options; stdlib `argparse` does it with no new dependency, and the team's `requirements.txt` shouldn't grow for this.
+- **Fetching both platforms in the CLI:** The AI proposed wiring `fetch_classroom` into the `fetch` command alongside Moodle (merge + sort both lists). Rejected for this stage — Classroom needs an interactive OAuth flow to obtain the credentials dict, which is out of P0 scope; bolting on a half-working "read a token from JSON" path would fake a feature the design doc puts behind the P1 OAuth story. The formatter already handles multi-platform lists, so the merge is a 3-line change when the OAuth story lands.
+- **Fixing Component 1's ruff violations:** `ruff check` still fails on `moodle_fetcher.py`/`test_moodle_fetcher.py` (blank-line whitespace, an unused variable). The AI offered to auto-fix them; rejected — those files are Component 1's scope, the violations pre-date this session, and silently reformatting a teammate's files inside my PR muddies review attribution. Flagged to vkatsel instead (one `ruff check --fix` + removing the unused `result` assignment makes `make ci` fully green).
+
+### Outcome (1 sentence)
+All 19 tests pass (8 formatter + 3 CLI + 8 fetchers), every Component 3 file passes `ruff check` and `ruff format --check`, and `make ci` is now blocked only by Component 1's pre-existing lint debt.

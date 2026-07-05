@@ -82,9 +82,9 @@ This stage turned the Stage 1 P0 contracts into a TDD-first test suite (red, wit
 |---|---|
 | **vkatsel** | **Component 1 (Moodle Fetcher) & Tooling Config:** Implemented the `fetch_moodle` logic utilizing the `requests` library and parsing the Moodle REST API response. Configured `responses`-based HTTP mocks to ensure US-01 and US-04 tests pass. Set up the strict `pre-push` git hook and the native `make ci` pipeline using `run_ci.sh` wrapper. |
 | **surovytsky1vadym-1** | **Component 2 (Classroom Fetcher):** Implemented `fetch_classroom` against the real Google Classroom REST API (`courses` + `courseWork` endpoints) using `requests`, mirroring the Moodle fetcher's style. Rewrote `test_classroom_fetcher.py` to import from `src` and mock both endpoints with `responses`, replacing the old magic-string-token stubs. Also added the missing `requirements.txt` and fixed `.github/workflows/test.yml` (added the `stage3` trigger branch, switched it to run `make ci`) so CI actually runs and has the dependencies it needs. |
-| **[Member 3]** | **[TODO: Add contributions here]** |
+| **ofedkevych** | **Component 3 (Formatter, CLI & Config):** Implemented `src/deadliner/formatter.py` — `format_assignment` (UTC→local conversion **before** the midnight-cutoff classification, course-shortname prefix with `[Course ID: …]` fallback, `Xd Yh` countdown) and `sort_assignments` (ascending by `due_utc`, tiebreak by `course_shortname` then `title`, returns a new list). Rewired `tests/test_formatter.py` from Stage 2 stubs to import from `src` — all 8 tests green with bodies unchanged. Implemented `src/deadliner/cli.py` (`fetch` subcommand via stdlib `argparse`; env-var/config-file credentials; `AuthError`/`ConnectionError` → stderr + non-zero exit). Added `tests/test_cli.py` (3 `monkeypatch` integration tests for the failure paths). Reviewed and cleaned `pyproject.toml` (pytest + ruff config). Wrote the Component 3 section of `docs/devtest_notes.md`. |
 
 **Stage 3 signatures:**
 - This reflects my actual contribution — vkatsel, 2026-07-01
 - This reflects my actual contribution — surovytsky1vadym-1, 2026-07-04
-- This reflects my actual contribution — [Name], 2026-07-__
+- This reflects my actual contribution — ofedkevych, 2026-07-05
