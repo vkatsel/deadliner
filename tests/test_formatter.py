@@ -1,37 +1,15 @@
-import pytest
-from dataclasses import dataclass
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
-
-@dataclass
-class Assignment:
-    platform: str
-    course_shortname: str
-    title: str
-    due_utc: datetime
-    url: str = ""
-
-
-def format_assignment(assignment: Assignment, now: datetime, local_tz) -> str:
-    raise AssertionError(
-        "format_assignment not implemented yet "
-        "(must convert due_utc to local_tz BEFORE classifying 00:00 as 'midnight cutoff')"
-    )
-
-
-def sort_assignments(assignments: list[Assignment]) -> list[Assignment]:
-    raise AssertionError(
-        "sort_assignments not implemented yet "
-        "(must sort ascending by due_utc, tiebreak by course_shortname then title)"
-    )
+from deadliner.formatter import format_assignment, sort_assignments
+from deadliner.models import Assignment
 
 
 # --- TESTS for US-03 (midnight cutoff distinction) ---
 
+
 def test_format_assignment_midnight_utc_kyiv_shows_midnight_cutoff():
-    assignment = Assignment("moodle", "ECON101", "Final Exam",
-                            datetime(2024, 10, 14, 21, 0, 0, tzinfo=timezone.utc))
+    assignment = Assignment("moodle", "ECON101", "Final Exam", datetime(2024, 10, 14, 21, 0, 0, tzinfo=timezone.utc))
     now = datetime(2024, 10, 12, 10, 0, 0, tzinfo=timezone.utc)
     local_tz = ZoneInfo("Europe/Kyiv")
 
@@ -42,8 +20,7 @@ def test_format_assignment_midnight_utc_kyiv_shows_midnight_cutoff():
 
 
 def test_format_assignment_end_of_day_does_not_show_midnight_cutoff():
-    assignment = Assignment("moodle", "ECON101", "Homework 3",
-                            datetime(2024, 10, 14, 20, 59, 0, tzinfo=timezone.utc))
+    assignment = Assignment("moodle", "ECON101", "Homework 3", datetime(2024, 10, 14, 20, 59, 0, tzinfo=timezone.utc))
     now = datetime(2024, 10, 12, 10, 0, 0, tzinfo=timezone.utc)
     local_tz = ZoneInfo("Europe/Kyiv")
 
@@ -53,8 +30,7 @@ def test_format_assignment_end_of_day_does_not_show_midnight_cutoff():
 
 
 def test_format_assignment_includes_course_shortname_as_prefix():
-    assignment = Assignment("moodle", "CS101", "Lab Report",
-                            datetime(2024, 11, 1, 12, 0, 0, tzinfo=timezone.utc))
+    assignment = Assignment("moodle", "CS101", "Lab Report", datetime(2024, 11, 1, 12, 0, 0, tzinfo=timezone.utc))
     now = datetime(2024, 10, 30, 10, 0, 0, tzinfo=timezone.utc)
     local_tz = ZoneInfo("Europe/Kyiv")
 
@@ -64,8 +40,7 @@ def test_format_assignment_includes_course_shortname_as_prefix():
 
 
 def test_format_assignment_empty_course_shortname_shows_fallback():
-    assignment = Assignment("moodle", "", "Mystery Assignment",
-                            datetime(2024, 11, 5, 15, 0, 0, tzinfo=timezone.utc))
+    assignment = Assignment("moodle", "", "Mystery Assignment", datetime(2024, 11, 5, 15, 0, 0, tzinfo=timezone.utc))
     now = datetime(2024, 11, 3, 10, 0, 0, tzinfo=timezone.utc)
     local_tz = ZoneInfo("Europe/Kyiv")
 
@@ -76,13 +51,11 @@ def test_format_assignment_empty_course_shortname_shows_fallback():
 
 # --- TESTS for US-02 (sorted deadline list) ---
 
+
 def test_sort_assignments_out_of_order_returns_ascending():
-    a1 = Assignment("moodle", "ECON101", "Quiz 1",
-                    datetime(2024, 10, 20, 10, 0, tzinfo=timezone.utc))
-    a2 = Assignment("moodle", "CS101", "Lab 3",
-                    datetime(2024, 10, 15, 9, 0, tzinfo=timezone.utc))
-    a3 = Assignment("moodle", "MATH201", "Homework 2",
-                    datetime(2024, 10, 18, 14, 0, tzinfo=timezone.utc))
+    a1 = Assignment("moodle", "ECON101", "Quiz 1", datetime(2024, 10, 20, 10, 0, tzinfo=timezone.utc))
+    a2 = Assignment("moodle", "CS101", "Lab 3", datetime(2024, 10, 15, 9, 0, tzinfo=timezone.utc))
+    a3 = Assignment("moodle", "MATH201", "Homework 2", datetime(2024, 10, 18, 14, 0, tzinfo=timezone.utc))
 
     result = sort_assignments([a1, a2, a3])
 
@@ -108,8 +81,7 @@ def test_sort_assignments_empty_list_returns_empty():
 
 
 def test_sort_assignments_single_item_returns_unchanged():
-    a = Assignment("moodle", "CS101", "Lab 1",
-                   datetime(2024, 10, 15, 9, 0, tzinfo=timezone.utc))
+    a = Assignment("moodle", "CS101", "Lab 1", datetime(2024, 10, 15, 9, 0, tzinfo=timezone.utc))
 
     result = sort_assignments([a])
 
