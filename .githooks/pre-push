@@ -7,9 +7,9 @@ set -euo pipefail
 
 echo "pre-push: running 'make ci' before allowing push..."
 
-if ! make ci; then
+if ! bash ./run_ci.sh; then
     echo >&2
-    echo "PUSH BLOCKED: 'make ci' is red. Fix it, then push again." >&2
+    echo "PUSH BLOCKED: CI script is red. Fix it, then push again." >&2
     echo "(To bypass in a genuine emergency: git push --no-verify)" >&2
     exit 1
 fi
