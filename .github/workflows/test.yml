@@ -6,6 +6,12 @@ on:
       - "team-typed-aura/stage2"
       - "team-typed-aura/stage3"
       - "team-typed-aura/main"
+      - "team-typed-aura/stage4"
+
+  pull_request:
+    branches:
+      - "team-typed-aura/stage4"
+      - "team-typed-aura/main"
 
 jobs:
   test:
