@@ -9,7 +9,7 @@ def format_assignment(assignment: Assignment, now: datetime, local_tz) -> str:
     local_due = assignment.due_utc.astimezone(local_tz)
 
     if assignment.course_shortname:
-        prefix = f"[{assignment.course_shortname}] "
+        prefix = f"\033[96m[{assignment.course_shortname}]\033[0m "
     else:
         prefix = ""
 
@@ -18,15 +18,17 @@ def format_assignment(assignment: Assignment, now: datetime, local_tz) -> str:
     if total_seconds >= 0:
         days = total_seconds // 86400
         hours = (total_seconds % 86400) // 3600
-        countdown = f"{days}d {hours}h"
+        countdown = f"\033[92m{days}d {hours}h\033[0m"
     else:
-        countdown = "overdue"
+        countdown = "\033[91moverdue\033[0m"
 
-    time_str = local_due.strftime("%H:%M")
-    line = f"{prefix}{assignment.title} — {countdown} — {time_str}"
+    time_str = f"\033[95m{local_due.strftime('%H:%M')}\033[0m"
+    title_str = f"\033[1m{assignment.title}\033[0m"
+
+    line = f"{prefix}{title_str} — {countdown} — {time_str}"
 
     if local_due.hour == 0 and local_due.minute == 0:
-        line += " midnight cutoff"
+        line += " \033[93mmidnight cutoff\033[0m"
 
     return line
 

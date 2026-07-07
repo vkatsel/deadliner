@@ -44,6 +44,31 @@ def test_fetch_classroom_valid_oauth_returns_assignments():
 
 
 @responses.activate
+def test_fetch_classroom_filters_out_past_deadlines():
+    oauth_creds = {"access_token": "valid-google-token"}
+
+    responses.add(responses.GET, COURSES_URL, json={"courses": [{"id": "c1", "name": "CS101"}]}, status=200)
+    responses.add(
+        responses.GET,
+        coursework_url("c1"),
+        json={
+            "courseWork": [
+                {
+                    "title": "Past Homework",
+                    "dueDate": {"year": 2020, "month": 1, "day": 1},
+                    "dueTime": {"hours": 12, "minutes": 0},
+                    "alternateLink": "https://classroom.google.com/c/1",
+                }
+            ]
+        },
+        status=200,
+    )
+
+    result = fetch_classroom(oauth_creds)
+    assert result == []
+
+
+@responses.activate
 def test_fetch_classroom_no_active_courses_returns_empty_list():
     oauth_creds = {"access_token": "valid-token-no-courses"}
 

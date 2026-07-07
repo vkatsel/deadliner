@@ -3,6 +3,11 @@ from zoneinfo import ZoneInfo
 
 from deadliner.formatter import format_assignment, sort_assignments
 from deadliner.models import Assignment
+import re
+
+
+def strip_ansi(text: str) -> str:
+    return re.sub(r"\x1b\[[0-9;]*m", "", text)
 
 
 # --- TESTS for US-03 (midnight cutoff distinction) ---
@@ -44,7 +49,7 @@ def test_format_assignment_empty_course_shortname_shows_fallback():
     now = datetime(2024, 11, 3, 10, 0, 0, tzinfo=timezone.utc)
     local_tz = ZoneInfo("Europe/Kyiv")
 
-    result = format_assignment(assignment, now, local_tz)
+    result = strip_ansi(format_assignment(assignment, now, local_tz))
 
     assert "[Course ID:" not in result, f"Should not use fallback prefix, got: {result!r}"
     assert result.startswith("Mystery Assignment —"), f"Must start with title if no shortname, got: {result!r}"

@@ -4,7 +4,7 @@ from deadliner import cli
 from deadliner.models import AuthError
 
 
-def test_cli_exits_nonzero_on_auth_error(monkeypatch):
+def test_cli_continues_on_moodle_auth_error(monkeypatch):
     monkeypatch.setattr(cli, "_load_credentials", lambda: ("https://moodle.example.com", "tok", ""))
 
     def _raise_auth_error(base_url, token):
@@ -15,10 +15,10 @@ def test_cli_exits_nonzero_on_auth_error(monkeypatch):
     with pytest.raises(SystemExit) as exc_info:
         cli.main(["fetch"])
 
-    assert exc_info.value.code != 0, "auth failure must exit non-zero, not pretend success"
+    assert exc_info.value.code == 0, "auth failure must not crash the app, but continue"
 
 
-def test_cli_exits_nonzero_on_connection_error(monkeypatch):
+def test_cli_continues_on_moodle_connection_error(monkeypatch):
     monkeypatch.setattr(cli, "_load_credentials", lambda: ("https://moodle.example.com", "tok", ""))
 
     def _raise_connection_error(base_url, token):
@@ -29,7 +29,7 @@ def test_cli_exits_nonzero_on_connection_error(monkeypatch):
     with pytest.raises(SystemExit) as exc_info:
         cli.main(["fetch"])
 
-    assert exc_info.value.code != 0
+    assert exc_info.value.code == 0
 
 
 def test_cli_exits_nonzero_when_credentials_missing(monkeypatch):

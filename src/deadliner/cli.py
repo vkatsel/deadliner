@@ -47,36 +47,40 @@ def _cmd_fetch(args: argparse.Namespace) -> int:
 
     from deadliner import classroom_fetcher
 
+    warnings = []
     assignments = []
 
     if base_url and token:
         try:
             assignments.extend(moodle_fetcher.fetch_moodle(base_url, token))
         except AuthError as e:
-            print(f"error: moodle authentication failed: {e}", file=sys.stderr)
-            return 1
+            warnings.append(f"warning: moodle authentication failed: {e}")
         except ConnectionError as e:
-            print(f"error: moodle connection: {e}", file=sys.stderr)
-            return 1
+            warnings.append(f"warning: moodle connection: {e}")
 
     if g_token:
         try:
             assignments.extend(classroom_fetcher.fetch_classroom({"access_token": g_token}))
         except AuthError as e:
-            print(f"error: classroom authentication failed: {e}", file=sys.stderr)
-            return 1
+            warnings.append(f"warning: classroom authentication failed: {e}")
         except ConnectionError as e:
-            print(f"error: classroom connection: {e}", file=sys.stderr)
-            return 1
+            warnings.append(f"warning: classroom connection: {e}")
 
     if not assignments:
         print("No upcoming deadlines.")
+        if warnings:
+            print("\n" + "\033[93m" + "\n".join(warnings) + "\033[0m", file=sys.stderr)
         return 0
 
     now = datetime.now(timezone.utc)
     local_tz = datetime.now().astimezone().tzinfo
     for assignment in sort_assignments(assignments):
         print(format_assignment(assignment, now, local_tz))
+
+    if warnings:
+        sys.stdout.flush()
+        print("\n" + "\033[93m" + "\n".join(warnings) + "\033[0m", file=sys.stderr)
+
     return 0
 
 
@@ -89,6 +93,14 @@ def main(argv: list[str] | None = None) -> None:
 
     fetch_parser = subparsers.add_parser("fetch", help="fetch deadlines from Moodle and print them")
     fetch_parser.set_defaults(func=_cmd_fetch)
+
+    login_parser = subparsers.add_parser("login", help="log in to a service")
+    login_subparsers = login_parser.add_subparsers(dest="service", required=True)
+
+    from deadliner.auth import _cmd_login_moodle
+
+    moodle_login = login_subparsers.add_parser("moodle", help="log in to Moodle")
+    moodle_login.set_defaults(func=_cmd_login_moodle)
 
     args = parser.parse_args(argv)
     sys.exit(args.func(args))

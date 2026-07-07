@@ -8,10 +8,12 @@ logger = logging.getLogger(__name__)
 
 def fetch_moodle(base_url: str, token: str) -> list[Assignment]:
     url = f"{base_url.rstrip('/')}/webservice/rest/server.php"
+    start_of_today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
     params = {
         "wstoken": token,
         "wsfunction": "core_calendar_get_action_events_by_timesort",
         "moodlewsrestformat": "json",
+        "timesortfrom": int(start_of_today.timestamp()),
     }
 
     logger.info(f"Fetching Moodle deadlines from {base_url}")
@@ -19,17 +21,22 @@ def fetch_moodle(base_url: str, token: str) -> list[Assignment]:
         response = requests.get(url, params=params, timeout=10)
         response.raise_for_status()
     except requests.RequestException as e:
-        logger.error(f"Moodle connection failed: {e}")
+        logger.debug(f"Moodle connection failed: {e}")
         raise ConnectionError(f"Failed to connect to Moodle: {e}")
+
+    try:
+        data = response.json()
+    except ValueError:
+        logger.debug("Moodle returned invalid JSON")
+        raise ConnectionError("Invalid JSON from Moodle")
 
     # Note: Moodle's REST API almost always returns HTTP 200 OK even for errors like invalid tokens.
     # The actual error is embedded in the JSON body, which is why we must check "errorcode" manually.
-    data = response.json()
     if "exception" in data or "errorcode" in data:
         if data.get("errorcode") == "invalidtoken":
-            logger.error("Moodle token rejected by API")
+            logger.debug("Moodle token rejected by API")
             raise AuthError("token rejected")
-        logger.error(f"Moodle returned an error: {data}")
+        logger.debug(f"Moodle returned an error: {data}")
         raise AuthError(f"Moodle error: {data}")
 
     assignments = []

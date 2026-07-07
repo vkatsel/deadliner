@@ -14,32 +14,23 @@ cd greenfield
 python -m pip install -r requirements.txt
 ```
 
-### 2. Configuration
+### 2. Configuration & Login
 
-Set your Moodle credentials. You can either use environment variables:
+Log in to your Moodle account interactively to automatically save your credentials:
 
 **Windows (PowerShell):**
 ```powershell
-$env:DEADLINER_MOODLE_URL="https://moodle.example.com"
-$env:DEADLINER_MOODLE_TOKEN="your_moodle_token_here"
-$env:DEADLINER_GOOGLE_TOKEN="your_google_access_token_here" # Optional
+$env:PYTHONPATH="src"; python -m deadliner.cli login moodle
 ```
 
 **Linux / macOS:**
 ```bash
-export DEADLINER_MOODLE_URL="https://moodle.example.com"
-export DEADLINER_MOODLE_TOKEN="your_moodle_token_here"
-export DEADLINER_GOOGLE_TOKEN="your_google_access_token_here" # Optional
+PYTHONPATH=src python -m deadliner.cli login moodle
 ```
 
-Or, alternatively, create a `~/.deadliner.json` file in your home directory:
-```json
-{
-  "moodle_base_url": "https://moodle.example.com",
-  "moodle_token": "your_moodle_token_here",
-  "google_access_token": "your_google_access_token_here"
-}
-```
+*(This will ask for your Moodle URL, username, and password, and safely save your API token to `~/.deadliner.json`)*
+
+Alternatively, you can manually set `DEADLINER_MOODLE_URL` and `DEADLINER_MOODLE_TOKEN` environment variables, or provide a Google Classroom token via `DEADLINER_GOOGLE_TOKEN`.
 
 ### 3. Run the App
 

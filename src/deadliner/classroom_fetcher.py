@@ -9,17 +9,18 @@ CLASSROOM_API_BASE = "https://classroom.googleapis.com/v1"
 
 
 def fetch_classroom(oauth_credentials: dict) -> list[Assignment]:
-    access_token = oauth_credentials.get("access_token")
-    if not access_token:
-        logger.error("Classroom fetch attempted without an access_token")
-        raise AuthError("missing access_token")
+    if not oauth_credentials or not oauth_credentials.get("access_token"):
+        logger.debug("Classroom fetch attempted without an access_token")
+        raise AuthError("No access token provided")
 
+    access_token = oauth_credentials.get("access_token")
     headers = {"Authorization": f"Bearer {access_token}"}
 
     logger.info("Fetching Google Classroom courses")
     courses_data = _get(f"{CLASSROOM_API_BASE}/courses", headers, params={"courseStates": "ACTIVE"})
     courses = courses_data.get("courses", [])
 
+    start_of_today_utc = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
     assignments = []
     for course in courses:
         course_id = course.get("id")
@@ -41,6 +42,9 @@ def fetch_classroom(oauth_credentials: dict) -> list[Assignment]:
                 due_time.get("minutes", 59),
                 tzinfo=timezone.utc,
             )
+            if due_utc < start_of_today_utc:
+                continue
+
             assignments.append(
                 Assignment(
                     platform="classroom",
@@ -56,15 +60,22 @@ def fetch_classroom(oauth_credentials: dict) -> list[Assignment]:
 
 
 def _get(url: str, headers: dict, params: dict | None = None) -> dict:
+
     try:
         response = requests.get(url, headers=headers, params=params, timeout=10)
     except requests.RequestException as e:
-        logger.error(f"Classroom connection failed: {e}")
-        raise ConnectionError(f"Failed to connect to Google Classroom: {e}")
+        logger.debug(f"Classroom connection failed: {e}")
+        raise ConnectionError(f"Failed to connect to Classroom: {e}")
 
     if response.status_code == 401:
-        logger.error("Classroom OAuth token rejected by API")
+        logger.debug("Classroom OAuth token rejected by API")
         raise AuthError("token rejected")
     response.raise_for_status()
 
-    return response.json()
+    try:
+        data = response.json()
+    except ValueError:
+        logger.debug("Classroom returned invalid JSON")
+        raise ConnectionError("Invalid JSON from Classroom")
+
+    return data
