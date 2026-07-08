@@ -413,3 +413,37 @@ ending at the deadline, [DEADLINE] title prefix]
 ### Outcome (1 sentence)
 `deadliner sync` pushes merged Moodle+Classroom deadlines to Google Calendar as red,
 deadline-anchored, idempotent events — 27/27 tests green and `make ci` passes.
+
+---
+
+## Session 11 — Stage 4 P1: Google Auth Foundation
+
+Track:          GREENFIELD
+AI role:        Pair-Programmer
+Tool & model:   Antigravity (DeepMind)
+Date & time:    2026-07-08
+
+### Goal (1-2 sentences)
+Implement the Google OAuth 2.0 Foundation (`deadliner login google`), handling interactive browser flow, secure local token storage (`~/.deadliner_google_token.json`), and automatic refresh-on-use to support Classroom and Calendar integrations.
+
+### Prompt (verbatim or final-iteration if you iterated)
+Iterative process starting from `cursor_plan.md` to implement the Google Auth Foundation task, fix the `student-submissions` scope mismatch, handle missing `__main__.py`, gracefully handle 403 HTTP errors during Classroom fetch, and resolve git merge conflicts with the `calendar-sync` feature branch.
+
+### Verification — how I checked
+- [X] Ran the code / command (`make ci` — 38/38 tests green, ruff check + format clean)
+- [X] Interactively authenticated via browser and successfully fetched Classroom deadlines.
+- [X] Verified 403 Forbidden errors (e.g. from missing scopes or archived courses) gracefully skip the course rather than crashing the CLI.
+- [X] Successfully verified Calendar Sync integration after resolving merge conflicts.
+
+### What I kept
+- `src/deadliner/google_auth.py`: Full interactive Google OAuth 2.0 flow using `google-auth-oauthlib`, saving the token locally, and injecting `OAUTHLIB_RELAX_TOKEN_SCOPE=1` to handle Google's strict scope requirements.
+- `src/deadliner/cli.py`: Integrated `deadliner login google` and updated `_load_credentials()` to dynamically refresh the Google token on use, preserving backward compatibility with `classroom_fetcher.py`.
+- `src/deadliner/__main__.py`: Added to support executing the tool directly via `python -m deadliner`.
+- `src/deadliner/formatter.py`: Updated to include `[{assignment.platform}]` in the output, fulfilling US-01.
+
+### What I discarded and why
+- **Hardcoding Client Secrets:** Discarded hardcoding the client secret inside the application to maintain stateless, zero-backend architecture per PRD, instead instructing users via README to provide their own `client_secret.json`.
+- **Crashing on 403 Forbidden:** Discarded the default behavior where `raise_for_status()` on a restricted course crashes the entire fetch process. Implemented a try/except block to skip the problematic course and continue fetching the rest.
+
+### Outcome (1 sentence)
+Successfully implemented robust Google OAuth integration, fixed CLI pathing, handled 403 API errors gracefully, resolved merge conflicts with the calendar sync feature, and updated the README with clear setup instructions.
