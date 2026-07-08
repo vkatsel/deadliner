@@ -1,5 +1,6 @@
 import logging
-from datetime import timedelta
+from datetime import timedelta, datetime
+import hashlib
 
 import requests
 
@@ -24,11 +25,16 @@ def _stable_id(assignment: Assignment) -> str:
     Prefers the platform URL (unique per assignment on both Moodle and
     Classroom); falls back to a composite key. Stored in the event's private
     extendedProperties so re-syncing updates the same event instead of
-    duplicating it — no fuzzy title matching (design_doc.md §5).
+    duplicating it. We hash the result to avoid unsafe characters (like '=')
+    breaking the Google Calendar API search query.
     """
     if assignment.url:
-        return f"{assignment.platform}:{assignment.url}"
-    return f"{assignment.platform}:{assignment.course_shortname}:{assignment.title}:{assignment.due_utc.isoformat()}"
+        raw_id = f"{assignment.platform}:{assignment.url}"
+    else:
+        raw_id = (
+            f"{assignment.platform}:{assignment.course_shortname}:{assignment.title}:{assignment.due_utc.isoformat()}"
+        )
+    return hashlib.sha256(raw_id.encode("utf-8")).hexdigest()
 
 
 def _event_payload(assignment: Assignment) -> dict:
@@ -63,8 +69,8 @@ def _request(method: str, url: str, headers: dict, **kwargs) -> dict:
     return response.json()
 
 
-def _find_existing_event(headers: dict, deadliner_id: str) -> str | None:
-    """Return the event id of a previously synced event, or None."""
+def _find_existing_event(headers: dict, deadliner_id: str) -> dict | None:
+    """Return the full event dictionary of a previously synced event, or None."""
     data = _request(
         "GET",
         f"{CALENDAR_API_BASE}/calendars/primary/events",
@@ -76,17 +82,18 @@ def _find_existing_event(headers: dict, deadliner_id: str) -> str | None:
         },
     )
     items = data.get("items", [])
-    return items[0]["id"] if items else None
+    return items[0] if items else None
 
 
-def sync_to_calendar(assignments: list[Assignment], access_token: str) -> tuple[int, int]:
+def sync_to_calendar(assignments: list[Assignment], access_token: str) -> tuple[int, int, int]:
     """Push assignments to Google Calendar as red deadline events.
 
     Idempotent: each event carries its assignment's stable id in private
     extendedProperties; an assignment that was already synced is patched in
     place (deadline moved on Moodle → event moves too), never duplicated.
+    Identical events are skipped entirely to save API quotas.
 
-    Returns (created, updated) counts. Raises AuthError on a rejected token
+    Returns (created, updated, skipped) counts. Raises AuthError on a rejected token
     and ConnectionError on network failure — loudly, never silently.
     """
     if not access_token:
@@ -96,21 +103,38 @@ def sync_to_calendar(assignments: list[Assignment], access_token: str) -> tuple[
     headers = {"Authorization": f"Bearer {access_token}"}
     created = 0
     updated = 0
+    skipped = 0
 
     for assignment in assignments:
         deadliner_id = _stable_id(assignment)
         payload = _event_payload(assignment)
 
-        event_id = _find_existing_event(headers, deadliner_id)
-        if event_id:
-            _request(
-                "PATCH",
-                f"{CALENDAR_API_BASE}/calendars/primary/events/{event_id}",
-                headers,
-                json=payload,
+        existing_event = _find_existing_event(headers, deadliner_id)
+        if existing_event:
+
+            def _parse_dt(s: str | None) -> datetime | None:
+                if not s:
+                    return None
+                if s.endswith("Z"):
+                    s = s[:-1] + "+00:00"
+                return datetime.fromisoformat(s)
+
+            needs_update = (
+                existing_event.get("summary") != payload["summary"]
+                or _parse_dt(existing_event.get("start", {}).get("dateTime")) != _parse_dt(payload["start"]["dateTime"])
+                or _parse_dt(existing_event.get("end", {}).get("dateTime")) != _parse_dt(payload["end"]["dateTime"])
             )
-            updated += 1
-            logger.info(f"Updated calendar event for '{assignment.title}'")
+            if needs_update:
+                event_id = existing_event["id"]
+                _request(
+                    "PATCH",
+                    f"{CALENDAR_API_BASE}/calendars/primary/events/{event_id}",
+                    headers,
+                    json=payload,
+                )
+                updated += 1
+            else:
+                skipped += 1
         else:
             _request(
                 "POST",
@@ -119,7 +143,6 @@ def sync_to_calendar(assignments: list[Assignment], access_token: str) -> tuple[
                 json=payload,
             )
             created += 1
-            logger.info(f"Created calendar event for '{assignment.title}'")
 
-    logger.info(f"Calendar sync done: {created} created, {updated} updated")
-    return created, updated
+    logger.debug(f"Calendar sync done: {created} created, {updated} updated, {skipped} skipped")
+    return created, updated, skipped

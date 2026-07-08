@@ -24,9 +24,9 @@ def test_sync_creates_event_for_new_assignment():
     responses.add(responses.GET, EVENTS_URL, json={"items": []}, status=200)
     responses.add(responses.POST, EVENTS_URL, json={"id": "evt1"}, status=200)
 
-    created, updated = sync_to_calendar([_assignment()], "valid-token")
+    created, updated, skipped = sync_to_calendar([_assignment()], "valid-token")
 
-    assert created == 1 and updated == 0
+    assert created == 1 and updated == 0 and skipped == 0
     body = responses.calls[1].request.body.decode()
     assert "[DEADLINE]" in body, "event summary must carry the [DEADLINE] marker"
     assert "deadliner_id" in body, "event must carry the stable id for idempotency"
@@ -40,9 +40,26 @@ def test_sync_patches_existing_event_instead_of_duplicating():
     responses.add(responses.GET, EVENTS_URL, json={"items": [{"id": "evt-old"}]}, status=200)
     responses.add(responses.PATCH, f"{EVENTS_URL}/evt-old", json={"id": "evt-old"}, status=200)
 
-    created, updated = sync_to_calendar([_assignment()], "valid-token")
+    created, updated, skipped = sync_to_calendar([_assignment()], "valid-token")
 
-    assert created == 0 and updated == 1, "an already-synced assignment must be patched, not re-created"
+    assert created == 0 and updated == 1 and skipped == 0, (
+        "an already-synced assignment with different data must be patched"
+    )
+
+
+@responses.activate
+def test_sync_skips_identical_event_instead_of_patching():
+    assignment = _assignment()
+    # Mock GET to return an event with identical summary and times
+    from deadliner.calendar_sync import _event_payload
+
+    payload = _event_payload(assignment)
+    payload["id"] = "evt-old"
+    responses.add(responses.GET, EVENTS_URL, json={"items": [payload]}, status=200)
+
+    created, updated, skipped = sync_to_calendar([assignment], "valid-token")
+
+    assert created == 0 and updated == 0 and skipped == 1, "identical assignments must be skipped"
 
 
 @responses.activate
@@ -59,6 +76,6 @@ def test_sync_missing_token_raises_auth_error_before_any_http():
 
 
 def test_sync_empty_list_makes_no_http_calls():
-    created, updated = sync_to_calendar([], "valid-token")
+    created, updated, skipped = sync_to_calendar([], "valid-token")
 
-    assert (created, updated) == (0, 0)
+    assert (created, updated, skipped) == (0, 0, 0)

@@ -64,7 +64,7 @@ def test_cli_sync_pushes_fetched_assignments(monkeypatch, capsys):
 
     synced = []
     monkeypatch.setattr(
-        calendar_sync, "sync_to_calendar", lambda assignments, token: (synced.extend(assignments), (1, 0))[1]
+        calendar_sync, "sync_to_calendar", lambda assignments, token: (synced.extend(assignments), (1, 0, 0))[1]
     )
 
     with pytest.raises(SystemExit) as exc_info:
@@ -72,7 +72,7 @@ def test_cli_sync_pushes_fetched_assignments(monkeypatch, capsys):
 
     assert exc_info.value.code == 0
     assert synced == [a], "sync must push exactly the fetched assignments"
-    assert "1 created" in capsys.readouterr().out
+    assert "Created:   1" in capsys.readouterr().out
 
 
 def test_cli_login_google_success(monkeypatch, tmp_path):

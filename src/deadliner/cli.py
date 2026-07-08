@@ -128,15 +128,22 @@ def _cmd_sync(args: argparse.Namespace) -> int:
         return 0
 
     try:
-        created, updated = calendar_sync.sync_to_calendar(sort_assignments(assignments), g_token)
+        print("Syncing to Google Calendar...")
+        created, updated, skipped = calendar_sync.sync_to_calendar(sort_assignments(assignments), g_token)
     except AuthError as e:
-        print(f"error: calendar authentication failed: {e}", file=sys.stderr)
+        print(f"\033[91merror: calendar authentication failed: {e}\033[0m", file=sys.stderr)
         return 1
     except ConnectionError as e:
-        print(f"error: {e}", file=sys.stderr)
+        print(f"\033[91merror: {e}\033[0m", file=sys.stderr)
         return 1
 
-    print(f"Synced {len(assignments)} deadline(s) to Google Calendar: {created} created, {updated} updated.")
+    print("\n" + "=" * 45)
+    print("Google Calendar Sync Summary")
+    print("=" * 45)
+    print(f"Created:   {created}")
+    print(f"Updated:   {updated}")
+    print(f"Skipped:   {skipped} (duplicates)")
+    print("=" * 45 + "\n")
     return 0
 
 
