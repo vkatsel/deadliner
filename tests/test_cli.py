@@ -73,3 +73,31 @@ def test_cli_sync_pushes_fetched_assignments(monkeypatch, capsys):
     assert exc_info.value.code == 0
     assert synced == [a], "sync must push exactly the fetched assignments"
     assert "1 created" in capsys.readouterr().out
+
+
+def test_cli_login_google_success(monkeypatch, tmp_path):
+    class FakeCreds:
+        token = "fake"
+
+    def fake_flow(path):
+        return FakeCreds()
+
+    monkeypatch.setattr("deadliner.google_auth.run_oauth_flow", fake_flow)
+    monkeypatch.setattr("deadliner.google_auth.get_token_path", lambda: tmp_path / "tok.json")
+
+    with pytest.raises(SystemExit) as exc_info:
+        cli.main(["login", "google", "--client-secrets", str(tmp_path / "s.json")])
+
+    assert exc_info.value.code == 0
+
+
+def test_cli_login_google_missing_secrets(monkeypatch, tmp_path):
+    def fake_flow(path):
+        raise FileNotFoundError("not found")
+
+    monkeypatch.setattr("deadliner.google_auth.run_oauth_flow", fake_flow)
+
+    with pytest.raises(SystemExit) as exc_info:
+        cli.main(["login", "google", "--client-secrets", "/no/such/file.json"])
+
+    assert exc_info.value.code == 1

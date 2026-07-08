@@ -25,7 +25,11 @@ def fetch_classroom(oauth_credentials: dict) -> list[Assignment]:
     for course in courses:
         course_id = course.get("id")
         course_name = course.get("name", "")
-        coursework_data = _get(f"{CLASSROOM_API_BASE}/courses/{course_id}/courseWork", headers)
+        try:
+            coursework_data = _get(f"{CLASSROOM_API_BASE}/courses/{course_id}/courseWork", headers)
+        except requests.exceptions.HTTPError as e:
+            logger.warning(f"Skipping course '{course_name}' due to API error: {e}")
+            continue
 
         for work in coursework_data.get("courseWork", []):
             title = work.get("title", "Unknown Assignment")

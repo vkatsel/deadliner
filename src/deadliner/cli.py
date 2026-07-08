@@ -17,6 +17,9 @@ def _load_credentials() -> tuple[str, str, str]:
 
     Env vars: DEADLINER_MOODLE_URL / DEADLINER_MOODLE_TOKEN / DEADLINER_GOOGLE_TOKEN.
     Config file shape: {"moodle_base_url": "...", "moodle_token": "...", "google_access_token": "..."}.
+
+    For Google, also checks for stored OAuth credentials (from ``deadliner login google``)
+    and refreshes them automatically if expired.
     """
     base_url = os.environ.get("DEADLINER_MOODLE_URL", "")
     token = os.environ.get("DEADLINER_MOODLE_TOKEN", "")
@@ -30,6 +33,14 @@ def _load_credentials() -> tuple[str, str, str]:
         base_url = base_url or cfg.get("moodle_base_url", "")
         token = token or cfg.get("moodle_token", "")
         g_token = g_token or cfg.get("google_access_token", "")
+
+    # If no static Google token, try stored OAuth credentials (refresh-on-use)
+    if not g_token:
+        from deadliner.google_auth import load_google_credentials
+
+        creds = load_google_credentials()
+        if creds:
+            g_token = creds.token  # raw access token string for backward compat
 
     return base_url, token, g_token
 
@@ -129,6 +140,21 @@ def _cmd_sync(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_login_google(args: argparse.Namespace) -> int:
+    from deadliner.google_auth import get_token_path, run_oauth_flow
+
+    try:
+        run_oauth_flow(args.client_secrets)
+        print(f"Google authentication successful. Token saved to {get_token_path()}")
+        return 0
+    except FileNotFoundError as e:
+        print(str(e), file=sys.stderr)
+        return 1
+    except Exception as e:
+        print(f"Google authentication failed: {e}", file=sys.stderr)
+        return 1
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
         prog="deadliner",
@@ -149,6 +175,14 @@ def main(argv: list[str] | None = None) -> None:
 
     moodle_login = login_subparsers.add_parser("moodle", help="log in to Moodle")
     moodle_login.set_defaults(func=_cmd_login_moodle)
+
+    google_login = login_subparsers.add_parser("google", help="authenticate with Google (Classroom + Calendar)")
+    google_login.add_argument(
+        "--client-secrets",
+        default=None,
+        help="path to client_secret.json from Google Cloud Console (default: ./client_secret.json)",
+    )
+    google_login.set_defaults(func=_cmd_login_google)
 
     args = parser.parse_args(argv)
     sys.exit(args.func(args))

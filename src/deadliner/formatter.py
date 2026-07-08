@@ -8,10 +8,11 @@ def format_assignment(assignment: Assignment, now: datetime, local_tz) -> str:
     # is 00:00 in Kyiv, and it is the LOCAL midnight that matters to the user.
     local_due = assignment.due_utc.astimezone(local_tz)
 
+    platform_prefix = f"\033[94m[{assignment.platform}]\033[0m "
     if assignment.course_shortname:
-        prefix = f"\033[96m[{assignment.course_shortname}]\033[0m "
+        prefix = f"{platform_prefix}\033[96m[{assignment.course_shortname}]\033[0m "
     else:
-        prefix = ""
+        prefix = platform_prefix
 
     remaining = assignment.due_utc - now
     total_seconds = int(remaining.total_seconds())
