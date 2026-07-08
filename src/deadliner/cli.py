@@ -34,13 +34,17 @@ def _load_credentials() -> tuple[str, str, str]:
     return base_url, token, g_token
 
 
-def _collect_assignments(base_url: str, token: str, g_token: str) -> tuple[list, list[str]]:
-    """Fetch from every configured source, tolerating per-source failures.
+def _cmd_fetch(args: argparse.Namespace) -> int:
+    base_url, token, g_token = _load_credentials()
+    if not (base_url and token) and not g_token:
+        print(
+            "error: No credentials configured. "
+            "Set DEADLINER_MOODLE_URL / DEADLINER_MOODLE_TOKEN or google_access_token "
+            f"or create {CONFIG_PATH}",
+            file=sys.stderr,
+        )
+        return 2
 
-    A source that fails (auth or network) contributes a warning instead of
-    aborting the run — the other source still gets fetched (fault tolerance).
-    Returns (assignments, warnings).
-    """
     from deadliner import classroom_fetcher
 
     warnings = []
@@ -62,22 +66,6 @@ def _collect_assignments(base_url: str, token: str, g_token: str) -> tuple[list,
         except ConnectionError as e:
             warnings.append(f"warning: classroom connection: {e}")
 
-    return assignments, warnings
-
-
-def _cmd_fetch(args: argparse.Namespace) -> int:
-    base_url, token, g_token = _load_credentials()
-    if not (base_url and token) and not g_token:
-        print(
-            "error: No credentials configured. "
-            "Set DEADLINER_MOODLE_URL / DEADLINER_MOODLE_TOKEN or google_access_token "
-            f"or create {CONFIG_PATH}",
-            file=sys.stderr,
-        )
-        return 2
-
-    assignments, warnings = _collect_assignments(base_url, token, g_token)
-
     if not assignments:
         print("No upcoming deadlines.")
         if warnings:
@@ -96,39 +84,6 @@ def _cmd_fetch(args: argparse.Namespace) -> int:
     return 0
 
 
-def _cmd_sync(args: argparse.Namespace) -> int:
-    from deadliner import calendar_sync
-
-    base_url, token, g_token = _load_credentials()
-    if not g_token:
-        print(
-            "error: Google credentials required for calendar sync. Run `deadliner login google` first.",
-            file=sys.stderr,
-        )
-        return 2
-
-    assignments, warnings = _collect_assignments(base_url, token, g_token)
-
-    for w in warnings:
-        print(f"\033[93m{w}\033[0m", file=sys.stderr)
-
-    if not assignments:
-        print("No upcoming deadlines to sync.")
-        return 0
-
-    try:
-        created, updated = calendar_sync.sync_to_calendar(sort_assignments(assignments), g_token)
-    except AuthError as e:
-        print(f"error: calendar authentication failed: {e}", file=sys.stderr)
-        return 1
-    except ConnectionError as e:
-        print(f"error: {e}", file=sys.stderr)
-        return 1
-
-    print(f"Synced {len(assignments)} deadline(s) to Google Calendar: {created} created, {updated} updated.")
-    return 0
-
-
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
         prog="deadliner",
@@ -138,9 +93,6 @@ def main(argv: list[str] | None = None) -> None:
 
     fetch_parser = subparsers.add_parser("fetch", help="fetch deadlines from Moodle and print them")
     fetch_parser.set_defaults(func=_cmd_fetch)
-
-    sync_parser = subparsers.add_parser("sync", help="push all fetched deadlines to Google Calendar as red events")
-    sync_parser.set_defaults(func=_cmd_sync)
 
     login_parser = subparsers.add_parser("login", help="log in to a service")
     login_subparsers = login_parser.add_subparsers(dest="service", required=True)
