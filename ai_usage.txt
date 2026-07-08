@@ -353,3 +353,63 @@ I'm working on a Python project called Deadliner... My component owns: formatter
 
 ### Outcome (1 sentence)
 All 19 tests pass (8 formatter + 3 CLI + 8 fetchers), every Component 3 file passes `ruff check` and `ruff format --check`, and `make ci` is now blocked only by Component 1's pre-existing lint debt.
+
+---
+
+## Session 10 — Stage 4 P1: Google Calendar Sync (ofedkevych)
+
+Track:          GREENFIELD
+AI role:        Pair-Programmer
+Tool & model:   Claude Code (Fable 5)
+Chat link:      no public link, prompt below
+Date & time:    2026-07-05
+
+### Goal (1-2 sentences)
+Implement Task 3 of the team's Stage 4 / P1 plan: `calendar_sync.py` (push Assignment
+lists to Google Calendar as red events ending exactly at the deadline, idempotent via
+extendedProperties) and the `deadliner sync` command tying both fetchers to the push.
+
+### Prompt (verbatim or final-iteration if you iterated)
+now we prepare for stage 4, in implementation plan i have a task 3 oleksandr fedkevych
+and we need to make sure we cover also P1 of our prd [attached: the team's unified
+implementation plan — calendar_sync.py module, sync command, 15-30 min red events
+ending at the deadline, [DEADLINE] title prefix]
+
+### Verification — how I checked
+- [X] Ran the code / command (`make ci` — 27/27 tests green incl. 5 new calendar_sync
+      tests and 2 new CLI sync tests; ruff check + format clean)
+- [X] Read the cited file/line and confirmed AI's claim (checked the event payload ends
+      exactly at due_utc and the stable id lands in extendedProperties.private, per
+      design_doc.md §5's CalendarGateway contract)
+- [X] Verified the mocked request body in the create test asserts colorId 11, the
+      [DEADLINE] marker, and the deadline-ending timestamp
+
+### What I kept
+- `src/deadliner/calendar_sync.py`: plain-requests Calendar v3 client matching the
+  fetchers' style; events end exactly at due_utc and start 15 min before; red
+  (colorId 11); `[DEADLINE] [COURSE] Title` summary; idempotency via a
+  `deadliner_id` in private extendedProperties — lookup first, PATCH if found,
+  POST if not (never duplicate, per design_doc.md §5).
+- `_collect_assignments` extracted in `cli.py` so `fetch` and `sync` share the
+  fault-tolerant two-source aggregation vkatsel built (one source failing warns
+  and continues).
+- `deadliner sync`: requires the Google token (exit 2 with a pointer to
+  `deadliner login google` otherwise), pushes the merged sorted list, reports
+  "N created, M updated".
+
+### What I discarded and why
+- **Google Tasks instead of Calendar events:** ruled out per the team plan — the
+  Tasks API drops the time-of-day component, which would erase the 00:00 vs 23:59
+  distinction US-03 exists to preserve. Calendar events keep the exact minute.
+- **Batch insert without the existence lookup:** the AI's first draft POSTed every
+  assignment unconditionally — simpler and half the HTTP calls, but every re-run
+  would duplicate every event. Rejected: idempotency is an explicit design_doc §5
+  requirement (and the anti-pattern the roomwise/shiftlog minis warn about is
+  exactly this kind of silent state divergence). Kept the per-item
+  lookup-then-patch at the cost of one extra GET per assignment.
+- **`googleapiclient` SDK:** same call as Component 2 made for Classroom — the
+  repo precedent is plain `requests` against the REST API; no new dependency.
+
+### Outcome (1 sentence)
+`deadliner sync` pushes merged Moodle+Classroom deadlines to Google Calendar as red,
+deadline-anchored, idempotent events — 27/27 tests green and `make ci` passes.
