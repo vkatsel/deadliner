@@ -52,7 +52,9 @@ def test_format_assignment_empty_course_shortname_shows_fallback():
     result = strip_ansi(format_assignment(assignment, now, local_tz))
 
     assert "[Course ID:" not in result, f"Should not use fallback prefix, got: {result!r}"
-    assert result.startswith("Mystery Assignment —"), f"Must start with title if no shortname, got: {result!r}"
+    assert result.startswith("[moodle] Mystery Assignment —"), (
+        f"Must start with platform and title if no shortname, got: {result!r}"
+    )
 
 
 # --- TESTS for US-02 (sorted deadline list) ---

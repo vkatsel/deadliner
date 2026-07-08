@@ -30,6 +30,11 @@ team.md
 # Keys and Secrets
 *.pem
 *.key
+client_secret.json
+.deadliner_google_token.json
+
+# Cursor plan (AI-generated, not for version control)
+cursor_plan.md
 
 # Linting/Formatting
 .ruff_cache/
