@@ -1,9 +1,40 @@
-.DS_Store
-Thumbs.db
-.vscode/
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.env
+.venv
+env/
+venv/
+
+# Testing
+.pytest_cache/
+coverage.xml
+.coverage
+
+# IDEs and OS
 .idea/
+.vscode/
 *.swp
 *~
-*.env
+*.code-workspace
+.DS_Store
+
+# Service files (course assignments, team lists)
+_task.md
+team.md
+
+
+# Keys and Secrets
 *.pem
 *.key
+client_secret.json
+.deadliner_google_token.json
+
+# Cursor plan (AI-generated, not for version control)
+cursor_plan.md
+
+# Linting/Formatting
+.ruff_cache/

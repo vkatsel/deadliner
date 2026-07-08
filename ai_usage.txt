@@ -1,0 +1,449 @@
+# =====================================================
+# ====================== STAGE 1 ======================
+# =====================================================
+
+Student name:           The team AI USAGE
+Submission:             Stage 1 — PRD + Design
+Submission date:        2026-06-13
+Practice repo PR:       N/A
+Greenfield repo:        https://github.com/CS460-SEP-2026/greenfield
+Team (if any):          Team team-typed-aura (ofedkevych, surovytsky1vadym-1, vkatsel)
+
+# ====================== SESSIONS ====================
+
+## Session 1 — Stage 1 PRD & Design Consolidation
+
+Track:          GREENFIELD
+AI role:        Architect
+Tool & model:   Gemini 3.1 Pro (High)
+Chat link:      no public link, prompt below
+Date & time:    2026-06-11 12:00
+
+### Goal (1-2 sentences)
+Consolidate our individual W2-W4 PRDs and Design Docs into a cohesive MVP architecture for the Stage 1 release, ensuring alignment with our P0/P1 scope.
+
+### Prompt (verbatim or final-iteration if you iterated)
+```
+Please review our individual W3/W4 artifacts from ofedkevych, vkatsel, and surovytsky1vadym-1. Propose an architecture that integrates Moodle and Google Classroom aggregation with a push-to-Google-Calendar feature.
+```
+
+### Verification — how I checked
+- [x] Read the cited file/line and confirmed AI's claim
+- [x] Re-prompted with a counter-example (when it hallucinated features not in the PRD)
+- [x] Reviewed output against peer-review feedback in `CONTRIBUTIONS.md`
+
+### What I kept
+- The stateless entity boundaries (`MoodleFetcher`, `ClassroomFetcher`, and `CalendarGateway`).
+- The explicit removal of any `Manager` or `Helper` anti-patterns in the core entities.
+
+### What I discarded and why
+- **Rejected Design 1 (SQLite Event Sourcing):** The AI suggested using SQLite to build a robust event sourcing engine that tracks Moodle event states locally before pushing them to GCal. I discarded this as an over-build. It would introduce complex schema migrations and local state drift risks for a simple CLI tool.
+- **Rejected Design 2 (Background Daemon):** The AI proposed running the tool as a background process (cron daemon) for continuous syncing. I rejected this because a background process masking network errors or auth failures leads to silent bugs, violating our P0 NFRs.
+
+### Outcome (1 sentence)
+Saved time drafting the boilerplate architecture, but required strict orchestration to reject over-engineered proposals like SQLite and daemons.
+
+---
+
+# ====================== AUTOCOMPLETE NOTES ======================
+
+## Tools used in autocomplete-only mode (no per-session log needed)
+- Was not used
+
+# ====================== SELF-ASSESSMENT ======================
+
+## Total sessions logged this submission:  1
+
+## Self-assessment (1 short paragraph)
+We actively orchestrated the AI. During the consolidation phase, the AI naturally gravitated towards complex, over-engineered solutions. 
+We had to explicitly reject these suggestions to maintain our strict stateless CLI architecture constraints. T
+he resulting artefacts reflect my and my team's actual design decisions, with the AI acting strictly as a sounding board and structured drafter rather than the decision-maker.
+
+# ====================== TRACK COVERAGE CHECK ======================
+
+This week's ai_usage.txt covers:
+  [X] Stage 1 Session
+
+
+# =====================================================
+# ====================== STAGE 2 ======================
+# =====================================================
+
+Student name:           Vadym Katsel
+Submission:             Stage 2 — Tests
+Submission date:        2026-06-19
+Practice repo PR:       N/A
+Greenfield repo:        https://github.com/CS460-SEP-2026/greenfield
+Team (if any):          Team team-typed-aura (ofedkevych, surovytsky1vadym-1, vkatsel)
+
+## Session 2 — Stage 2 Test Scaffolding and CI Setup
+
+Track:          GREENFIELD
+AI role:        Pair-Programmer / Test-Generator
+Tool & model:   Gemini 3.1 Pro (High)
+Chat link:      no public link, prompt below
+Date & time:    2026-06-19 23:30
+
+### Goal (1-2 sentences)
+Format the Stage 2 requirements, distribute tasks among the team members based on their Stage 1 expertise, set up the CI pipeline, and generate the initial TDD scaffolding (red tests) for US-01.
+
+### Prompt (verbatim or final-iteration if you iterated)
+Analyze the Stage 2 requirements and our team's past contributions to propose a task breakdown. Then, set up the GitHub Actions CI workflow and generate the automated tests for US-01 (Moodle & Classroom fetching). Ensure the tests are fully meaningful with real assertions (similar to the provided Go test example) but fail cleanly as stubs, adhering to the strict Stage 2 TDD rules.
+
+### Verification — how I checked
+- [X] Ran the code / command
+- [X] Read the cited file/line and confirmed AI's claim
+- [X] Re-prompted with a counter-example
+- [ ] Looked up referenced API / library version
+- [ ] Asked a classmate / instructor
+
+### What I kept
+- The GitHub Actions CI workflow (`test.yml`).
+- The separation of US-01 into two separate test files (`test_moodle_fetcher.py` and `test_classroom_fetcher.py`) to properly match the API signatures in the design doc.
+
+### What I discarded and why
+- **Pipeline Overreach:** I modified the AI's generated GitHub Actions CI workflow, changing its trigger from a wildcard `**` to explicitly track only the relevant team branches (`team-typed-aura/stage2` and `team-typed-aura/main`).
+- **Wrong Test Surface:** I rejected the AI's initial attempt to test an abstract `DeadlinerCLI.fetch()` method, forcing it to look at our `design_doc.md` and rewrite the tests specifically for the `fetch_moodle` and `fetch_classroom` functions.
+- **Lazy Assertions:** I criticized the AI for writing "lazy" tests full of "TODO" comments. A proper Stage 2 TDD test must contain real assertions even if the implementation is a stub. I provided a Go colleague's test as a counter-example, forcing the AI to rewrite the Python tests with real `assert` statements so they fail correctly on the implementation stub rather than being empty shells.
+
+### Outcome (1 sentence)
+Saved time on boilerplate and CI setup, but required firm orchestration to ensure the generated tests met the "real assertions but failing" TDD standard.
+
+---
+
+# Session 3 — US-02 & US-03 Test Scaffolding
+
+Student name: ofedkevych
+Submission: Stage 2 — Tests (US-02 sorting, US-03 midnight cutoff)
+Submission date: 2026-06-23
+
+Track: GREENFIELD
+AI role: Pair-Programmer / Test-Generator
+Tool & model: Claude Sonnet 4.6
+Date & time: 2026-06-23
+
+## Goal
+Generate TDD scaffolding for US-02 (sorted deadline list) and US-03 (midnight cutoff
+distinction) against the `format_assignment` and `sort_assignments` stubs defined in
+design_doc.md §3.
+
+## Prompt (verbatim)
+"Generate pytest tests for format_assignment(assignment, now, local_tz) and
+sort_assignments(assignments) that fail cleanly with AssertionError messages.
+Cover: (1) 21:00 UTC = 00:00 Kyiv shows midnight cutoff, (2) 23:59 local does NOT,
+(3) empty shortname fallback, (4) sort ascending, (5) tiebreak by course+title,
+(6) empty list, (7) single item."
+
+## Verification — how I checked
+- [X] Ran the code / command
+- [X] Read the cited file/line and confirmed AI's claim
+- [X] Re-prompted with a counter-example
+
+## What I kept
+- The ZoneInfo injection pattern (pass local_tz explicitly so tests never depend
+  on the machine's system timezone — directly from the milenayer W4 peer review).
+- The tiebreak test with three items where two share both due_utc and course — the
+  edge case that ArseniiKlimenko flagged in W3 review and that made it into US-02 AC.
+
+## What I discarded and why
+- **Tautological timezone test:** AI initially proposed
+  `assert format_assignment(...) == format_assignment(...)` to "verify consistency."
+  This asserts nothing about behavior — if the stub always raises, both sides raise
+  identically. Replaced with a concrete string assertion on "midnight cutoff".
+- **Mock-heavy sort test:** AI proposed mocking `datetime.now()` inside
+  `sort_assignments`. The function takes no `now` parameter — sort is purely
+  structural (by field values). Mocking the clock here tests nothing real and adds
+  a dependency on `unittest.mock` for no reason. Replaced with plain list comparison.
+
+## Outcome
+8 tests in test_formatter.py, all failing with informative AssertionError messages.
+No imports from a non-existent source module — stubs defined inline following
+vkatsel's established pattern in test_moodle_fetcher.py.
+
+---
+
+# Session 4 — US-04 Auth-Error Tests + Stage 2 Administration
+
+Student name: surovytsky1vadym-1
+Submission: Stage 2 — Tests (US-04 connector auth failure)
+Submission date: 2026-06-23
+
+Track: GREENFIELD
+AI role: Pair-Programmer / Test-Generator
+Tool & model: Claude Opus 4.8
+Date & time: 2026-06-23
+
+## Goal
+Add the US-04 auth-failure tests to the existing moodle/classroom fetcher files
+(invalid token must fail loudly, never silently return an empty list), wire US-04
+into the test plan's inventory + traceability, and close out the Stage 2 admin
+(contribution block, sign-offs, CI red-for-the-right-reason check).
+
+## Prompt (verbatim)
+"Add US-04 tests to test_moodle_fetcher.py and test_classroom_fetcher.py: an
+invalid/revoked token must raise AuthError (design_doc §3), and an auth failure
+must not be indistinguishable from a healthy empty account (Mini #1 anti-pattern).
+Keep them red for the right reason against the existing stubs. Then map US-04 in
+the test plan and refresh CONTRIBUTIONS."
+
+## Verification — how I checked
+- [X] Ran the code / command (pytest -v on both fetcher files)
+- [X] Confirmed all tests fail with AssertionError from the stub, not an import/
+      collector crash — the collector lists every test by name
+- [X] Read design_doc §3 and confirmed AuthError is the contracted error type
+- [X] Confirmed US-04 now maps to tests 13–16 in the traceability matrix
+
+## What I kept
+- The AuthError-raising tests tied directly to design_doc §3's contract, so the
+  red reason is "AuthError behaviour not implemented" rather than a broken test.
+- A second moodle test asserting the auth failure does NOT collapse into an empty
+  list — this is the exact Mini #1 "silent 200 OK" regression PRD §5 commits to
+  avoiding, so it earns its place as a distinct edge.
+
+## What I discarded and why
+- **Tautological / unreachable assertion:** the AI first proposed
+  `with pytest.raises(AuthError): result = fetch_moodle(...); assert result is None`
+  — putting the call AND a follow-up assertion inside the `pytest.raises` block.
+  The assertion after the raising call is unreachable (the exception fires first),
+  so it asserts nothing. I kept only the form where the raising call is the last
+  statement in the block, so the test actually pins "AuthError is raised."
+- **Over-mocked HTTP test:** the AI also proposed mocking `requests.get` to return
+  a fake 401 response object and asserting on the mock's call args. At Stage 2 there
+  is no HTTP client wired yet and no production code — mocking a library we haven't
+  integrated tests the mock, not our contract, and would couple the test to an
+  implementation detail (that we use `requests`) the design doc doesn't mandate.
+  Rejected in favour of asserting the contracted AuthError directly on the stub.
+
+## Outcome
+4 US-04 tests added (2 moodle, 2 classroom), all failing cleanly with the stub's
+informative AssertionError; US-04 mapped in §2/§3/§7; CI is red for the right reason.
+
+# ====================== TRACK COVERAGE CHECK (Stage 2) ======================
+  [X] US-01 — vkatsel (Session 2)
+  [X] US-02 / US-03 — ofedkevych (Session 3)
+  [X] US-04 + administration — surovytsky1vadym-1 (Session 4)
+
+# =====================================================
+# ====================== STAGE 3 ======================
+# =====================================================
+
+Student name:           vkatsel
+Submission:             Stage 3 — Implementation
+Submission date:        2026-07-01
+Practice repo PR:       N/A
+Greenfield repo:        https://github.com/CS460-SEP-2026/greenfield
+Team (if any):          Team team-typed-aura (ofedkevych, surovytsky1vadym-1, vkatsel)
+
+## Session 6 — Stage 3 Implementation (Component 1)
+
+Track:          GREENFIELD
+AI role:        Pair-Programmer
+Tool & model:   Gemini 3.1 Pro (High)
+Chat link:      no public link, prompt below
+Date & time:    2026-07-01
+
+### Goal (1-2 sentences)
+Implement the Moodle fetcher logic to pass the Stage 2 TDD tests (US-01, US-04), setup the `responses` library for mocking, and configure the Git hooks and Makefile pipeline based on best practices from our PRs.
+
+### Prompt (verbatim or final-iteration if you iterated)
+Давай виконаємо мою частинку. Реалізуй Moodle Fetcher і тести до нього. Також глянь мейкфайли та гітхукі з попередніх PR нашої групи, вибери найкращий варіант CI та хуку і запиши сюди.
+
+### Verification — how I checked
+- [X] Ran the code / command
+- [X] Read the cited file/line and confirmed AI's claim
+- [X] Re-prompted with a counter-example
+
+### What I kept
+- The `requests` and `responses` implementation for the Moodle Fetcher.
+- The Git hook and `run_ci.sh` scripts based on the PR 286 template.
+
+### What I discarded and why (MANDATORY FOR STAGE 3)
+- **Fallback duplication:** The AI initially duplicated the course name logic (`if not course_shortname: course_shortname = event.get("coursename")`). I rejected this as bad practice and forced it to strictly return `""` when missing, leaving fallback to the formatter.
+- **Service Files Tracking:** The AI attempted to commit internal service files (`_task.md`, `team.md`). I firmly rejected this and instructed it to remove them via `git rm --cached` and put them in `.gitignore`.
+- **Silent 0 timestarts:** The AI initially passed through missing `timestart` fields as 1970 timestamps. I forced it to add logging and explicitly skip (`continue`) assignments with `timestart = 0`.
+
+### Outcome (1 sentence)
+Successfully implemented the Moodle API integration and robust CI pipeline, but required manual code review to fix logical fallbacks and prevent committing service files.
+
+## Session 7 (vkatsel)
+
+### Goal / Prompt
+Виникла помилка імпорту модулів під час запуску тестів: `Cannot find module src.deadliner.models`. Поясни, чому `pytest` та IDE по-різному визначають кореневу директорію для імпортів, і допоможи налаштувати правильний шлях.
+
+### Verification — how I checked
+- [X] Ran the code / command
+- [X] Read the cited file/line and confirmed AI's claim
+- [X] Re-prompted with a counter-example
+
+### What I kept
+- The updated imports (removed `src.` prefix to just `deadliner.models`).
+- Added `"src"` to `pythonpath` in `pyproject.toml` to fix the `pytest` runner.
+
+### What I discarded and why (MANDATORY FOR STAGE 3)
+- **Dynamic sys.path modification:** The AI initially proposed appending `src` directly via `sys.path.append('src')` in test files. I rejected this dynamic patching as an anti-pattern that complicates code maintenance, forcing it instead to properly configure `pythonpath` globally via `pyproject.toml`.
+
+### Outcome (1 sentence)
+Resolved a Python pathing issue by cleaning up absolute imports and properly configuring `pytest` to recognize the `src` directory as a module root.
+
+---
+
+## Session 8 — Stage 3 Implementation (Component 2, surovytsky1vadym-1)
+
+Track:          GREENFIELD
+AI role:        Pair-Programmer
+Tool & model:   Claude Code (Sonnet 5)
+Chat link:      no public link, prompt below
+Date & time:    2026-07-04
+
+### Goal (1-2 sentences)
+Implement Component 2 (`fetch_classroom` + its tests), following the pattern already established by Component 1's Moodle fetcher, and check whether any tooling/CI gaps were blocking the whole team's `make ci`/pre-push pipeline.
+
+### Prompt (verbatim or final-iteration if you iterated)
+прочитай файл, що я тобі скинув, проаналізуй код, що є наразі по проекту і виконай частину participant 2. якщо тобі треба додаткові файли з інших репо - пиши
+
+### Verification — how I checked
+- [X] Ran the code / command
+- [X] Read the cited file/line and confirmed AI's claim
+- [X] Re-prompted with a counter-example
+
+### What I kept
+- `src/deadliner/classroom_fetcher.py`: `fetch_classroom` implemented via plain `requests` calls against the real Classroom REST API (`/courses`, `/courses/{id}/courseWork`), mirroring `moodle_fetcher.py`'s logging/error-handling style.
+- Rewritten `tests/test_classroom_fetcher.py` importing from `src` and mocking both endpoints with `responses`, matching `test_moodle_fetcher.py`'s approach.
+- New `requirements.txt` (`pytest`, `requests`, `responses`, `ruff`) and an updated `.github/workflows/test.yml` (added the `stage3` trigger branch, now runs `make ci` instead of a bare `pytest` subset).
+
+### What I discarded and why (MANDATORY FOR STAGE 3)
+- **`googleapiclient`/`google-auth` SDK:** Considered using Google's official client library, but discarded it — it isn't installed anywhere in the repo, the design doc only requires accepting an already-obtained OAuth credentials dict, and `moodle_fetcher.py` already established the precedent of calling the REST API directly with `requests` rather than pulling in a platform SDK.
+- **Keeping the old test stubs' magic-string-token branching:** The original `test_classroom_fetcher.py` decided pass/fail by inspecting literal substrings like `"revoked"` in the token, with no HTTP mocking at all. I rejected this because it can't exercise real API-response parsing; rewrote it with `@responses.activate` HTTP mocks instead, consistent with the Moodle tests.
+- **Reformatting `moodle_fetcher.py`/`test_moodle_fetcher.py`:** `ruff format --check` flags both files as needing reformatting (pre-existing, not introduced by this session). Left them untouched since they belong to Component 1 and weren't part of this task's scope — only ran `ruff format` on the new/changed classroom files.
+
+### Outcome (1 sentence)
+`fetch_classroom` and its 4 tests are implemented and green, `make ci` now only fails on the (separately owned, not-yet-implemented) Component 3 formatter tests, and CI is wired up to actually run on `stage3` with the dependencies it needs.
+
+---
+
+## Session 9 — Stage 3 Implementation (Component 3, ofedkevych)
+
+Track:          GREENFIELD
+AI role:        Pair-Programmer
+Tool & model:   Claude Code (Fable 5)
+Chat link:      no public link, prompt below
+Date & time:    2026-07-05
+
+### Goal (1-2 sentences)
+Implement Component 3 (formatter + CLI + tooling config): replace the `NotImplementedError` stubs in `src/deadliner/formatter.py`, rewire `tests/test_formatter.py` to import from `src`, build the `fetch` CLI with proper error exits, and add CLI integration tests.
+
+### Prompt (verbatim or final-iteration if you iterated)
+I'm working on a Python project called Deadliner... My component owns: formatter.py, cli.py, test_cli.py, pyproject.toml configuration... [full component brief with the 8 formatter test contracts, CLI requirements (fetch subcommand, AuthError/ConnectionError → stderr + non-zero exit), and hard constraints: absolute imports only, timezone conversion BEFORE midnight classification, sort must return a new list, no datetime.now() inside format_assignment, do not touch Components 1/2 files]
+
+### Verification — how I checked
+- [X] Ran the code / command (`pytest tests/ -v` — 19/19 green; `ruff check` + `ruff format --check` clean on all Component 3 files)
+- [X] Read the cited file/line and confirmed AI's claim (checked the astimezone() call comes before the hour/minute check; checked sorted() returns a new list)
+- [X] Verified the test bodies in test_formatter.py were unchanged from the Stage 2 red suite (only the stub definitions at the top were replaced with imports)
+
+### What I kept
+- `src/deadliner/formatter.py`: `format_assignment` converting `due_utc.astimezone(local_tz)` FIRST, then classifying local 00:00 as "midnight cutoff"; `[Course ID: <title>]` fallback for empty shortname; `Xd Yh` countdown computed from the injected `now` (deterministic, no wall-clock calls).
+- `sort_assignments` as a single `sorted()` keyed on `(due_utc, course_shortname, title)` — returns a new list.
+- `src/deadliner/cli.py`: stdlib `argparse` with a `fetch` subcommand, env-var credentials (`DEADLINER_MOODLE_URL`/`DEADLINER_MOODLE_TOKEN`) with a `~/.deadliner.json` fallback, and `AuthError`/`ConnectionError` both printing to stderr and exiting non-zero.
+- `tests/test_cli.py`: three `monkeypatch` tests pinning the failure contracts (auth error, connection error, missing credentials — all must `SystemExit` non-zero).
+
+### What I discarded and why (MANDATORY FOR STAGE 3)
+- **`click`/`typer` for the CLI:** The AI initially sketched the CLI with a third-party framework. Rejected — the design doc's CLI is one subcommand with zero options; stdlib `argparse` does it with no new dependency, and the team's `requirements.txt` shouldn't grow for this.
+- **Fetching both platforms in the CLI:** The AI proposed wiring `fetch_classroom` into the `fetch` command alongside Moodle (merge + sort both lists). Rejected for this stage — Classroom needs an interactive OAuth flow to obtain the credentials dict, which is out of P0 scope; bolting on a half-working "read a token from JSON" path would fake a feature the design doc puts behind the P1 OAuth story. The formatter already handles multi-platform lists, so the merge is a 3-line change when the OAuth story lands.
+- **Fixing Component 1's ruff violations:** `ruff check` still fails on `moodle_fetcher.py`/`test_moodle_fetcher.py` (blank-line whitespace, an unused variable). The AI offered to auto-fix them; rejected — those files are Component 1's scope, the violations pre-date this session, and silently reformatting a teammate's files inside my PR muddies review attribution. Flagged to vkatsel instead (one `ruff check --fix` + removing the unused `result` assignment makes `make ci` fully green).
+
+### Outcome (1 sentence)
+All 19 tests pass (8 formatter + 3 CLI + 8 fetchers), every Component 3 file passes `ruff check` and `ruff format --check`, and `make ci` is now blocked only by Component 1's pre-existing lint debt.
+
+---
+
+## Session 10 — Stage 4 P1: Google Calendar Sync (ofedkevych)
+
+Track:          GREENFIELD
+AI role:        Pair-Programmer
+Tool & model:   Claude Code (Fable 5)
+Chat link:      no public link, prompt below
+Date & time:    2026-07-05
+
+### Goal (1-2 sentences)
+Implement Task 3 of the team's Stage 4 / P1 plan: `calendar_sync.py` (push Assignment
+lists to Google Calendar as red events ending exactly at the deadline, idempotent via
+extendedProperties) and the `deadliner sync` command tying both fetchers to the push.
+
+### Prompt (verbatim or final-iteration if you iterated)
+now we prepare for stage 4, in implementation plan i have a task 3 oleksandr fedkevych
+and we need to make sure we cover also P1 of our prd [attached: the team's unified
+implementation plan — calendar_sync.py module, sync command, 15-30 min red events
+ending at the deadline, [DEADLINE] title prefix]
+
+### Verification — how I checked
+- [X] Ran the code / command (`make ci` — 27/27 tests green incl. 5 new calendar_sync
+      tests and 2 new CLI sync tests; ruff check + format clean)
+- [X] Read the cited file/line and confirmed AI's claim (checked the event payload ends
+      exactly at due_utc and the stable id lands in extendedProperties.private, per
+      design_doc.md §5's CalendarGateway contract)
+- [X] Verified the mocked request body in the create test asserts colorId 11, the
+      [DEADLINE] marker, and the deadline-ending timestamp
+
+### What I kept
+- `src/deadliner/calendar_sync.py`: plain-requests Calendar v3 client matching the
+  fetchers' style; events end exactly at due_utc and start 15 min before; red
+  (colorId 11); `[DEADLINE] [COURSE] Title` summary; idempotency via a
+  `deadliner_id` in private extendedProperties — lookup first, PATCH if found,
+  POST if not (never duplicate, per design_doc.md §5).
+- `_collect_assignments` extracted in `cli.py` so `fetch` and `sync` share the
+  fault-tolerant two-source aggregation vkatsel built (one source failing warns
+  and continues).
+- `deadliner sync`: requires the Google token (exit 2 with a pointer to
+  `deadliner login google` otherwise), pushes the merged sorted list, reports
+  "N created, M updated".
+
+### What I discarded and why
+- **Google Tasks instead of Calendar events:** ruled out per the team plan — the
+  Tasks API drops the time-of-day component, which would erase the 00:00 vs 23:59
+  distinction US-03 exists to preserve. Calendar events keep the exact minute.
+- **Batch insert without the existence lookup:** the AI's first draft POSTed every
+  assignment unconditionally — simpler and half the HTTP calls, but every re-run
+  would duplicate every event. Rejected: idempotency is an explicit design_doc §5
+  requirement (and the anti-pattern the roomwise/shiftlog minis warn about is
+  exactly this kind of silent state divergence). Kept the per-item
+  lookup-then-patch at the cost of one extra GET per assignment.
+- **`googleapiclient` SDK:** same call as Component 2 made for Classroom — the
+  repo precedent is plain `requests` against the REST API; no new dependency.
+
+### Outcome (1 sentence)
+`deadliner sync` pushes merged Moodle+Classroom deadlines to Google Calendar as red,
+deadline-anchored, idempotent events — 27/27 tests green and `make ci` passes.
+
+---
+
+## Session 11 — Stage 4 P1: Google Auth Foundation
+
+Track:          GREENFIELD
+AI role:        Pair-Programmer
+Tool & model:   Antigravity (DeepMind)
+Date & time:    2026-07-08
+
+### Goal (1-2 sentences)
+Implement the Google OAuth 2.0 Foundation (`deadliner login google`), handling interactive browser flow, secure local token storage (`~/.deadliner_google_token.json`), and automatic refresh-on-use to support Classroom and Calendar integrations.
+
+### Prompt (verbatim or final-iteration if you iterated)
+Iterative process starting from `cursor_plan.md` to implement the Google Auth Foundation task, fix the `student-submissions` scope mismatch, handle missing `__main__.py`, gracefully handle 403 HTTP errors during Classroom fetch, and resolve git merge conflicts with the `calendar-sync` feature branch.
+
+### Verification — how I checked
+- [X] Ran the code / command (`make ci` — 38/38 tests green, ruff check + format clean)
+- [X] Interactively authenticated via browser and successfully fetched Classroom deadlines.
+- [X] Verified 403 Forbidden errors (e.g. from missing scopes or archived courses) gracefully skip the course rather than crashing the CLI.
+- [X] Successfully verified Calendar Sync integration after resolving merge conflicts.
+
+### What I kept
+- `src/deadliner/google_auth.py`: Full interactive Google OAuth 2.0 flow using `google-auth-oauthlib`, saving the token locally, and injecting `OAUTHLIB_RELAX_TOKEN_SCOPE=1` to handle Google's strict scope requirements.
+- `src/deadliner/cli.py`: Integrated `deadliner login google` and updated `_load_credentials()` to dynamically refresh the Google token on use, preserving backward compatibility with `classroom_fetcher.py`.
+- `src/deadliner/__main__.py`: Added to support executing the tool directly via `python -m deadliner`.
+- `src/deadliner/formatter.py`: Updated to include `[{assignment.platform}]` in the output, fulfilling US-01.
+
+### What I discarded and why
+- **Hardcoding Client Secrets:** Discarded hardcoding the client secret inside the application to maintain stateless, zero-backend architecture per PRD, instead instructing users via README to provide their own `client_secret.json`.
+- **Crashing on 403 Forbidden:** Discarded the default behavior where `raise_for_status()` on a restricted course crashes the entire fetch process. Implemented a try/except block to skip the problematic course and continue fetching the rest.
+
+### Outcome (1 sentence)
+Successfully implemented robust Google OAuth integration, fixed CLI pathing, handled 403 API errors gracefully, resolved merge conflicts with the calendar sync feature, and updated the README with clear setup instructions.
