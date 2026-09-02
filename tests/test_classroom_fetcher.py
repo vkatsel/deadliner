@@ -25,7 +25,7 @@ def test_fetch_classroom_valid_oauth_returns_assignments():
             "courseWork": [
                 {
                     "title": "Homework 1",
-                    "dueDate": {"year": 2026, "month": 7, "day": 10},
+                    "dueDate": {"year": 2099, "month": 7, "day": 10},
                     "dueTime": {"hours": 23, "minutes": 59},
                     "alternateLink": "https://classroom.google.com/c/1",
                 }

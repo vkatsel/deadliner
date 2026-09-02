@@ -33,39 +33,50 @@ Then, run:
 ```bash
 PYTHONPATH=src python -m deadliner login google
 ```
-*(This opens a browser for you to grant permission)*
+**Log in to KSE Schedule:**
+```bash
+PYTHONPATH=src python -m deadliner login kse
+```
+*(Prompts for your KSE token from `schedule.kse.ua` and enables schedule syncing)*
 
-### 3. Fetch Deadlines
+### 3. Interactive Menu (Recommended)
 
-Fetch and display your upcoming deadlines from all configured platforms:
+Simply run Deadliner with no arguments (or `deadliner menu`) to open the interactive workflow interface:
 
-**Windows (PowerShell):**
-```powershell
-$env:PYTHONPATH="src"; python -m deadliner fetch
+```bash
+PYTHONPATH=src python -m deadliner
 ```
 
-**Linux / macOS:**
+### 4. Fetch Deadlines & KSE Schedule
+
+**Fetch Assignments:**
 ```bash
 PYTHONPATH=src python -m deadliner fetch
 ```
 
-### 4. Sync to Google Calendar
-
-Push all upcoming deadlines to your Google Calendar as 15-minute events:
-
-**Windows (PowerShell):**
-```powershell
-$env:PYTHONPATH="src"; python -m deadliner sync
+**Fetch KSE Classes (Next 7 days by default):**
+```bash
+PYTHONPATH=src python -m deadliner schedule fetch
 ```
 
-**Linux / macOS:**
+*(Optional: specify `--from 2026-09-01 --till 2026-09-08` or `--days 14`)*
+
+### 5. Sync to Google Calendar
+
+**Sync Deadlines (Red events):**
 ```bash
 PYTHONPATH=src python -m deadliner sync
 ```
 
-### 5. Run Tests
+**Sync KSE Classes (Peacock blue events):**
+```bash
+PYTHONPATH=src python -m deadliner schedule sync
+```
+
+### 6. Run Tests
 
 Run the full test suite with one command:
 ```bash
 pytest -v tests/
 ```
+

@@ -30,8 +30,11 @@ team.md
 # Keys and Secrets
 *.pem
 *.key
-client_secret.json
+client_secret*.json
 .deadliner_google_token.json
+
+# Screenshots & Local Assets
+*.png
 
 # Cursor plan (AI-generated, not for version control)
 cursor_plan.md

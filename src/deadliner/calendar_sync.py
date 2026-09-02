@@ -4,7 +4,7 @@ import hashlib
 
 import requests
 
-from deadliner.models import Assignment, AuthError
+from deadliner.models import Assignment, AuthError, ScheduleEvent
 
 logger = logging.getLogger(__name__)
 
@@ -12,6 +12,9 @@ CALENDAR_API_BASE = "https://www.googleapis.com/calendar/v3"
 
 #: Google Calendar colorId "11" is red — deadlines should be impossible to miss.
 EVENT_COLOR_ID = "11"
+
+#: Google Calendar colorId "6" is Tangerine (warm autumn orange) — for KSE classes.
+SCHEDULE_EVENT_COLOR_ID = "6"
 
 #: The event ends exactly at the deadline and starts this many minutes before it,
 #: so the calendar block visually points at the cutoff moment (US-03: a midnight
@@ -37,6 +40,12 @@ def _stable_id(assignment: Assignment) -> str:
     return hashlib.sha256(raw_id.encode("utf-8")).hexdigest()
 
 
+def _schedule_stable_id(event: ScheduleEvent) -> str:
+    """Return a stable identifier for a KSE schedule class."""
+    raw_id = f"kse_class:{event.event_id}:{event.date}:{event.period}:{event.discipline}:{event.subgroup}"
+    return hashlib.sha256(raw_id.encode("utf-8")).hexdigest()
+
+
 def _event_payload(assignment: Assignment) -> dict:
     """Translate an Assignment into a Google Calendar event body."""
     end = assignment.due_utc
@@ -51,6 +60,51 @@ def _event_payload(assignment: Assignment) -> dict:
         "end": {"dateTime": end.isoformat()},
         "colorId": EVENT_COLOR_ID,
         "extendedProperties": {"private": {"deadliner_id": _stable_id(assignment)}},
+    }
+
+
+def _schedule_event_payload(event: ScheduleEvent) -> dict:
+    """Translate a ScheduleEvent into a Google Calendar event body."""
+    type_ua = (
+        "Лекція"
+        if event.event_type == "lecture"
+        else "Практика"
+        if event.event_type == "practice"
+        else event.event_type.capitalize()
+    )
+    summary = (
+        f"[{event.discipline}] {event.course_name} ({type_ua})"
+        if event.discipline
+        else f"{event.course_name} ({type_ua})"
+    )
+
+    loc_parts = []
+    if event.room:
+        loc_parts.append(f"Ауд. {event.room}")
+    if event.shelter:
+        loc_parts.append(f"Укриття {event.shelter}")
+    loc_parts.append("вул. М. Шпака 3")
+    location = ", ".join(loc_parts)
+
+    desc_lines = []
+    if event.teacher:
+        desc_lines.append(f"Викладач: {event.teacher}")
+    if event.subgroup is not None:
+        desc_lines.append(f"Підгрупа: {event.subgroup}")
+    if event.zoom_url:
+        desc_lines.append(f"Zoom: {event.zoom_url}")
+    if event.comment:
+        desc_lines.append(f"Коментар: {event.comment}")
+    description = "\n".join(desc_lines)
+
+    return {
+        "summary": summary,
+        "location": location,
+        "description": description,
+        "start": {"dateTime": event.start_utc.isoformat()},
+        "end": {"dateTime": event.end_utc.isoformat()},
+        "colorId": SCHEDULE_EVENT_COLOR_ID,
+        "extendedProperties": {"private": {"deadliner_id": _schedule_stable_id(event)}},
     }
 
 
@@ -85,6 +139,14 @@ def _find_existing_event(headers: dict, deadliner_id: str) -> dict | None:
     return items[0] if items else None
 
 
+def _parse_dt(s: str | None) -> datetime | None:
+    if not s:
+        return None
+    if s.endswith("Z"):
+        s = s[:-1] + "+00:00"
+    return datetime.fromisoformat(s)
+
+
 def sync_to_calendar(assignments: list[Assignment], access_token: str) -> tuple[int, int, int]:
     """Push assignments to Google Calendar as red deadline events.
 
@@ -111,14 +173,6 @@ def sync_to_calendar(assignments: list[Assignment], access_token: str) -> tuple[
 
         existing_event = _find_existing_event(headers, deadliner_id)
         if existing_event:
-
-            def _parse_dt(s: str | None) -> datetime | None:
-                if not s:
-                    return None
-                if s.endswith("Z"):
-                    s = s[:-1] + "+00:00"
-                return datetime.fromisoformat(s)
-
             needs_update = (
                 existing_event.get("summary") != payload["summary"]
                 or _parse_dt(existing_event.get("start", {}).get("dateTime")) != _parse_dt(payload["start"]["dateTime"])
@@ -146,3 +200,68 @@ def sync_to_calendar(assignments: list[Assignment], access_token: str) -> tuple[
 
     logger.debug(f"Calendar sync done: {created} created, {updated} updated, {skipped} skipped")
     return created, updated, skipped
+
+
+def sync_schedule_to_calendar(
+    events: list[ScheduleEvent],
+    access_token: str,
+    return_details: bool = False,
+) -> tuple[int, int, int] | tuple[int, int, int, list[tuple[ScheduleEvent, str]]]:
+    """Push KSE schedule classes to Google Calendar as peacock blue events.
+
+    Idempotent: uses extendedProperties.private.deadliner_id to match and update.
+    Returns (created, updated, skipped) or (created, updated, skipped, item_statuses) if return_details=True.
+    """
+    if not access_token:
+        logger.error("Schedule sync attempted without a Google access token")
+        raise AuthError("missing access token")
+
+    headers = {"Authorization": f"Bearer {access_token}"}
+    created = 0
+    updated = 0
+    skipped = 0
+    statuses: list[tuple[ScheduleEvent, str]] = []
+
+    for event in events:
+        deadliner_id = _schedule_stable_id(event)
+        payload = _schedule_event_payload(event)
+
+        existing_event = _find_existing_event(headers, deadliner_id)
+        if existing_event:
+            needs_update = (
+                existing_event.get("summary") != payload["summary"]
+                or existing_event.get("location") != payload.get("location")
+                or existing_event.get("description") != payload.get("description")
+                or _parse_dt(existing_event.get("start", {}).get("dateTime")) != _parse_dt(payload["start"]["dateTime"])
+                or _parse_dt(existing_event.get("end", {}).get("dateTime")) != _parse_dt(payload["end"]["dateTime"])
+            )
+            if needs_update:
+                event_id = existing_event["id"]
+                _request(
+                    "PATCH",
+                    f"{CALENDAR_API_BASE}/calendars/primary/events/{event_id}",
+                    headers,
+                    json=payload,
+                )
+                updated += 1
+                statuses.append((event, "updated"))
+            else:
+                skipped += 1
+                statuses.append((event, "skipped"))
+        else:
+            _request(
+                "POST",
+                f"{CALENDAR_API_BASE}/calendars/primary/events",
+                headers,
+                json=payload,
+            )
+            created += 1
+            statuses.append((event, "created"))
+
+    logger.debug(f"KSE schedule sync done: {created} created, {updated} updated, {skipped} skipped")
+    if return_details:
+        return created, updated, skipped, statuses
+    return created, updated, skipped
+
+
+

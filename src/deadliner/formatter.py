@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from deadliner.models import Assignment
+from deadliner.models import Assignment, ScheduleEvent
 
 
 def format_assignment(assignment: Assignment, now: datetime, local_tz) -> str:
@@ -36,3 +36,43 @@ def format_assignment(assignment: Assignment, now: datetime, local_tz) -> str:
 
 def sort_assignments(assignments: list[Assignment]) -> list[Assignment]:
     return sorted(assignments, key=lambda a: (a.due_utc, a.course_shortname, a.title))
+
+
+def format_schedule_event(event: ScheduleEvent, local_tz) -> str:
+    local_start = event.start_utc.astimezone(local_tz)
+    local_end = event.end_utc.astimezone(local_tz)
+
+    type_ua = (
+        "Лекція"
+        if event.event_type == "lecture"
+        else "Практика"
+        if event.event_type == "practice"
+        else event.event_type.capitalize()
+    )
+
+    prefix = "\033[94m[kse]\033[0m "
+    if event.discipline:
+        prefix += f"\033[96m[{event.discipline}]\033[0m "
+
+    title_str = f"\033[1m{event.course_name}\033[0m ({type_ua})"
+    if event.subgroup is not None:
+        title_str += f" [Група {event.subgroup}]"
+
+    date_str = local_start.strftime("%a %d %b")
+    time_str = f"\033[95m{local_start.strftime('%H:%M')}-{local_end.strftime('%H:%M')}\033[0m"
+
+    details = []
+    if event.room:
+        details.append(f"Ауд. {event.room}")
+    if event.shelter:
+        details.append(f"Укриття {event.shelter}")
+    if event.teacher:
+        details.append(event.teacher)
+
+    details_str = f" — {' | '.join(details)}" if details else ""
+    return f"{prefix}{title_str} — \033[92m{date_str}\033[0m — {time_str}{details_str}"
+
+
+def sort_schedule_events(events: list[ScheduleEvent]) -> list[ScheduleEvent]:
+    return sorted(events, key=lambda e: (e.start_utc, e.period, e.discipline, e.course_name))
+

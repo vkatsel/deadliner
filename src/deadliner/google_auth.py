@@ -59,7 +59,10 @@ def run_oauth_flow(client_secrets_path: str | None = None) -> Credentials:
         )
 
     flow = InstalledAppFlow.from_client_secrets_file(secrets, SCOPES)
-    creds = flow.run_local_server(port=0)  # opens browser, runs local redirect
+    try:
+        creds = flow.run_local_server(port=0)  # opens browser, runs local redirect
+    except KeyboardInterrupt:
+        raise
 
     _save_token(creds)
     return creds
