@@ -1,3 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "deadliner"
+version = "0.1.0"
+description = "CLI tool to aggregate academic deadlines and KSE schedule, syncing them to Google Calendar"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "requests",
+    "google-auth",
+    "google-auth-oauthlib",
+    "google-api-python-client",
+]
+
+[project.scripts]
+deadliner = "deadliner.cli:main"
+
 [tool.pytest.ini_options]
 addopts = "-v"
 pythonpath = [".", "src"]
@@ -11,3 +31,4 @@ line-length = 120
 [tool.ruff.lint]
 select = ["E", "F", "W"]
 ignore = []
+

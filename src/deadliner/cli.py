@@ -288,16 +288,16 @@ def _cmd_login_google(args: argparse.Namespace) -> int:
 def _cmd_menu(args: argparse.Namespace | None = None) -> int:
     """Interactive CLI menu for seamless workflow navigation."""
     while True:
-        print("\n" + "=" * 50)
-        print("  📅 DEADLINER — Academic Hub & Calendar Sync")
-        print("=" * 50)
-        print("1. 📋 Fetch upcoming deadlines (Moodle & Classroom)")
-        print("2. 🔄 Sync deadlines to Google Calendar (Red events)")
-        print("3. 🎓 Fetch KSE class schedule (Next 7 days)")
-        print("4. 🔄 Sync KSE class schedule to Google Calendar (Blue events)")
-        print("5. 🔑 Login / Configure Services (Moodle / Google / KSE)")
-        print("6. 🚪 Exit")
-        print("=" * 50)
+        print("\n" + "=" * 55)
+        print("  DEADLINER — Academic Hub & Calendar Sync")
+        print("=" * 55)
+        print("1. Fetch upcoming deadlines (Moodle & Classroom)")
+        print("2. Sync deadlines to Google Calendar (Red events)")
+        print("3. Fetch KSE class schedule (Next 7 days)")
+        print("4. Sync KSE class schedule to Google Calendar (Orange events)")
+        print("5. Login / Configure Services (Moodle / Google / KSE)")
+        print("6. Exit")
+        print("=" * 55)
 
         try:
             choice = input("Select an option [1-6]: ").strip()

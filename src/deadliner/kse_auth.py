@@ -130,7 +130,7 @@ def _decode_jwt_payload(token: str) -> dict:
 def _cmd_login_kse(args: argparse.Namespace) -> int:
     """CLI handler for `deadliner login kse`."""
     print("\n" + "=" * 65)
-    print("  🎓 KSE SCHEDULE LOGIN")
+    print("  KSE Schedule Login")
     print("=" * 65)
     print("To connect your KSE Schedule in 10 seconds:")
     print("1. Open https://schedule.kse.ua in your browser (signed in with @kse.org.ua).")
@@ -195,7 +195,7 @@ def _cmd_login_kse(args: argparse.Namespace) -> int:
         return 1
 
     save_kse_credentials(token, refresh_token, session_id)
-    print("\n\033[92m✔ Successfully verified and saved KSE credentials to ~/.deadliner.json!\033[0m")
+    print("\n\033[92mSuccessfully verified and saved KSE credentials to ~/.deadliner.json!\033[0m")
     user_display = user_name or email or "KSE Student"
     details_str = f" ({email})" if email and user_name else ""
     prog_str = f" — Program: {program}" if program else ""
