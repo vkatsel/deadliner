@@ -354,24 +354,48 @@ def _cmd_login_google(args: argparse.Namespace) -> int:
         return 1
 
 
+def _get_cron_badge() -> str:
+    from deadliner import scheduler
+
+    try:
+        st = scheduler.get_schedule_status()
+        if st.get("enabled"):
+            t = st.get("start_time") or ""
+            if not t and "next_run" in st:
+                t = st["next_run"].split()[-1] if " " in st["next_run"] else st["next_run"]
+            label = f"Active @ {t}" if t else "Active"
+            return f"\033[92m[{label}]\033[0m"
+        return "\033[90m[Disabled]\033[0m"
+    except Exception:
+        return ""
+
+
 def _cmd_menu(args: argparse.Namespace | None = None) -> int:
     """Interactive CLI menu for seamless workflow navigation."""
+    from deadliner import scheduler
+
     while True:
-        print("\n" + "=" * 55)
-        print("  DEADLINER — Academic Hub & Calendar Sync")
-        print("=" * 55)
-        print("1. Fetch upcoming deadlines (Moodle & Classroom)")
-        print("2. Sync deadlines to Google Calendar (Red events)")
-        print("3. Fetch KSE class schedule (Next 7 days)")
-        print("4. Sync KSE class schedule to Google Calendar (Orange events)")
-        print("5. Sync Everything (Deadlines + KSE Schedule)")
-        print("6. Auto-Sync Schedule (Daily 24h background sync)")
-        print("7. Login / Configure Services (Moodle / Google / KSE)")
-        print("8. Exit")
-        print("=" * 55)
+        cron_badge = _get_cron_badge()
+
+        print("\n\033[1;36m" + "=" * 58 + "\033[0m")
+        print("\033[1;37m  DEADLINER \033[0m— \033[36mAcademic Hub & Calendar Sync\033[0m")
+        print("\033[1;36m" + "=" * 58 + "\033[0m")
+        print("\033[1;34m[ Deadlines & Coursework ]\033[0m")
+        print("  \033[1m1.\033[0m Fetch upcoming deadlines \033[90m(Moodle & Classroom)\033[0m")
+        print("  \033[1m2.\033[0m Sync deadlines to Google Calendar \033[91m[Red]\033[0m")
+        print("\n\033[1;34m[ KSE University Schedule ]\033[0m")
+        print("  \033[1m3.\033[0m Fetch KSE class schedule \033[90m(Next 7 days)\033[0m")
+        print("  \033[1m4.\033[0m Sync KSE class schedule to Google Calendar \033[93m[Orange]\033[0m")
+        print("\n\033[1;34m[ Automation & All-in-One ]\033[0m")
+        print("  \033[1m5.\033[0m Sync Everything \033[92m[Deadlines + KSE Schedule]\033[0m")
+        print(f"  \033[1m6.\033[0m Auto-Sync Background Scheduler       {cron_badge}")
+        print("\n\033[1;34m[ Account & Settings ]\033[0m")
+        print("  \033[1m7.\033[0m Login / Configure Services \033[90m(Moodle / Google / KSE)\033[0m")
+        print("  \033[1m8.\033[0m Exit")
+        print("\033[1;36m" + "=" * 58 + "\033[0m")
 
         try:
-            choice = input("Select an option [1-8]: ").strip()
+            choice = input("\033[1mSelect an option [1-8]:\033[0m ").strip()
         except (KeyboardInterrupt, EOFError):
             print("\nGoodbye!")
             return 0
@@ -387,7 +411,11 @@ def _cmd_menu(args: argparse.Namespace | None = None) -> int:
         elif choice == "5":
             _cmd_sync_all(argparse.Namespace())
         elif choice == "6":
-            print("\nDaily Auto-Sync Configuration:")
+            st = scheduler.get_schedule_status()
+            st_text = f"\033[92mENABLED (Next: {st.get('next_run', 'N/A')})\033[0m" if st.get("enabled") else "\033[90mDISABLED\033[0m"
+            print("\n" + "-" * 55)
+            print(f"Daily Auto-Sync Status: {st_text}")
+            print("-" * 55)
             print("  a) Enable / Update daily sync time (Default: 08:00)")
             print("  b) Check status and next scheduled run")
             print("  c) Disable daily auto-sync")
