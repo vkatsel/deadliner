@@ -262,6 +262,3 @@ def sync_schedule_to_calendar(
     if return_details:
         return created, updated, skipped, statuses
     return created, updated, skipped
-
-
-

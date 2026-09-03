@@ -99,8 +99,16 @@ def _parse_single_event(raw_event: dict, default_date: str = "") -> ScheduleEven
     event_id = str(raw_event.get("event_id") or raw_event.get("id") or f"{date_str}_{period}_{discipline}_{subgroup}")
     room = raw_event.get("room") or ""
     shelter = raw_event.get("shelter") or ""
-    teacher = raw_event.get("teacher_name") or _extract_teacher_name(raw_event.get("teacher") or raw_event.get("instructor"))
-    zoom_url = raw_event.get("online_link") or raw_event.get("zoom_url") or raw_event.get("zoom") or raw_event.get("link") or ""
+    teacher = raw_event.get("teacher_name") or _extract_teacher_name(
+        raw_event.get("teacher") or raw_event.get("instructor")
+    )
+    zoom_url = (
+        raw_event.get("online_link")
+        or raw_event.get("zoom_url")
+        or raw_event.get("zoom")
+        or raw_event.get("link")
+        or ""
+    )
     comment = raw_event.get("comment") or raw_event.get("passcode") or ""
     is_shifted = bool(raw_event.get("is_evening_slot_shifted") or raw_event.get("is_shifted"))
 
@@ -137,6 +145,7 @@ def fetch_kse_schedule(
         from_date = date.today()
     if till_date is None:
         from datetime import timedelta
+
         till_date = (from_date if isinstance(from_date, date) else date.fromisoformat(from_date)) + timedelta(days=6)
 
     start_d = from_date if isinstance(from_date, date) else date.fromisoformat(from_date)

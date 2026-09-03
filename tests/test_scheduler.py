@@ -45,12 +45,7 @@ def test_get_schedule_status_windows_enabled(monkeypatch):
 
     class MockRun:
         returncode = 0
-        stdout = (
-            "TaskName: DeadlinerDailySync\n"
-            "Next Run Time: 08:00:00, 04.09.2026\n"
-            "Status: Ready\n"
-            "Start Time: 08:00\n"
-        )
+        stdout = "TaskName: DeadlinerDailySync\nNext Run Time: 08:00:00, 04.09.2026\nStatus: Ready\nStart Time: 08:00\n"
         stderr = ""
 
     monkeypatch.setattr("subprocess.run", lambda *args, **kwargs: MockRun())
@@ -211,4 +206,3 @@ def test_cli_menu_auto_sync_submenu(monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "Task set for 07:30" in out
     assert "Task disabled" in out
-

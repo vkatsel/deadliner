@@ -107,4 +107,3 @@ def test_cmd_login_kse_success(tmp_path, monkeypatch, capsys):
 
     token, _, _ = load_kse_credentials()
     assert token == "valid.jwt.token"
-

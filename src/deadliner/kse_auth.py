@@ -136,7 +136,7 @@ def _cmd_login_kse(args: argparse.Namespace) -> int:
     print("1. Open https://schedule.kse.ua in your browser (signed in with @kse.org.ua).")
     print("2. Press F12 -> Console.")
     print("3. Paste this command and hit Enter (it copies the token automatically):")
-    print("\n   copy(localStorage.getItem(\"__NEXUS_REACT_ADMIN_AUTH__\"))\n")
+    print('\n   copy(localStorage.getItem("__NEXUS_REACT_ADMIN_AUTH__"))\n')
     print("4. Paste the copied text below.")
     print("=" * 65)
 
@@ -201,5 +201,3 @@ def _cmd_login_kse(args: argparse.Namespace) -> int:
     prog_str = f" — Program: {program}" if program else ""
     print(f"Logged in as: \033[1m{user_display}{details_str}\033[0m{prog_str}\n")
     return 0
-
-

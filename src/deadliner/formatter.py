@@ -75,4 +75,3 @@ def format_schedule_event(event: ScheduleEvent, local_tz) -> str:
 
 def sort_schedule_events(events: list[ScheduleEvent]) -> list[ScheduleEvent]:
     return sorted(events, key=lambda e: (e.start_utc, e.period, e.discipline, e.course_name))
-

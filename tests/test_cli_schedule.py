@@ -26,6 +26,7 @@ def test_cli_schedule_fetch_success(monkeypatch, capsys):
     monkeypatch.setattr(cli, "_load_credentials", lambda: ("", "", "", "mock-kse-token"))
 
     from deadliner import kse_fetcher
+
     monkeypatch.setattr(kse_fetcher, "fetch_kse_schedule", lambda **kwargs: [_mock_schedule_event()])
 
     with pytest.raises(SystemExit) as exc:
@@ -97,9 +98,7 @@ def test_cli_menu_exit(monkeypatch):
 
 def test_cli_load_credentials_refreshes_expired_kse_token(tmp_path, monkeypatch):
     test_cfg = tmp_path / ".deadliner.json"
-    test_cfg.write_text(
-        '{"kse_token": "expired-token", "kse_refresh_token": "refresh-1", "kse_session_id": "sess-1"}'
-    )
+    test_cfg.write_text('{"kse_token": "expired-token", "kse_refresh_token": "refresh-1", "kse_session_id": "sess-1"}')
     monkeypatch.setattr(cli, "CONFIG_PATH", test_cfg)
     monkeypatch.setenv("DEADLINER_KSE_TOKEN", "")
 
@@ -111,4 +110,3 @@ def test_cli_load_credentials_refreshes_expired_kse_token(tmp_path, monkeypatch)
 
     _, _, _, kse_token = cli._load_credentials()
     assert kse_token == "refreshed-fresh-token"
-

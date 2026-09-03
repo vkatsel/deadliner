@@ -139,7 +139,15 @@ def get_schedule_status() -> dict:
                     k, _, v = line.partition(":")
                     k_clean = k.strip()
                     v_clean = v.strip()
-                    if k_clean in ("TaskName", "Next Run Time", "Status", "Last Run Time", "Last Result", "Schedule Type", "Start Time"):
+                    if k_clean in (
+                        "TaskName",
+                        "Next Run Time",
+                        "Status",
+                        "Last Run Time",
+                        "Last Result",
+                        "Schedule Type",
+                        "Start Time",
+                    ):
                         details[k_clean] = v_clean
 
             return {

@@ -32,4 +32,3 @@ class ScheduleEvent:
     zoom_url: str = ""
     comment: str = ""
     is_shifted: bool = False
-

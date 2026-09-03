@@ -56,7 +56,6 @@ def _load_credentials() -> tuple[str, str, str, str]:
     return base_url, token, g_token, kse_token
 
 
-
 def _collect_assignments(base_url: str, token: str, g_token: str) -> tuple[list, list[str]]:
     """Fetch deadlines from every configured source, tolerating per-source failures."""
     from deadliner import classroom_fetcher
@@ -412,7 +411,11 @@ def _cmd_menu(args: argparse.Namespace | None = None) -> int:
             _cmd_sync_all(argparse.Namespace())
         elif choice == "6":
             st = scheduler.get_schedule_status()
-            st_text = f"\033[92mENABLED (Next: {st.get('next_run', 'N/A')})\033[0m" if st.get("enabled") else "\033[90mDISABLED\033[0m"
+            st_text = (
+                f"\033[92mENABLED (Next: {st.get('next_run', 'N/A')})\033[0m"
+                if st.get("enabled")
+                else "\033[90mDISABLED\033[0m"
+            )
             print("\n" + "-" * 55)
             print(f"Daily Auto-Sync Status: {st_text}")
             print("-" * 55)
@@ -482,7 +485,9 @@ def main(argv: list[str] | None = None) -> None:
         sync_parser.set_defaults(func=_cmd_sync)
 
         # deadliner sync-all
-        sync_all_parser = subparsers.add_parser("sync-all", help="push both deadlines and KSE schedule to Google Calendar")
+        sync_all_parser = subparsers.add_parser(
+            "sync-all", help="push both deadlines and KSE schedule to Google Calendar"
+        )
         sync_all_parser.set_defaults(func=_cmd_sync_all)
 
         # deadliner menu
@@ -546,8 +551,6 @@ def main(argv: list[str] | None = None) -> None:
     except (KeyboardInterrupt, EOFError):
         print("\n\nOperation cancelled by user.", file=sys.stderr)
         sys.exit(130)
-
-
 
 
 if __name__ == "__main__":

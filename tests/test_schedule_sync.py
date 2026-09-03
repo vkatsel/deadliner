@@ -48,7 +48,6 @@ def test_sync_schedule_creates_new_event():
     assert "deadliner_id" in payload["extendedProperties"]["private"]
 
 
-
 @responses.activate
 def test_sync_schedule_patches_modified_event():
     existing_event = {
