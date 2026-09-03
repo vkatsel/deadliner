@@ -41,7 +41,16 @@ def _stable_id(assignment: Assignment) -> str:
 
 
 def _schedule_stable_id(event: ScheduleEvent) -> str:
-    """Return a stable identifier for a KSE schedule class."""
+    """Return a primary stable identifier for a KSE schedule class based on DB event_id."""
+    if event.event_id:
+        raw_id = f"kse_class:{event.event_id}"
+    else:
+        raw_id = f"kse_class:{event.date}:{event.period}:{event.discipline}:{event.subgroup}"
+    return hashlib.sha256(raw_id.encode("utf-8")).hexdigest()
+
+
+def _schedule_legacy_stable_id(event: ScheduleEvent) -> str:
+    """Return the legacy composite identifier for backward-compatible event matching."""
     raw_id = f"kse_class:{event.event_id}:{event.date}:{event.period}:{event.discipline}:{event.subgroup}"
     return hashlib.sha256(raw_id.encode("utf-8")).hexdigest()
 
@@ -227,6 +236,11 @@ def sync_schedule_to_calendar(
         payload = _schedule_event_payload(event)
 
         existing_event = _find_existing_event(headers, deadliner_id)
+        if not existing_event:
+            legacy_id = _schedule_legacy_stable_id(event)
+            if legacy_id != deadliner_id:
+                existing_event = _find_existing_event(headers, legacy_id)
+
         if existing_event:
             needs_update = (
                 existing_event.get("summary") != payload["summary"]
@@ -234,6 +248,7 @@ def sync_schedule_to_calendar(
                 or existing_event.get("description") != payload.get("description")
                 or _parse_dt(existing_event.get("start", {}).get("dateTime")) != _parse_dt(payload["start"]["dateTime"])
                 or _parse_dt(existing_event.get("end", {}).get("dateTime")) != _parse_dt(payload["end"]["dateTime"])
+                or existing_event.get("extendedProperties", {}).get("private", {}).get("deadliner_id") != deadliner_id
             )
             if needs_update:
                 event_id = existing_event["id"]
