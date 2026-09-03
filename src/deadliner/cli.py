@@ -31,7 +31,7 @@ def _load_credentials() -> tuple[str, str, str, str]:
     g_token = os.environ.get("DEADLINER_GOOGLE_TOKEN", "")
     kse_token = os.environ.get("DEADLINER_KSE_TOKEN", "")
 
-    if (not base_url or not token or not g_token or not kse_token) and CONFIG_PATH.exists():
+    if (not base_url or not token or not g_token) and CONFIG_PATH.exists():
         try:
             cfg = json.loads(CONFIG_PATH.read_text())
         except (OSError, ValueError):
@@ -39,7 +39,6 @@ def _load_credentials() -> tuple[str, str, str, str]:
         base_url = base_url or cfg.get("moodle_base_url", "")
         token = token or cfg.get("moodle_token", "")
         g_token = g_token or cfg.get("google_access_token", "")
-        kse_token = kse_token or cfg.get("kse_token", "")
 
     # If no static Google token, try stored OAuth credentials (refresh-on-use)
     if not g_token:
@@ -55,6 +54,7 @@ def _load_credentials() -> tuple[str, str, str, str]:
         kse_token = get_valid_kse_token()
 
     return base_url, token, g_token, kse_token
+
 
 
 def _collect_assignments(base_url: str, token: str, g_token: str) -> tuple[list, list[str]]:
@@ -294,7 +294,7 @@ def _cmd_menu(args: argparse.Namespace | None = None) -> int:
         print("1. Fetch upcoming deadlines (Moodle & Classroom)")
         print("2. Sync deadlines to Google Calendar (Red events)")
         print("3. Fetch KSE class schedule (Next 7 days)")
-        print("4. Sync KSE class schedule to Google Calendar (Orange events)")
+        print("4. Sync KSE class schedule to Google Calendar (Green events)")
         print("5. Login / Configure Services (Moodle / Google / KSE)")
         print("6. Exit")
         print("=" * 55)

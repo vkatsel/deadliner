@@ -93,3 +93,22 @@ def test_cli_menu_exit(monkeypatch):
     with pytest.raises(SystemExit) as exc:
         cli.main([])
     assert exc.value.code == 0
+
+
+def test_cli_load_credentials_refreshes_expired_kse_token(tmp_path, monkeypatch):
+    test_cfg = tmp_path / ".deadliner.json"
+    test_cfg.write_text(
+        '{"kse_token": "expired-token", "kse_refresh_token": "refresh-1", "kse_session_id": "sess-1"}'
+    )
+    monkeypatch.setattr(cli, "CONFIG_PATH", test_cfg)
+    monkeypatch.setenv("DEADLINER_KSE_TOKEN", "")
+
+    from deadliner import kse_auth
+
+    monkeypatch.setattr(kse_auth, "CONFIG_PATH", test_cfg)
+    monkeypatch.setattr(kse_auth, "is_kse_token_expired", lambda tok: True)
+    monkeypatch.setattr(kse_auth, "refresh_kse_token", lambda r, s: "refreshed-fresh-token")
+
+    _, _, _, kse_token = cli._load_credentials()
+    assert kse_token == "refreshed-fresh-token"
+

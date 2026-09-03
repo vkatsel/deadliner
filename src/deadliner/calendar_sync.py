@@ -14,7 +14,7 @@ CALENDAR_API_BASE = "https://www.googleapis.com/calendar/v3"
 EVENT_COLOR_ID = "11"
 
 #: Google Calendar colorId "6" is Tangerine (warm autumn orange) — for KSE classes.
-SCHEDULE_EVENT_COLOR_ID = "6"
+SCHEDULE_EVENT_COLOR_ID = "2"
 
 #: The event ends exactly at the deadline and starts this many minutes before it,
 #: so the calendar block visually points at the cutoff moment (US-03: a midnight

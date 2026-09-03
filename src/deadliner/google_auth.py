@@ -11,10 +11,12 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
+import warnings
 
 # Relax strict scope matching because Google sometimes returns slightly different scopes
 # (e.g. classroom.student-submissions.me.readonly instead of coursework)
 os.environ["OAUTHLIB_RELAX_TOKEN_SCOPE"] = "1"
+warnings.filterwarnings("ignore", message=".*missing scopes.*")
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
