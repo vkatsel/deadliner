@@ -89,7 +89,7 @@ def test_cli_schedule_sync_pushes_events(monkeypatch, capsys):
 
 
 def test_cli_menu_exit(monkeypatch):
-    monkeypatch.setattr("builtins.input", lambda prompt: "6")
+    monkeypatch.setattr("builtins.input", lambda prompt: "8")
     with pytest.raises(SystemExit) as exc:
         cli.main([])
     assert exc.value.code == 0

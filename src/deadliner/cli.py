@@ -267,6 +267,75 @@ def _cmd_schedule_sync(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_sync_all(args: argparse.Namespace) -> int:
+    """Synchronize both deadlines (Moodle/Classroom) and KSE class schedule to Google Calendar."""
+    print("\n" + "=" * 55)
+    print("  DEADLINER — Syncing All (Deadlines + KSE Schedule)")
+    print("=" * 55 + "\n")
+
+    print("[1/2] Syncing Deadlines...")
+    deadlines_code = _cmd_sync(args)
+
+    print("\n[2/2] Syncing KSE Classes...")
+    schedule_code = _cmd_schedule_sync(args)
+
+    print("\n" + "=" * 55)
+    if deadlines_code == 0 and schedule_code == 0:
+        print("  All sync tasks completed successfully!")
+    else:
+        print("  Sync completed with warnings/errors. Check logs above.")
+    print("=" * 55 + "\n")
+    return max(deadlines_code, schedule_code)
+
+
+def _cmd_cron_enable(args: argparse.Namespace) -> int:
+    from deadliner import scheduler
+
+    time_str = getattr(args, "time", "08:00")
+    success, msg = scheduler.enable_schedule(time_str)
+    if success:
+        print(f"\033[92m{msg}\033[0m")
+        return 0
+    else:
+        print(f"\033[91m{msg}\033[0m", file=sys.stderr)
+        return 1
+
+
+def _cmd_cron_disable(args: argparse.Namespace) -> int:
+    from deadliner import scheduler
+
+    success, msg = scheduler.disable_schedule()
+    if success:
+        print(f"\033[92m{msg}\033[0m")
+        return 0
+    else:
+        print(f"\033[91m{msg}\033[0m", file=sys.stderr)
+        return 1
+
+
+def _cmd_cron_status(args: argparse.Namespace) -> int:
+    from deadliner import scheduler
+
+    status = scheduler.get_schedule_status()
+    print("\n" + "=" * 50)
+    print("  Deadliner Daily Auto-Sync Status")
+    print("=" * 50)
+    if status.get("enabled"):
+        print("  Status:     \033[92mENABLED (Active)\033[0m")
+        if "next_run" in status:
+            print(f"  Next Run:   {status['next_run']}")
+        if "start_time" in status and status["start_time"]:
+            print(f"  Start Time: {status['start_time']}")
+        if "cron_entry" in status:
+            print(f"  Crontab:    {status['cron_entry']}")
+    else:
+        print("  Status:     \033[90mDISABLED (Not scheduled)\033[0m")
+        if "details" in status:
+            print(f"  Info:       {status['details']}")
+    print("=" * 50 + "\n")
+    return 0
+
+
 def _cmd_login_google(args: argparse.Namespace) -> int:
     from deadliner.google_auth import get_token_path, run_oauth_flow
 
@@ -294,13 +363,15 @@ def _cmd_menu(args: argparse.Namespace | None = None) -> int:
         print("1. Fetch upcoming deadlines (Moodle & Classroom)")
         print("2. Sync deadlines to Google Calendar (Red events)")
         print("3. Fetch KSE class schedule (Next 7 days)")
-        print("4. Sync KSE class schedule to Google Calendar (Green events)")
-        print("5. Login / Configure Services (Moodle / Google / KSE)")
-        print("6. Exit")
+        print("4. Sync KSE class schedule to Google Calendar (Orange events)")
+        print("5. Sync Everything (Deadlines + KSE Schedule)")
+        print("6. Auto-Sync Schedule (Daily 24h background sync)")
+        print("7. Login / Configure Services (Moodle / Google / KSE)")
+        print("8. Exit")
         print("=" * 55)
 
         try:
-            choice = input("Select an option [1-6]: ").strip()
+            choice = input("Select an option [1-8]: ").strip()
         except (KeyboardInterrupt, EOFError):
             print("\nGoodbye!")
             return 0
@@ -314,6 +385,25 @@ def _cmd_menu(args: argparse.Namespace | None = None) -> int:
         elif choice == "4":
             _cmd_schedule_sync(argparse.Namespace(from_date=None, till_date=None, days=7))
         elif choice == "5":
+            _cmd_sync_all(argparse.Namespace())
+        elif choice == "6":
+            print("\nDaily Auto-Sync Configuration:")
+            print("  a) Enable / Update daily sync time (Default: 08:00)")
+            print("  b) Check status and next scheduled run")
+            print("  c) Disable daily auto-sync")
+            print("  d) Back")
+            try:
+                cron_choice = input("Choice [a/b/c/d]: ").strip().lower()
+            except (KeyboardInterrupt, EOFError):
+                continue
+            if cron_choice == "a":
+                time_in = input("Enter daily sync time (HH:MM in 24h, default 08:00): ").strip() or "08:00"
+                _cmd_cron_enable(argparse.Namespace(time=time_in))
+            elif cron_choice == "b":
+                _cmd_cron_status(argparse.Namespace())
+            elif cron_choice == "c":
+                _cmd_cron_disable(argparse.Namespace())
+        elif choice == "7":
             print("\nSelect service to configure:")
             print("  a) Moodle Login")
             print("  b) Google OAuth (Classroom & Calendar)")
@@ -333,11 +423,11 @@ def _cmd_menu(args: argparse.Namespace | None = None) -> int:
                 from deadliner.kse_auth import _cmd_login_kse
 
                 _cmd_login_kse(argparse.Namespace())
-        elif choice in ("6", "q", "exit"):
+        elif choice in ("8", "q", "exit"):
             print("Goodbye!")
             return 0
         else:
-            print("Invalid selection. Please choose 1-6.")
+            print("Invalid selection. Please choose 1-8.")
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -363,6 +453,10 @@ def main(argv: list[str] | None = None) -> None:
         sync_parser = subparsers.add_parser("sync", help="push deadlines to Google Calendar as red events")
         sync_parser.set_defaults(func=_cmd_sync)
 
+        # deadliner sync-all
+        sync_all_parser = subparsers.add_parser("sync-all", help="push both deadlines and KSE schedule to Google Calendar")
+        sync_all_parser.set_defaults(func=_cmd_sync_all)
+
         # deadliner menu
         menu_parser = subparsers.add_parser("menu", help="open interactive workflow menu")
         menu_parser.set_defaults(func=_cmd_menu)
@@ -382,6 +476,20 @@ def main(argv: list[str] | None = None) -> None:
         sched_sync_parser.add_argument("--till", dest="till_date", default=None, help="End date (YYYY-MM-DD)")
         sched_sync_parser.add_argument("--days", type=int, default=7, help="Number of days to sync (default: 7)")
         sched_sync_parser.set_defaults(func=_cmd_schedule_sync)
+
+        # deadliner cron [enable|disable|status]
+        cron_parser = subparsers.add_parser("cron", help="manage daily 24h background auto-sync")
+        cron_subparsers = cron_parser.add_subparsers(dest="cron_cmd", required=True)
+
+        cron_enable_parser = cron_subparsers.add_parser("enable", help="enable daily auto-sync")
+        cron_enable_parser.add_argument("--time", default="08:00", help="Time of day (HH:MM in 24h, default: 08:00)")
+        cron_enable_parser.set_defaults(func=_cmd_cron_enable)
+
+        cron_disable_parser = cron_subparsers.add_parser("disable", help="disable daily auto-sync")
+        cron_disable_parser.set_defaults(func=_cmd_cron_disable)
+
+        cron_status_parser = cron_subparsers.add_parser("status", help="check daily auto-sync status")
+        cron_status_parser.set_defaults(func=_cmd_cron_status)
 
         # deadliner login [moodle|google|kse]
         login_parser = subparsers.add_parser("login", help="log in to a service")
@@ -410,6 +518,7 @@ def main(argv: list[str] | None = None) -> None:
     except (KeyboardInterrupt, EOFError):
         print("\n\nOperation cancelled by user.", file=sys.stderr)
         sys.exit(130)
+
 
 
 

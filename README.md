@@ -63,13 +63,32 @@ deadliner
   *(Options: `--days 14`, `--from 2026-09-01 --till 2026-09-10`)*
 
 #### Sync to Google Calendar
-- **Sync Deadlines (Tomato Red):**
+- **Sync Everything (Deadlines + KSE Classes):**
+  ```bash
+  deadliner sync-all
+  ```
+- **Sync Deadlines only (Tomato Red):**
   ```bash
   deadliner sync
   ```
-- **Sync KSE Classes (Autumn Orange):**
+- **Sync KSE Classes only (Autumn Orange):**
   ```bash
   deadliner schedule sync
+  ```
+
+#### 24h Background Auto-Sync (Cron)
+Automatically sync Deadlines and KSE classes every day in the background without keeping the app open:
+- **Enable daily sync (e.g. at 08:00 AM):**
+  ```bash
+  deadliner cron enable --time 08:00
+  ```
+- **Check schedule status & next run:**
+  ```bash
+  deadliner cron status
+  ```
+- **Disable auto-sync:**
+  ```bash
+  deadliner cron disable
   ```
 
 ---
