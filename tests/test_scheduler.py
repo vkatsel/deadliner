@@ -74,6 +74,88 @@ def test_get_schedule_status_disabled(monkeypatch):
     assert status["enabled"] is False
 
 
+def test_enable_schedule_failure(monkeypatch):
+    monkeypatch.setattr(platform, "system", lambda: "Windows")
+
+    class MockRun:
+        returncode = 1
+        stdout = ""
+        stderr = "ERROR: Access is denied."
+
+    monkeypatch.setattr("subprocess.run", lambda *args, **kwargs: MockRun())
+
+    success, msg = scheduler.enable_schedule("08:30")
+    assert success is False
+    assert "Access is denied" in msg
+
+
+def test_enable_schedule_unix_crontab(monkeypatch):
+    monkeypatch.setattr(platform, "system", lambda: "Linux")
+
+    written_crontab = []
+
+    def mock_run(cmd, *args, **kwargs):
+        class MockRun:
+            returncode = 0
+            stdout = "0 7 * * * /usr/bin/some_job\n"
+            stderr = ""
+
+        if cmd == ["crontab", "-l"]:
+            return MockRun()
+        elif cmd == ["crontab", "-"]:
+            written_crontab.append(kwargs.get("input", ""))
+            return MockRun()
+        return MockRun()
+
+    monkeypatch.setattr("subprocess.run", mock_run)
+
+    success, msg = scheduler.enable_schedule("09:45")
+    assert success is True
+    assert "45 9 * * *" in written_crontab[0]
+    assert scheduler.TASK_NAME in written_crontab[0]
+
+
+def test_disable_schedule_unix_crontab(monkeypatch):
+    monkeypatch.setattr(platform, "system", lambda: "Linux")
+
+    written_crontab = []
+
+    def mock_run(cmd, *args, **kwargs):
+        class MockRun:
+            returncode = 0
+            stdout = f"0 7 * * * /usr/bin/some_job\n0 8 * * * deadliner # {scheduler.TASK_NAME}\n"
+            stderr = ""
+
+        if cmd == ["crontab", "-l"]:
+            return MockRun()
+        elif cmd == ["crontab", "-"]:
+            written_crontab.append(kwargs.get("input", ""))
+            return MockRun()
+        return MockRun()
+
+    monkeypatch.setattr("subprocess.run", mock_run)
+
+    success, msg = scheduler.disable_schedule()
+    assert success is True
+    assert scheduler.TASK_NAME not in written_crontab[0]
+    assert "/usr/bin/some_job" in written_crontab[0]
+
+
+def test_get_schedule_status_unix(monkeypatch):
+    monkeypatch.setattr(platform, "system", lambda: "Darwin")
+
+    class MockRun:
+        returncode = 0
+        stdout = f"0 8 * * * deadliner # {scheduler.TASK_NAME}\n"
+        stderr = ""
+
+    monkeypatch.setattr("subprocess.run", lambda *args, **kwargs: MockRun())
+
+    status = scheduler.get_schedule_status()
+    assert status["enabled"] is True
+    assert scheduler.TASK_NAME in status["cron_entry"]
+
+
 def test_cli_cron_enable(monkeypatch, capsys):
     monkeypatch.setattr(scheduler, "enable_schedule", lambda time_str: (True, f"Scheduled for {time_str}"))
 
@@ -112,3 +194,21 @@ def test_cli_sync_all(monkeypatch):
         cli.main(["sync-all"])
     assert exc.value.code == 0
     assert synced == ["deadlines", "schedule"]
+
+
+def test_cli_menu_auto_sync_submenu(monkeypatch, capsys):
+    inputs = iter(["6", "a", "07:30", "6", "b", "6", "c", "8"])
+    monkeypatch.setattr("builtins.input", lambda prompt="": next(inputs))
+
+    monkeypatch.setattr(scheduler, "enable_schedule", lambda t: (True, f"Task set for {t}"))
+    monkeypatch.setattr(scheduler, "get_schedule_status", lambda: {"enabled": True, "next_run": "07:30"})
+    monkeypatch.setattr(scheduler, "disable_schedule", lambda: (True, "Task disabled"))
+
+    with pytest.raises(SystemExit) as exc:
+        cli.main([])
+
+    assert exc.value.code == 0
+    out = capsys.readouterr().out
+    assert "Task set for 07:30" in out
+    assert "Task disabled" in out
+
