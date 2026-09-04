@@ -40,12 +40,34 @@ def get_token_path() -> Path:
     return Path.home() / _DEFAULT_TOKEN_PATH
 
 
+def find_client_secrets_path(explicit_path: str | Path | None = None) -> Path | None:
+    """Find client_secret.json across common locations or return None."""
+    if explicit_path:
+        p = Path(explicit_path)
+        return p if p.is_file() else None
+
+    env_path = os.environ.get("DEADLINER_CLIENT_SECRETS") or os.environ.get("GOOGLE_CLIENT_SECRETS")
+    if env_path and Path(env_path).is_file():
+        return Path(env_path)
+
+    candidates = [
+        Path.home() / ".deadliner" / "client_secret.json",
+        Path.cwd() / "client_secret.json",
+        Path(__file__).resolve().parent.parent.parent / "client_secret.json",
+        Path.home() / "client_secret.json",
+    ]
+
+    for cand in candidates:
+        if cand.is_file():
+            return cand
+    return None
+
+
 def run_oauth_flow(client_secrets_path: str | None = None) -> Credentials:
     """Run the full interactive OAuth2 flow (opens browser).
 
     Args:
         client_secrets_path: path to client_secret.json from Google Cloud Console.
-                            Defaults to ./client_secret.json in current directory.
 
     Returns:
         Authorized Credentials object.
@@ -53,14 +75,16 @@ def run_oauth_flow(client_secrets_path: str | None = None) -> Credentials:
     Raises:
         FileNotFoundError: if client_secrets_path does not exist.
     """
-    secrets = client_secrets_path or _DEFAULT_CLIENT_SECRETS
-    if not os.path.exists(secrets):
+    secrets = find_client_secrets_path(client_secrets_path)
+    if not secrets:
+        target = client_secrets_path or _DEFAULT_CLIENT_SECRETS
         raise FileNotFoundError(
-            f"Google client secrets file not found at {secrets}. "
-            f"Download it from Google Cloud Console → APIs & Services → Credentials."
+            f"Google client secrets file not found at {target}. "
+            f"Download it from Google Cloud Console → APIs & Services → Credentials "
+            f"and place it in ~/.deadliner/client_secret.json or in the project root."
         )
 
-    flow = InstalledAppFlow.from_client_secrets_file(secrets, SCOPES)
+    flow = InstalledAppFlow.from_client_secrets_file(str(secrets), SCOPES)
     try:
         creds = flow.run_local_server(port=0)  # opens browser, runs local redirect
     except KeyboardInterrupt:

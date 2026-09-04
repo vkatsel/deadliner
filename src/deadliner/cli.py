@@ -364,10 +364,45 @@ def _cmd_cron_logs(args: argparse.Namespace | None = None) -> int:
 
 
 def _cmd_login_google(args: argparse.Namespace) -> int:
-    from deadliner.google_auth import get_token_path, run_oauth_flow
+    from deadliner.google_auth import find_client_secrets_path, get_token_path, run_oauth_flow
+    import shutil
+
+    secrets_path = getattr(args, "client_secrets", None)
+    if not secrets_path:
+        found = find_client_secrets_path()
+        if not found:
+            print("\n" + "=" * 65)
+            print("  Google OAuth Setup")
+            print("=" * 65)
+            print("Could not automatically locate client_secret.json.")
+            print("1. Download client_secret.json from Google Cloud Console.")
+            print("2. Enter the path to your downloaded file below")
+            print("   (or drag & drop the file into this terminal):\n")
+            try:
+                user_in = input("Path to client_secret.json: ").strip().strip('"').strip("'")
+            except (KeyboardInterrupt, EOFError):
+                print("\nGoogle authentication cancelled.")
+                return 130
+
+            if not user_in or not os.path.isfile(user_in):
+                print(f"Error: File '{user_in}' does not exist.", file=sys.stderr)
+                return 1
+
+            # Save to ~/.deadliner/client_secret.json for permanent discovery
+            dest_dir = Path.home() / ".deadliner"
+            dest_dir.mkdir(parents=True, exist_ok=True)
+            dest_file = dest_dir / "client_secret.json"
+            try:
+                shutil.copyfile(user_in, dest_file)
+                print(f"Saved copy to {dest_file}")
+                secrets_path = str(dest_file)
+            except Exception:
+                secrets_path = user_in
+        else:
+            secrets_path = str(found)
 
     try:
-        run_oauth_flow(args.client_secrets)
+        run_oauth_flow(secrets_path)
         print(f"Google authentication successful. Token saved to {get_token_path()}")
         return 0
     except FileNotFoundError as e:
