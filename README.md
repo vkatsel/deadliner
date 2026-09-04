@@ -71,7 +71,7 @@ deadliner
   ```bash
   deadliner sync
   ```
-- **Sync KSE Classes only (Autumn Orange):**
+- **Sync KSE Classes only (Sage Green):**
   ```bash
   deadliner schedule sync
   ```
@@ -85,6 +85,10 @@ Automatically sync Deadlines and KSE classes every day in the background without
 - **Check schedule status & next run:**
   ```bash
   deadliner cron status
+  ```
+- **View auto-sync execution logs (`~/.deadliner/sync.log`):**
+  ```bash
+  deadliner logs
   ```
 - **Disable auto-sync:**
   ```bash
