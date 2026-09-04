@@ -412,7 +412,7 @@ def _cmd_menu(args: argparse.Namespace | None = None) -> int:
         print("  \033[1m2.\033[0m Sync deadlines to Google Calendar \033[91m[Red]\033[0m")
         print("\n\033[1;34m[ KSE University Schedule ]\033[0m")
         print("  \033[1m3.\033[0m Fetch KSE class schedule \033[90m(Next 7 days)\033[0m")
-        print("  \033[1m4.\033[0m Sync KSE class schedule to Google Calendar \033[93m[Orange]\033[0m")
+        print("  \033[1m4.\033[0m Sync KSE class schedule to Google Calendar \033[92m[Green]\033[0m")
         print("\n\033[1;34m[ Automation & All-in-One ]\033[0m")
         print("  \033[1m5.\033[0m Sync Everything \033[92m[Deadlines + KSE Schedule]\033[0m")
         print(f"  \033[1m6.\033[0m Auto-Sync Background Scheduler       {cron_badge}")
