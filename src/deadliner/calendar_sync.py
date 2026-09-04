@@ -13,7 +13,7 @@ CALENDAR_API_BASE = "https://www.googleapis.com/calendar/v3"
 #: Google Calendar colorId "11" is red — deadlines should be impossible to miss.
 EVENT_COLOR_ID = "11"
 
-#: Google Calendar colorId "6" is Tangerine (warm autumn orange) — for KSE classes.
+#: Google Calendar colorId "2" is Green - for KSE classes.
 SCHEDULE_EVENT_COLOR_ID = "2"
 
 #: The event ends exactly at the deadline and starts this many minutes before it,

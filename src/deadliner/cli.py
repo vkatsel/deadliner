@@ -427,69 +427,80 @@ def _cmd_menu(args: argparse.Namespace | None = None) -> int:
             print("\nGoodbye!")
             return 0
 
-        if choice == "1":
-            _cmd_fetch(argparse.Namespace())
-        elif choice == "2":
-            _cmd_sync(argparse.Namespace())
-        elif choice == "3":
-            _cmd_schedule_fetch(argparse.Namespace(from_date=None, till_date=None, days=7))
-        elif choice == "4":
-            _cmd_schedule_sync(argparse.Namespace(from_date=None, till_date=None, days=7))
-        elif choice == "5":
-            _cmd_sync_all(argparse.Namespace())
-        elif choice == "6":
-            st = scheduler.get_schedule_status()
-            st_text = (
-                f"\033[92mENABLED (Next: {st.get('next_run', 'N/A')})\033[0m"
-                if st.get("enabled")
-                else "\033[90mDISABLED\033[0m"
-            )
-            print("\n" + "-" * 55)
-            print(f"Daily Auto-Sync Status: {st_text}")
-            print("-" * 55)
-            print("  a) Enable / Update daily sync time (Default: 08:00)")
-            print("  b) Check status and next scheduled run")
-            print("  c) View recent auto-sync logs (~/.deadliner/sync.log)")
-            print("  d) Disable daily auto-sync")
-            print("  e) Back")
-            try:
-                cron_choice = input("Choice [a/b/c/d/e]: ").strip().lower()
-            except (KeyboardInterrupt, EOFError):
-                continue
-            if cron_choice == "a":
-                time_in = input("Enter daily sync time (HH:MM in 24h, default 08:00): ").strip() or "08:00"
-                _cmd_cron_enable(argparse.Namespace(time=time_in))
-            elif cron_choice == "b":
-                _cmd_cron_status(argparse.Namespace())
-            elif cron_choice == "c":
-                _cmd_cron_logs(argparse.Namespace())
-            elif cron_choice == "d":
-                _cmd_cron_disable(argparse.Namespace())
-        elif choice == "7":
-            print("\nSelect service to configure:")
-            print("  a) Moodle Login")
-            print("  b) Google OAuth (Classroom & Calendar)")
-            print("  c) KSE Schedule Token")
-            print("  d) Back")
-            try:
-                sub_choice = input("Choice [a/b/c/d]: ").strip().lower()
-            except (KeyboardInterrupt, EOFError):
-                continue
-            if sub_choice == "a":
-                from deadliner.auth import _cmd_login_moodle
+        match choice:
+            case "1":
+                _cmd_fetch(argparse.Namespace())
+            case "2":
+                _cmd_sync(argparse.Namespace())
+            case "3":
+                _cmd_schedule_fetch(argparse.Namespace(from_date=None, till_date=None, days=7))
+            case "4":
+                _cmd_schedule_sync(argparse.Namespace(from_date=None, till_date=None, days=7))
+            case "5":
+                _cmd_sync_all(argparse.Namespace())
+            case "6":
+                st = scheduler.get_schedule_status()
+                st_text = (
+                    f"\033[92mENABLED (Next: {st.get('next_run', 'N/A')})\033[0m"
+                    if st.get("enabled")
+                    else "\033[90mDISABLED\033[0m"
+                )
+                print("\n" + "-" * 55)
+                print(f"Daily Auto-Sync Status: {st_text}")
+                print("-" * 55)
+                print("  a) Enable / Update daily sync time (Default: 08:00)")
+                print("  b) Check status and next scheduled run")
+                print("  c) View recent auto-sync logs (~/.deadliner/sync.log)")
+                print("  d) Disable daily auto-sync")
+                print("  e) Back")
+                try:
+                    cron_choice = input("Choice [a/b/c/d/e]: ").strip().lower()
+                except (KeyboardInterrupt, EOFError):
+                    continue
+                match cron_choice:
+                    case "a":
+                        time_in = input("Enter daily sync time (HH:MM in 24h, default 08:00): ").strip() or "08:00"
+                        _cmd_cron_enable(argparse.Namespace(time=time_in))
+                    case "b":
+                        _cmd_cron_status(argparse.Namespace())
+                    case "c":
+                        _cmd_cron_logs(argparse.Namespace())
+                    case "d":
+                        _cmd_cron_disable(argparse.Namespace())
+                    case "e" | "q" | "back":
+                        pass
+                    case _:
+                        print("Invalid choice.")
+            case "7":
+                print("\nSelect service to configure:")
+                print("  a) Moodle Login")
+                print("  b) Google OAuth (Classroom & Calendar)")
+                print("  c) KSE Schedule Token")
+                print("  d) Back")
+                try:
+                    sub_choice = input("Choice [a/b/c/d]: ").strip().lower()
+                except (KeyboardInterrupt, EOFError):
+                    continue
+                match sub_choice:
+                    case "a":
+                        from deadliner.auth import _cmd_login_moodle
 
-                _cmd_login_moodle(argparse.Namespace())
-            elif sub_choice == "b":
-                _cmd_login_google(argparse.Namespace(client_secrets=None))
-            elif sub_choice == "c":
-                from deadliner.kse_auth import _cmd_login_kse
+                        _cmd_login_moodle(argparse.Namespace())
+                    case "b":
+                        _cmd_login_google(argparse.Namespace(client_secrets=None))
+                    case "c":
+                        from deadliner.kse_auth import _cmd_login_kse
 
-                _cmd_login_kse(argparse.Namespace())
-        elif choice in ("8", "q", "exit"):
-            print("Goodbye!")
-            return 0
-        else:
-            print("Invalid selection. Please choose 1-8.")
+                        _cmd_login_kse(argparse.Namespace())
+                    case "d" | "q" | "back":
+                        pass
+                    case _:
+                        print("Invalid choice.")
+            case "8" | "q" | "exit":
+                print("Goodbye!")
+                return 0
+            case _:
+                print("Invalid selection. Please choose 1-8.")
 
 
 def main(argv: list[str] | None = None) -> None:
