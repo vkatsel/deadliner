@@ -191,12 +191,56 @@ def test_cli_sync_all(monkeypatch):
     assert synced == ["deadlines", "schedule"]
 
 
+def test_append_sync_log_and_read_logs(tmp_path, monkeypatch):
+    log_dir = tmp_path / ".deadliner"
+    log_file = log_dir / "sync.log"
+    monkeypatch.setattr(scheduler, "DEADLINER_DIR", log_dir)
+    monkeypatch.setattr(scheduler, "LOG_FILE", log_file)
+
+    scheduler.append_sync_log("Test log entry 1")
+    scheduler.append_sync_log("Test log entry 2")
+
+    logs = scheduler.get_recent_logs()
+    assert len(logs) == 2
+    assert "Test log entry 1" in logs[0]
+    assert "Test log entry 2" in logs[1]
+
+
+def test_cli_cron_logs_command(monkeypatch, capsys):
+    monkeypatch.setattr(
+        scheduler,
+        "get_recent_logs",
+        lambda max_lines=30: ["[2026-09-04 08:00:00] [SYNC-ALL] Completed successfully"],
+    )
+
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["cron", "logs"])
+    assert exc.value.code == 0
+    assert "Completed successfully" in capsys.readouterr().out
+
+
+def test_cli_logs_shortcut_command(monkeypatch, capsys):
+    monkeypatch.setattr(
+        scheduler,
+        "get_recent_logs",
+        lambda max_lines=30: ["[2026-09-04 08:00:00] [SYNC-ALL] Completed successfully"],
+    )
+
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["logs"])
+    assert exc.value.code == 0
+    assert "Completed successfully" in capsys.readouterr().out
+
+
 def test_cli_menu_auto_sync_submenu(monkeypatch, capsys):
-    inputs = iter(["6", "a", "07:30", "6", "b", "6", "c", "8"])
+    inputs = iter(["6", "a", "07:30", "6", "b", "6", "c", "6", "d", "8"])
     monkeypatch.setattr("builtins.input", lambda prompt="": next(inputs))
 
     monkeypatch.setattr(scheduler, "enable_schedule", lambda t: (True, f"Task set for {t}"))
     monkeypatch.setattr(scheduler, "get_schedule_status", lambda: {"enabled": True, "next_run": "07:30"})
+    monkeypatch.setattr(
+        scheduler, "get_recent_logs", lambda max_lines=30: ["[2026-09-04 07:30:00] [SYNC-ALL] Log test"]
+    )
     monkeypatch.setattr(scheduler, "disable_schedule", lambda: (True, "Task disabled"))
 
     with pytest.raises(SystemExit) as exc:
@@ -205,4 +249,6 @@ def test_cli_menu_auto_sync_submenu(monkeypatch, capsys):
     assert exc.value.code == 0
     out = capsys.readouterr().out
     assert "Task set for 07:30" in out
+    assert "Log test" in out
     assert "Task disabled" in out
+

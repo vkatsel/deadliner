@@ -177,3 +177,33 @@ def get_schedule_status() -> dict:
             return {"enabled": False, "details": "No Deadliner task in crontab."}
         except Exception as e:
             return {"enabled": False, "error": str(e)}
+
+
+from datetime import datetime
+from pathlib import Path
+
+DEADLINER_DIR = Path.home() / ".deadliner"
+LOG_FILE = DEADLINER_DIR / "sync.log"
+
+
+def append_sync_log(message: str) -> None:
+    """Append a timestamped log entry to ~/.deadliner/sync.log."""
+    try:
+        DEADLINER_DIR.mkdir(parents=True, exist_ok=True)
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with open(LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(f"[{now_str}] {message}\n")
+    except Exception as e:
+        logger.debug(f"Failed to write to sync.log: {e}")
+
+
+def get_recent_logs(max_lines: int = 25) -> list[str]:
+    """Return the last max_lines from ~/.deadliner/sync.log."""
+    if not LOG_FILE.exists():
+        return []
+    try:
+        lines = LOG_FILE.read_text(encoding="utf-8").splitlines()
+        return lines[-max_lines:]
+    except Exception:
+        return []
+

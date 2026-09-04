@@ -268,6 +268,9 @@ def _cmd_schedule_sync(args: argparse.Namespace) -> int:
 
 def _cmd_sync_all(args: argparse.Namespace) -> int:
     """Synchronize both deadlines (Moodle/Classroom) and KSE class schedule to Google Calendar."""
+    from deadliner.scheduler import append_sync_log
+
+    append_sync_log("[SYNC-ALL] Started synchronization")
     print("\n" + "=" * 55)
     print("  DEADLINER — Syncing All (Deadlines + KSE Schedule)")
     print("=" * 55 + "\n")
@@ -278,13 +281,16 @@ def _cmd_sync_all(args: argparse.Namespace) -> int:
     print("\n[2/2] Syncing KSE Classes...")
     schedule_code = _cmd_schedule_sync(args)
 
+    res_code = max(deadlines_code, schedule_code)
     print("\n" + "=" * 55)
-    if deadlines_code == 0 and schedule_code == 0:
+    if res_code == 0:
         print("  All sync tasks completed successfully!")
+        append_sync_log("[SYNC-ALL] Completed successfully (code 0)")
     else:
         print("  Sync completed with warnings/errors. Check logs above.")
+        append_sync_log(f"[SYNC-ALL] Completed with exit code {res_code}")
     print("=" * 55 + "\n")
-    return max(deadlines_code, schedule_code)
+    return res_code
 
 
 def _cmd_cron_enable(args: argparse.Namespace) -> int:
@@ -333,6 +339,28 @@ def _cmd_cron_status(args: argparse.Namespace) -> int:
             print(f"  Info:       {status['details']}")
     print("=" * 50 + "\n")
     return 0
+
+
+def _cmd_cron_logs(args: argparse.Namespace | None = None) -> int:
+    from deadliner import scheduler
+
+    logs = scheduler.get_recent_logs(max_lines=30)
+    print("\n" + "=" * 58)
+    print("  Deadliner Auto-Sync Execution Logs (~/.deadliner/sync.log)")
+    print("=" * 58)
+    if not logs:
+        print("  No sync logs recorded yet.")
+    else:
+        for line in logs:
+            if "error" in line.lower() or "failed" in line.lower():
+                print(f"  \033[91m{line}\033[0m")
+            elif "success" in line.lower():
+                print(f"  \033[92m{line}\033[0m")
+            else:
+                print(f"  {line}")
+    print("=" * 58 + "\n")
+    return 0
+
 
 
 def _cmd_login_google(args: argparse.Namespace) -> int:
@@ -421,10 +449,11 @@ def _cmd_menu(args: argparse.Namespace | None = None) -> int:
             print("-" * 55)
             print("  a) Enable / Update daily sync time (Default: 08:00)")
             print("  b) Check status and next scheduled run")
-            print("  c) Disable daily auto-sync")
-            print("  d) Back")
+            print("  c) View recent auto-sync logs (~/.deadliner/sync.log)")
+            print("  d) Disable daily auto-sync")
+            print("  e) Back")
             try:
-                cron_choice = input("Choice [a/b/c/d]: ").strip().lower()
+                cron_choice = input("Choice [a/b/c/d/e]: ").strip().lower()
             except (KeyboardInterrupt, EOFError):
                 continue
             if cron_choice == "a":
@@ -433,6 +462,8 @@ def _cmd_menu(args: argparse.Namespace | None = None) -> int:
             elif cron_choice == "b":
                 _cmd_cron_status(argparse.Namespace())
             elif cron_choice == "c":
+                _cmd_cron_logs(argparse.Namespace())
+            elif cron_choice == "d":
                 _cmd_cron_disable(argparse.Namespace())
         elif choice == "7":
             print("\nSelect service to configure:")
@@ -510,7 +541,7 @@ def main(argv: list[str] | None = None) -> None:
         sched_sync_parser.add_argument("--days", type=int, default=7, help="Number of days to sync (default: 7)")
         sched_sync_parser.set_defaults(func=_cmd_schedule_sync)
 
-        # deadliner cron [enable|disable|status]
+        # deadliner cron [enable|disable|status|logs]
         cron_parser = subparsers.add_parser("cron", help="manage daily 24h background auto-sync")
         cron_subparsers = cron_parser.add_subparsers(dest="cron_cmd", required=True)
 
@@ -523,6 +554,13 @@ def main(argv: list[str] | None = None) -> None:
 
         cron_status_parser = cron_subparsers.add_parser("status", help="check daily auto-sync status")
         cron_status_parser.set_defaults(func=_cmd_cron_status)
+
+        cron_logs_parser = cron_subparsers.add_parser("logs", help="view recent auto-sync logs")
+        cron_logs_parser.set_defaults(func=_cmd_cron_logs)
+
+        # deadliner logs (shortcut for deadliner cron logs)
+        logs_parser = subparsers.add_parser("logs", help="view recent auto-sync logs (~/.deadliner/sync.log)")
+        logs_parser.set_defaults(func=_cmd_cron_logs)
 
         # deadliner login [moodle|google|kse]
         login_parser = subparsers.add_parser("login", help="log in to a service")
