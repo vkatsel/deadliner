@@ -73,7 +73,7 @@ def test_get_valid_kse_token_falls_back_to_refresh(monkeypatch):
 
 def test_cmd_login_kse_invalid_token_format(monkeypatch, capsys):
     monkeypatch.setattr("builtins.input", lambda prompt: "/")
-    exit_code = _cmd_login_kse(argparse.Namespace())
+    exit_code = _cmd_login_kse(argparse.Namespace(manual=True))
     assert exit_code == 1
     err = capsys.readouterr().err
     assert "invalid jwt format" in err.lower()
@@ -84,7 +84,7 @@ def test_cmd_login_kse_rejected_by_api(monkeypatch, capsys):
     responses.add(responses.GET, KSE_SCHEDULE_VERIFY_URL, json={"error": "unauthorized"}, status=401)
     monkeypatch.setattr("builtins.input", lambda prompt: "header.payload.signature")
 
-    exit_code = _cmd_login_kse(argparse.Namespace())
+    exit_code = _cmd_login_kse(argparse.Namespace(manual=True))
     assert exit_code == 1
     err = capsys.readouterr().err
     assert "401 unauthorized" in err.lower()
@@ -100,10 +100,60 @@ def test_cmd_login_kse_success(tmp_path, monkeypatch, capsys):
     responses.add(responses.GET, KSE_SCHEDULE_VERIFY_URL, json={"groups": []}, status=200)
     monkeypatch.setattr("builtins.input", lambda prompt: "valid.jwt.token")
 
-    exit_code = _cmd_login_kse(argparse.Namespace())
+    exit_code = _cmd_login_kse(argparse.Namespace(manual=True))
     assert exit_code == 0
     out = capsys.readouterr().out
     assert "successfully verified and saved" in out.lower()
 
     token, _, _ = load_kse_credentials()
     assert token == "valid.jwt.token"
+
+
+@responses.activate
+def test_cmd_login_kse_1click_clipboard_sync(tmp_path, monkeypatch, capsys):
+    test_cfg = tmp_path / ".deadliner.json"
+    monkeypatch.setattr(kse_auth, "CONFIG_PATH", test_cfg)
+    monkeypatch.setenv("DEADLINER_KSE_TOKEN", "")
+    monkeypatch.setenv("DEADLINER_KSE_REFRESH_TOKEN", "")
+
+    monkeypatch.setattr(
+        kse_auth,
+        "login_kse_clipboard_sync",
+        lambda: ("browser.captured.token", "browser-refresh-token", "browser-sess-1", "Test Student"),
+    )
+    responses.add(responses.GET, KSE_SCHEDULE_VERIFY_URL, json={"groups": []}, status=200)
+
+    exit_code = _cmd_login_kse(argparse.Namespace(manual=False))
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    assert "successfully received kse credentials from clipboard" in out.lower()
+
+    token, refresh, sess = load_kse_credentials()
+    assert token == "browser.captured.token"
+    assert refresh == "browser-refresh-token"
+    assert sess == "browser-sess-1"
+
+
+def test_extract_credentials_from_json():
+    payload = {
+        "user": {
+            "token": "hdr.pay.sig",
+            "refreshToken": "ref-123",
+            "sessionId": "sess-456",
+            "profile": {"name": "Taras Shevchenko"},
+        }
+    }
+    creds = kse_auth._extract_credentials_from_text(json.dumps(payload))
+    assert creds is not None
+    assert creds == ("hdr.pay.sig", "ref-123", "sess-456", "Taras Shevchenko")
+
+
+def test_extract_credentials_from_raw_jwt():
+    creds = kse_auth._extract_credentials_from_text("eyJhbGciOi.payload.signature")
+    assert creds is not None
+    assert creds == ("eyJhbGciOi.payload.signature", "", "", "")
+
+
+def test_extract_credentials_invalid():
+    assert kse_auth._extract_credentials_from_text("not-a-token") is None
+    assert kse_auth._extract_credentials_from_text("") is None

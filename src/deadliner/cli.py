@@ -659,6 +659,11 @@ def main(argv: list[str] | None = None) -> None:
         from deadliner.kse_auth import _cmd_login_kse
 
         kse_login = login_subparsers.add_parser("kse", help="log in to KSE schedule")
+        kse_login.add_argument(
+            "--manual",
+            action="store_true",
+            help="use manual token copy-paste instead of 1-click browser sync",
+        )
         kse_login.set_defaults(func=_cmd_login_kse)
 
         args = parser.parse_args(argv)
