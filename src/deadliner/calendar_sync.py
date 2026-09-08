@@ -129,6 +129,8 @@ def _request(method: str, url: str, headers: dict, **kwargs) -> dict:
         raise AuthError("token rejected")
     response.raise_for_status()
 
+    if response.status_code == 204 or not response.content:
+        return {}
     return response.json()
 
 
@@ -211,15 +213,57 @@ def sync_to_calendar(assignments: list[Assignment], access_token: str) -> tuple[
     return created, updated, skipped
 
 
+def _fetch_gcal_schedule_events(headers: dict, time_min_utc: datetime, time_max_utc: datetime) -> list[dict]:
+    """Fetch existing Deadliner KSE schedule events from Google Calendar in the given UTC window."""
+    events = []
+    page_token = None
+
+    time_min_str = time_min_utc.isoformat()
+    if not time_min_str.endswith("Z") and "+00:00" not in time_min_str:
+        time_min_str += "Z"
+    elif "+00:00" in time_min_str:
+        time_min_str = time_min_str.replace("+00:00", "Z")
+
+    time_max_str = time_max_utc.isoformat()
+    if not time_max_str.endswith("Z") and "+00:00" not in time_max_str:
+        time_max_str += "Z"
+    elif "+00:00" in time_max_str:
+        time_max_str = time_max_str.replace("+00:00", "Z")
+
+    while True:
+        params: dict = {
+            "timeMin": time_min_str,
+            "timeMax": time_max_str,
+            "singleEvents": "true",
+            "maxResults": 250,
+        }
+        if page_token:
+            params["pageToken"] = page_token
+
+        data = _request("GET", f"{CALENDAR_API_BASE}/calendars/primary/events", headers, params=params)
+        for item in data.get("items", []):
+            deadliner_id = item.get("extendedProperties", {}).get("private", {}).get("deadliner_id")
+            if deadliner_id:
+                events.append(item)
+
+        page_token = data.get("nextPageToken")
+        if not page_token:
+            break
+
+    return events
+
+
 def sync_schedule_to_calendar(
     events: list[ScheduleEvent],
     access_token: str,
+    time_min: datetime | None = None,
+    time_max: datetime | None = None,
     return_details: bool = False,
-) -> tuple[int, int, int] | tuple[int, int, int, list[tuple[ScheduleEvent, str]]]:
-    """Push KSE schedule classes to Google Calendar as peacock blue events.
+) -> tuple[int, int, int, int] | tuple[int, int, int, int, list[tuple[ScheduleEvent | str, str]]]:
+    """Push KSE schedule classes to Google Calendar and delete cancelled ones in the given window.
 
     Idempotent: uses extendedProperties.private.deadliner_id to match and update.
-    Returns (created, updated, skipped) or (created, updated, skipped, item_statuses) if return_details=True.
+    Returns (created, updated, skipped, deleted) or with item_statuses if return_details=True.
     """
     if not access_token:
         logger.error("Schedule sync attempted without a Google access token")
@@ -229,8 +273,10 @@ def sync_schedule_to_calendar(
     created = 0
     updated = 0
     skipped = 0
-    statuses: list[tuple[ScheduleEvent, str]] = []
+    deleted = 0
+    statuses: list[tuple[ScheduleEvent | str, str]] = []
 
+    # 1. Upsert active events (POST new, PATCH changed/rescheduled, SKIP identical)
     for event in events:
         deadliner_id = _schedule_stable_id(event)
         payload = _schedule_event_payload(event)
@@ -273,7 +319,26 @@ def sync_schedule_to_calendar(
             created += 1
             statuses.append((event, "created"))
 
-    logger.debug(f"KSE schedule sync done: {created} created, {updated} updated, {skipped} skipped")
+    # 2. Reconcile and delete cancelled events in [time_min, time_max] window
+    if time_min and time_max:
+        active_ids = {_schedule_stable_id(e) for e in events} | {_schedule_legacy_stable_id(e) for e in events}
+        gcal_events = _fetch_gcal_schedule_events(headers, time_min, time_max)
+        for gcal_item in gcal_events:
+            gcal_deadliner_id = gcal_item.get("extendedProperties", {}).get("private", {}).get("deadliner_id")
+            if gcal_deadliner_id and gcal_deadliner_id not in active_ids:
+                event_id = gcal_item["id"]
+                _request(
+                    "DELETE",
+                    f"{CALENDAR_API_BASE}/calendars/primary/events/{event_id}",
+                    headers,
+                )
+                deleted += 1
+                summary = gcal_item.get("summary", "Cancelled Class")
+                statuses.append((summary, "deleted"))
+
+    logger.debug(
+        f"KSE schedule sync done: {created} created, {updated} updated, {skipped} skipped, {deleted} deleted"
+    )
     if return_details:
-        return created, updated, skipped, statuses
-    return created, updated, skipped
+        return created, updated, skipped, deleted, statuses
+    return created, updated, skipped, deleted

@@ -229,13 +229,36 @@ def _cmd_schedule_sync(args: argparse.Namespace) -> int:
         print("No KSE classes found to sync.")
         return 0
 
+    from deadliner.kse_fetcher import KYIV_TZ
+    from datetime import timezone
+
+    time_min_utc = (
+        datetime.fromisoformat(from_str)
+        .replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=KYIV_TZ)
+        .astimezone(timezone.utc)
+    )
+    time_max_utc = (
+        datetime.fromisoformat(till_str)
+        .replace(hour=23, minute=59, second=59, microsecond=999999, tzinfo=KYIV_TZ)
+        .astimezone(timezone.utc)
+    )
+
     try:
         print(f"Syncing {len(events)} classes to Google Calendar...")
         sync_result = calendar_sync.sync_schedule_to_calendar(
-            sort_schedule_events(events), g_token, return_details=True
+            sort_schedule_events(events),
+            g_token,
+            time_min=time_min_utc,
+            time_max=time_max_utc,
+            return_details=True,
         )
-        created, updated, skipped = sync_result[0], sync_result[1], sync_result[2]
-        statuses = sync_result[3] if len(sync_result) > 3 else []
+        created, updated, skipped, deleted = (
+            sync_result[0],
+            sync_result[1],
+            sync_result[2],
+            sync_result[3],
+        )
+        statuses = sync_result[4] if len(sync_result) > 4 else []
     except AuthError as e:
         print(f"\033[91merror: Google Calendar authentication failed: {e}\033[0m", file=sys.stderr)
         return 1
@@ -245,15 +268,21 @@ def _cmd_schedule_sync(args: argparse.Namespace) -> int:
 
     local_tz = datetime.now().astimezone().tzinfo
     print("-" * 65)
-    for event, status in statuses:
-        start_local = event.start_utc.astimezone(local_tz).strftime("%a %d %b %H:%M")
-        if status == "created":
-            tag = "\033[92m[+ Added to Calendar]\033[0m"
-        elif status == "updated":
-            tag = "\033[93m[~ Updated in Calendar]\033[0m"
+    for item, status in statuses:
+        if status == "deleted":
+            summary = item if isinstance(item, str) else getattr(item, "course_name", "Cancelled Class")
+            tag = "\033[91m[- Removed from Calendar]\033[0m"
+            print(f"{tag} {summary} (cancelled/removed)")
         else:
-            tag = "\033[90m[= Already in Calendar]\033[0m"
-        print(f"{tag} [{event.discipline}] {event.course_name} ({start_local})")
+            event = item
+            start_local = event.start_utc.astimezone(local_tz).strftime("%a %d %b %H:%M")
+            if status == "created":
+                tag = "\033[92m[+ Added to Calendar]\033[0m"
+            elif status == "updated":
+                tag = "\033[93m[~ Updated in Calendar]\033[0m"
+            else:
+                tag = "\033[90m[= Already in Calendar]\033[0m"
+            print(f"{tag} [{event.discipline}] {event.course_name} ({start_local})")
     print("-" * 65)
 
     print("\n" + "=" * 45)
@@ -262,6 +291,8 @@ def _cmd_schedule_sync(args: argparse.Namespace) -> int:
     print(f"Created:   {created}")
     print(f"Updated:   {updated}")
     print(f"Skipped:   {skipped} (already up-to-date)")
+    if deleted > 0:
+        print(f"Deleted:   {deleted} (cancelled/removed)")
     print("=" * 45 + "\n")
     return 0
 

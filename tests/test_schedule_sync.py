@@ -38,9 +38,9 @@ def test_sync_schedule_creates_new_event():
     responses.add(responses.GET, EVENTS_URL, json={"items": []}, status=200)
     responses.add(responses.POST, EVENTS_URL, json={"id": "gcal-evt-1"}, status=200)
 
-    created, updated, skipped = sync_schedule_to_calendar([_sample_schedule_event()], "google-token")
+    created, updated, skipped, deleted = sync_schedule_to_calendar([_sample_schedule_event()], "google-token")
 
-    assert created == 1 and updated == 0 and skipped == 0
+    assert created == 1 and updated == 0 and skipped == 0 and deleted == 0
     post_calls = [c for c in responses.calls if c.request.method == "POST"]
     assert len(post_calls) == 1
     payload = json.loads(post_calls[0].request.body.decode())
@@ -63,9 +63,9 @@ def test_sync_schedule_patches_modified_event():
     responses.add(responses.GET, EVENTS_URL, json={"items": [existing_event]}, status=200)
     responses.add(responses.PATCH, f"{EVENTS_URL}/gcal-old-evt", json={"id": "gcal-old-evt"}, status=200)
 
-    created, updated, skipped = sync_schedule_to_calendar([_sample_schedule_event()], "google-token")
+    created, updated, skipped, deleted = sync_schedule_to_calendar([_sample_schedule_event()], "google-token")
 
-    assert created == 0 and updated == 1 and skipped == 0
+    assert created == 0 and updated == 1 and skipped == 0 and deleted == 0
 
 
 @responses.activate
@@ -78,9 +78,9 @@ def test_sync_schedule_skips_identical_event():
 
     responses.add(responses.GET, EVENTS_URL, json={"items": [payload]}, status=200)
 
-    created, updated, skipped = sync_schedule_to_calendar([event], "google-token")
+    created, updated, skipped, deleted = sync_schedule_to_calendar([event], "google-token")
 
-    assert created == 0 and updated == 0 and skipped == 1
+    assert created == 0 and updated == 0 and skipped == 1 and deleted == 0
 
 
 def test_sync_schedule_missing_token_raises_auth_error():
@@ -89,8 +89,8 @@ def test_sync_schedule_missing_token_raises_auth_error():
 
 
 def test_sync_schedule_empty_list_makes_no_calls():
-    created, updated, skipped = sync_schedule_to_calendar([], "google-token")
-    assert (created, updated, skipped) == (0, 0, 0)
+    created, updated, skipped, deleted = sync_schedule_to_calendar([], "google-token")
+    assert (created, updated, skipped, deleted) == (0, 0, 0, 0)
 
 
 @responses.activate
@@ -117,7 +117,60 @@ def test_sync_schedule_backward_compatible_migration():
     # PATCH should be called to migrate deadliner_id to new_id
     responses.add(responses.PATCH, f"{EVENTS_URL}/gcal-legacy-evt", json={"id": "gcal-legacy-evt"}, status=200)
 
-    created, updated, skipped = sync_schedule_to_calendar([event], "google-token")
-    assert created == 0 and updated == 1 and skipped == 0
+    created, updated, skipped, deleted = sync_schedule_to_calendar([event], "google-token")
+    assert created == 0 and updated == 1 and skipped == 0 and deleted == 0
     assert len(responses.calls) == 3
+
+
+@responses.activate
+def test_sync_schedule_deletes_cancelled_event_in_window():
+    from deadliner.calendar_sync import _schedule_event_payload
+
+    event = _sample_schedule_event()
+    payload = _schedule_event_payload(event)
+    payload["id"] = "gcal-active-evt"
+
+    # Active event search in GCal
+    responses.add(responses.GET, EVENTS_URL, json={"items": [payload]}, status=200)
+
+    # Reconciliation search for the window [2026-09-01, 2026-09-07]
+    cancelled_event = {
+        "id": "gcal-cancelled-evt",
+        "summary": "[CS440] Cancelled Class",
+        "extendedProperties": {"private": {"deadliner_id": "sha256_of_old_cancelled_class"}},
+    }
+    responses.add(responses.GET, EVENTS_URL, json={"items": [payload, cancelled_event]}, status=200)
+    responses.add(responses.DELETE, f"{EVENTS_URL}/gcal-cancelled-evt", status=204)
+
+    t_min = datetime(2026, 9, 1, 0, 0, tzinfo=timezone.utc)
+    t_max = datetime(2026, 9, 7, 23, 59, tzinfo=timezone.utc)
+
+    created, updated, skipped, deleted, statuses = sync_schedule_to_calendar(
+        [event], "google-token", time_min=t_min, time_max=t_max, return_details=True
+    )
+
+    assert created == 0 and updated == 0 and skipped == 1 and deleted == 1
+    delete_calls = [c for c in responses.calls if c.request.method == "DELETE"]
+    assert len(delete_calls) == 1
+    assert delete_calls[0].request.url == f"{EVENTS_URL}/gcal-cancelled-evt"
+
+
+@responses.activate
+def test_sync_schedule_does_not_delete_without_time_window():
+    from deadliner.calendar_sync import _schedule_event_payload
+
+    event = _sample_schedule_event()
+    payload = _schedule_event_payload(event)
+    payload["id"] = "gcal-active-evt"
+
+    responses.add(responses.GET, EVENTS_URL, json={"items": [payload]}, status=200)
+
+    # Calling without time_min / time_max
+    created, updated, skipped, deleted = sync_schedule_to_calendar([event], "google-token")
+
+    assert created == 0 and updated == 0 and skipped == 1 and deleted == 0
+    delete_calls = [c for c in responses.calls if c.request.method == "DELETE"]
+    assert len(delete_calls) == 0
+
+
 

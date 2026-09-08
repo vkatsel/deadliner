@@ -78,7 +78,10 @@ def test_cli_schedule_sync_pushes_events(monkeypatch, capsys):
     monkeypatch.setattr(
         calendar_sync,
         "sync_schedule_to_calendar",
-        lambda events, token, *args, **kwargs: (synced_events.extend(events), (1, 0, 0, [(event, "created")]))[1],
+        lambda events, token, *args, **kwargs: (
+            synced_events.extend(events),
+            (1, 0, 0, 0, [(event, "created")]),
+        )[1],
     )
 
     with pytest.raises(SystemExit) as exc:
@@ -87,6 +90,36 @@ def test_cli_schedule_sync_pushes_events(monkeypatch, capsys):
     assert exc.value.code == 0
     assert synced_events == [event]
     assert "Created:   1" in capsys.readouterr().out
+
+
+def test_cli_schedule_sync_reports_deleted_events(monkeypatch, capsys):
+    monkeypatch.setattr(cli, "_load_credentials", lambda: ("", "", "google-token", "kse-token"))
+
+    from deadliner import calendar_sync, kse_fetcher
+
+    event = _mock_schedule_event()
+    monkeypatch.setattr(kse_fetcher, "fetch_kse_schedule", lambda **kwargs: [event])
+
+    monkeypatch.setattr(
+        calendar_sync,
+        "sync_schedule_to_calendar",
+        lambda events, token, *args, **kwargs: (
+            0,
+            0,
+            1,
+            1,
+            [(event, "skipped"), ("[CS440] Cancelled Class", "deleted")],
+        ),
+    )
+
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["schedule", "sync"])
+
+    assert exc.value.code == 0
+    out = capsys.readouterr().out
+    assert "Deleted:   1" in out
+    assert "[- Removed from Calendar]" in out
+
 
 
 def test_cli_menu_exit(monkeypatch):
