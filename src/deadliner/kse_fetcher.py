@@ -88,7 +88,13 @@ def _parse_single_event(raw_event: dict, default_date: str = "") -> ScheduleEven
 
     discipline = raw_event.get("discipline") or ""
     course_name = raw_event.get("course_name") or raw_event.get("title") or discipline or "KSE Class"
-    event_type = raw_event.get("event_type") or "lecture"
+    raw_type = str(raw_event.get("event_type") or raw_event.get("type") or "lecture").strip().lower()
+    if raw_type in ("practice", "practicum", "практика", "семінар", "seminar"):
+        event_type = "practice"
+    elif raw_type in ("lecture", "лекція"):
+        event_type = "lecture"
+    else:
+        event_type = raw_type
     subgroup = raw_event.get("subgroup")
     if subgroup is not None:
         try:

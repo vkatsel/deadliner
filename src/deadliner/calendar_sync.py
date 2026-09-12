@@ -13,8 +13,12 @@ CALENDAR_API_BASE = "https://www.googleapis.com/calendar/v3"
 #: Google Calendar colorId "11" is red — deadlines should be impossible to miss.
 EVENT_COLOR_ID = "11"
 
-#: Google Calendar colorId "2" is Green - for KSE classes.
+#: Google Calendar colorId "2" is Sage (Green) - for KSE lectures / default classes.
 SCHEDULE_EVENT_COLOR_ID = "2"
+SCHEDULE_LECTURE_COLOR_ID = "2"
+
+#: Google Calendar colorId "7" is Peacock (Light Blue / Teal) - for KSE practice sessions.
+SCHEDULE_PRACTICE_COLOR_ID = "7"
 
 #: The event ends exactly at the deadline and starts this many minutes before it,
 #: so the calendar block visually points at the cutoff moment (US-03: a midnight
@@ -106,13 +110,19 @@ def _schedule_event_payload(event: ScheduleEvent) -> dict:
         desc_lines.append(f"Коментар: {event.comment}")
     description = "\n".join(desc_lines)
 
+    color_id = (
+        SCHEDULE_PRACTICE_COLOR_ID
+        if event.event_type.lower() == "practice"
+        else SCHEDULE_LECTURE_COLOR_ID
+    )
+
     return {
         "summary": summary,
         "location": location,
         "description": description,
         "start": {"dateTime": event.start_utc.isoformat()},
         "end": {"dateTime": event.end_utc.isoformat()},
-        "colorId": SCHEDULE_EVENT_COLOR_ID,
+        "colorId": color_id,
         "extendedProperties": {"private": {"deadliner_id": _schedule_stable_id(event)}},
     }
 

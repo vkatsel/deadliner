@@ -6,6 +6,8 @@ import responses
 from deadliner.calendar_sync import (
     CALENDAR_API_BASE,
     SCHEDULE_EVENT_COLOR_ID,
+    SCHEDULE_LECTURE_COLOR_ID,
+    SCHEDULE_PRACTICE_COLOR_ID,
     sync_schedule_to_calendar,
 )
 from deadliner.models import AuthError, ScheduleEvent
@@ -49,6 +51,40 @@ def test_sync_schedule_creates_new_event():
     assert "Ауд. 1.08, Укриття S06" in payload["location"]
     assert "Викладач: Iryna Rozora" in payload["description"]
     assert "deadliner_id" in payload["extendedProperties"]["private"]
+
+
+@responses.activate
+def test_sync_schedule_practice_event_color():
+    responses.add(responses.GET, EVENTS_URL, json={"items": []}, status=200)
+    responses.add(responses.GET, EVENTS_URL, json={"items": []}, status=200)
+    responses.add(responses.POST, EVENTS_URL, json={"id": "gcal-evt-practice"}, status=200)
+
+    practice_event = ScheduleEvent(
+        event_id="evt-practice-1",
+        discipline="SEBA2000",
+        course_name="Software Engineering",
+        event_type="practice",
+        subgroup=1,
+        date="2026-09-03",
+        period=2,
+        start_utc=datetime(2026, 9, 3, 7, 0, tzinfo=timezone.utc),
+        end_utc=datetime(2026, 9, 3, 8, 20, tzinfo=timezone.utc),
+        room="2.04",
+        shelter="S02",
+        teacher="Volodymyr Saviak",
+        zoom_url="",
+        comment="",
+    )
+
+    created, updated, skipped, deleted = sync_schedule_to_calendar([practice_event], "google-token")
+    assert created == 1 and updated == 0 and skipped == 0 and deleted == 0
+
+    post_calls = [c for c in responses.calls if c.request.method == "POST"]
+    assert len(post_calls) == 1
+    payload = json.loads(post_calls[0].request.body.decode())
+    assert payload["summary"] == "[SEBA2000] Software Engineering (Практика)"
+    assert payload["colorId"] == SCHEDULE_PRACTICE_COLOR_ID
+    assert payload["colorId"] == "7"  # Peacock (Light blue)
 
 
 @responses.activate
