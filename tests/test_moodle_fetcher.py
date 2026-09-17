@@ -37,6 +37,32 @@ def test_fetch_moodle_valid_token_returns_assignments():
 
 
 @responses.activate
+def test_fetch_moodle_strips_year_from_course_shortname():
+    base_url = "https://moodle.example.com"
+    token = "valid-token"
+
+    responses.add(
+        responses.GET,
+        "https://moodle.example.com/webservice/rest/server.php",
+        json={
+            "events": [
+                {"name": "HW1", "course": {"shortname": "STAT2100-2024"}, "timestart": 1718449200, "url": "url1"},
+                {"name": "HW2", "course": {"shortname": "SEBA2000_2025"}, "timestart": 1718449200, "url": "url2"},
+                {"name": "HW3", "course": {"shortname": "CS101 2026"}, "timestart": 1718449200, "url": "url3"},
+                {"name": "HW4", "course": {"shortname": "ML2000"}, "timestart": 1718449200, "url": "url4"},
+            ]
+        },
+        status=200,
+    )
+
+    result = fetch_moodle(base_url, token)
+
+    assert len(result) == 4
+    assert result[0].course_shortname == "STAT2100"
+    assert result[1].course_shortname == "SEBA2000"
+    assert result[2].course_shortname == "CS101"
+    assert result[3].course_shortname == "ML2000"
+@responses.activate
 def test_fetch_moodle_empty_calendar_returns_empty_list():
     base_url = "https://moodle.example.com"
     token = "valid-token-empty-account"

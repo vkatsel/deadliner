@@ -1,4 +1,5 @@
 import logging
+import re
 import requests
 from datetime import datetime, timezone
 from deadliner.models import Assignment, AuthError
@@ -45,6 +46,8 @@ def fetch_moodle(base_url: str, token: str) -> list[Assignment]:
 
         course = event.get("course")
         course_shortname = course.get("shortname", "") if isinstance(course, dict) else ""
+        if course_shortname:
+            course_shortname = re.sub(r'[-_\s]20\d{2}$', '', course_shortname).strip()
 
         due_timestamp = event.get("timestart")
         if not due_timestamp or due_timestamp == 0:
