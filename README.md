@@ -144,6 +144,7 @@ deadliner login kse
 | `deadliner login moodle` | Interactive Moodle login prompt |
 | `deadliner login google` | Authenticate Google Calendar & Classroom via OAuth2 |
 | `deadliner login kse` | Connect KSE university schedule account |
+| `deadliner setup-path` | Permanently add `deadliner` to system PATH (Windows / Linux / macOS) |
 
 ---
 
@@ -178,11 +179,12 @@ src/deadliner/
 ├── kse_auth.py         # KSE schedule token extraction & auto-refresh
 ├── kse_fetcher.py      # KSE schedule REST API client
 ├── moodle_fetcher.py   # Moodle core_calendar API client
+├── path_util.py        # Cross-platform PATH configuration & executable detection
 └── scheduler.py        # OS-native task scheduler (Windows schtasks / Unix cron)
 ```
 
 ### Running Tests
-Deadliner is backed by a comprehensive test suite (134 tests) with zero external network dependencies (mocked via `responses` and `monkeypatch`):
+Deadliner is backed by a comprehensive test suite (141 tests) with zero external network dependencies (mocked via `responses` and `monkeypatch`):
 
 ```bash
 pytest
@@ -191,6 +193,13 @@ pytest
 ---
 
 ## ❓ FAQ & Troubleshooting
+
+### Q: `deadliner: command not found` after running `pip install`?
+**A:** If Python's `Scripts/` or `bin/` directory is not yet in your system PATH, run:
+```bash
+python -m deadliner setup-path
+```
+Deadliner will automatically detect your OS (Windows Registry or Linux/macOS `.bashrc`/`.zshrc`), configure your PATH permanently, and broadcast the environment update without requiring a full restart. You can also configure this from `deadliner menu` -> **Option 7** (`f`).
 
 ### Q: Google displays "Google hasn't verified this app" during login.
 **A:** Because you created a personal Google Cloud project, Google displays this warning for unverified desktop apps. Click **Advanced** &rarr; **Go to Deadliner (unsafe)** &rarr; Grant calendar permissions. Your tokens remain strictly local on your machine.

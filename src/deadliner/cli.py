@@ -606,6 +606,31 @@ def _cmd_config_classroom(args: argparse.Namespace) -> int:
         return 2
 
 
+def _cmd_setup_path(args: argparse.Namespace) -> int:
+    """Check and add Deadliner to the user's permanent PATH."""
+    from deadliner import path_util
+
+    print("\n" + "=" * 55)
+    print("  Deadliner System PATH Configuration")
+    print("=" * 55)
+    if path_util.is_on_path():
+        print("✓ The `deadliner` command is already configured in your PATH.")
+        print("You can run `deadliner` directly from any terminal window.")
+        print("=" * 55 + "\n")
+        return 0
+
+    print("Configuring PATH so you can type `deadliner` anywhere...")
+    success, msg = path_util.add_to_path()
+    if success:
+        print(f"\033[92m{msg}\033[0m")
+        print("=" * 55 + "\n")
+        return 0
+    else:
+        print(f"\033[91m{msg}\033[0m", file=sys.stderr)
+        print("=" * 55 + "\n")
+        return 1
+
+
 def _get_cron_badge() -> str:
     from deadliner import scheduler
 
@@ -697,16 +722,20 @@ def _cmd_menu(args: argparse.Namespace | None = None) -> int:
                     case _:
                         print("Invalid choice.")
             case "7":
+                from deadliner import path_util
+
                 cr_badge = "\033[92m[Enabled]\033[0m" if is_classroom_sync_enabled() else "\033[90m[Disabled]\033[0m"
+                path_badge = "\033[92m[In PATH]\033[0m" if path_util.is_on_path() else "\033[93m[Not in PATH]\033[0m"
                 print("\nSelect service to configure:")
                 print("  a) Moodle Login")
                 print("  b) Google OAuth (Classroom & Calendar)")
                 print("  c) KSE Schedule Token")
                 print(f"  d) Toggle Google Classroom Sync {cr_badge}")
                 print("  e) Import / Update Google Client Secrets (client_secret.json)")
-                print("  f) Back")
+                print(f"  f) Configure System PATH {path_badge}")
+                print("  g) Back")
                 try:
-                    sub_choice = input("Choice [a/b/c/d/e/f]: ").strip().lower()
+                    sub_choice = input("Choice [a/b/c/d/e/f/g]: ").strip().lower()
                 except (KeyboardInterrupt, EOFError):
                     continue
                 match sub_choice:
@@ -728,7 +757,9 @@ def _cmd_menu(args: argparse.Namespace | None = None) -> int:
                         print(f"Google Classroom sync {msg}.")
                     case "e":
                         _interactive_setup_client_secrets()
-                    case "f" | "q" | "back":
+                    case "f":
+                        _cmd_setup_path(argparse.Namespace())
+                    case "g" | "q" | "back":
                         pass
                     case _:
                         print("Invalid choice.")
@@ -852,6 +883,10 @@ def main(argv: list[str] | None = None) -> None:
             help="use manual token copy-paste instead of 1-click browser sync",
         )
         kse_login.set_defaults(func=_cmd_login_kse)
+
+        # deadliner setup-path
+        path_parser = subparsers.add_parser("setup-path", help="add deadliner to user environment PATH")
+        path_parser.set_defaults(func=_cmd_setup_path)
 
         args = parser.parse_args(argv)
         sys.exit(args.func(args))
