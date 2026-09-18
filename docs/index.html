@@ -9,9 +9,6 @@
   <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
-  <!-- Dynamic Illuminating Glow -->
-  <div class="ambient-glow" id="ambient-glow" aria-hidden="true"></div>
-
   <!-- Site Header / Navigation -->
   <header class="site-header">
     <div class="container nav-wrap">
@@ -568,34 +565,6 @@
           btn.textContent = orig;
           btn.style.color = '';
         }, 2000);
-      });
-    }
-
-    // Dynamic Illuminating Ambient Glow (tracks pointer & reacts to scroll)
-    const glow = document.getElementById('ambient-glow');
-    if (glow) {
-      let mouseX = window.innerWidth / 2;
-      let mouseY = 260;
-      let currentX = mouseX;
-      let currentY = mouseY;
-
-      window.addEventListener('pointermove', (e) => {
-        mouseX = e.clientX;
-        mouseY = e.clientY;
-      });
-
-      function animateGlow() {
-        currentX += (mouseX - currentX) * 0.08;
-        currentY += (mouseY - currentY) * 0.08;
-        glow.style.transform = `translate(${currentX}px, ${currentY}px) translate(-50%, -50%)`;
-        requestAnimationFrame(animateGlow);
-      }
-      animateGlow();
-
-      window.addEventListener('scroll', () => {
-        const scrollY = window.scrollY;
-        const opacity = Math.max(0.35, 1 - scrollY / 1200);
-        glow.style.opacity = opacity;
       });
     }
   </script>

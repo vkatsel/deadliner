@@ -1,107 +1,210 @@
 # Deadliner
 
-Deadliner is an academic CLI hub that fetches upcoming assignments (Moodle, Google Classroom) and university class schedules (KSE Schedule) and displays them in your local timezone. You can also sync everything directly to your personal Google Calendar with automatic deduplication and color-coding.
+<div align="center">
+  <img src="docs/assets/logo.png" alt="Deadliner Logo" width="120" height="120" style="border-radius: 20px;">
+  <h3>Academic Hub & Google Calendar Synchronization Utility</h3>
+  <p>
+    <strong>Never miss a university deadline or class again.</strong><br>
+    Unified, local-first aggregation of Moodle, Google Classroom, and KSE Schedule directly into your Google Calendar.
+  </p>
+
+  <p>
+    <a href="https://github.com/vkatsel/deadliner/actions"><img src="https://img.shields.io/badge/tests-134%20passed%20(100%25)-brightgreen?style=flat-square" alt="Tests"></a>
+    <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.10%2B-blue?style=flat-square" alt="Python Version"></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-purple?style=flat-square" alt="License"></a>
+    <a href="https://vkatsel.github.io/deadliner/"><img src="https://img.shields.io/badge/docs-GitHub%20Pages-039be5?style=flat-square" alt="Docs"></a>
+    <a href="https://github.com/vkatsel/deadliner/releases/latest"><img src="https://img.shields.io/badge/release-v1.5.6-57d296?style=flat-square" alt="Release"></a>
+  </p>
+</div>
 
 ---
 
-## Quickstart
+## 🎯 What is Deadliner?
+
+Students often navigate fragmented platforms: **Moodle LMS** for assignments, **Google Classroom** for seminar tasks, and **KSE Schedule** for university timetable updates.
+
+**Deadliner** is an ADHD- and anxiety-informed, local-first command-line tool that brings all academic obligations into a single, beautifully organized Google Calendar.
+
+### ✨ Key Features
+
+- 🎯 **All-in-One Academic Aggregation:** Collects upcoming deadlines from Moodle & Google Classroom and class schedules from schedule.kse.ua.
+- 🎨 **Strict Visual Color Coding in Google Calendar:**
+  - 🔴 **Tomato Red (`#D50000`, Color #11):** Deadlines & coursework (with unambiguous midnight cutoff indicators: e.g., `23:59 (midnight cutoff)`).
+  - 🟢 **Sage Green (`#33B679`, Color #2):** KSE Lectures & standard academic classes.
+  - 🔵 **Peacock Blue (`#039BE5`, Color #7):** KSE Practices, labs, and interactive seminars.
+- ⚡ **1-Click KSE Schedule Sync:** Clipboard-assisted login that bypasses browser Cross-Origin restrictions with automatic JWT token refresh.
+- 🧹 **Cancellation & Rescheduling Reconciliation:** Cancelled or moved KSE classes are automatically purged or updated in Google Calendar upon synchronization.
+- ⏰ **24h Background Auto-Sync (Cron):** Zero-maintenance automated daily background synchronization via native Windows Task Scheduler or Unix crontab.
+- ⚙️ **Granular Controls:** Ability to toggle Google Classroom sync on/off independently (`deadliner config classroom off`).
+- 🔒 **Zero-Knowledge Privacy:** All tokens (`~/.deadliner.json`, `~/.deadliner_google_token.json`) are stored strictly on your machine. No telemetry, no third-party servers.
+
+---
+
+## 🚀 Quickstart
 
 ### 1. Installation
 
-Clone the repository and install in editable mode (so `deadliner` is available anywhere in your terminal):
+Clone the repository and install into your Python environment:
 
 ```bash
-git clone https://github.com/CS460-SEP-2026/greenfield.git
-cd greenfield
+git clone https://github.com/vkatsel/deadliner.git
+cd deadliner
 pip install -e .
 ```
 
----
-
-### 2. Configuration & Login
-
-**Log in to Moodle:**
+*Or install directly via pip:*
 ```bash
-deadliner login moodle
+pip install git+https://github.com/vkatsel/deadliner.git
 ```
-*(Prompts for your Moodle URL, username, and password, saving the token to `~/.deadliner.json`)*
-
-**Log in to Google (Calendar & Classroom):**
-1. Create a project in [Google Cloud Console](https://console.cloud.google.com/).
-2. Enable **Google Calendar API** and **Google Classroom API**.
-3. Create an OAuth Client ID (**Application Type: Desktop App**) and download `client_secret.json` into the root of this project.
-4. Run:
-```bash
-deadliner login google
-```
-
-**Log in to KSE Schedule:**
-```bash
-deadliner login kse
-```
-*(Quick 1-step login using your browser session token from `schedule.kse.ua`. Token auto-refreshes seamlessly in the background!)*
 
 ---
 
-### 3. Usage
+### 2. Interactive Navigation (Recommended)
 
-#### Interactive Menu (Recommended)
-Simply run `deadliner` with no arguments (or double-click `run_deadliner.bat` on Windows):
+Simply type `deadliner` with no arguments to launch the full-featured interactive menu:
+
 ```bash
 deadliner
 ```
 
-#### Fetch Deadlines & Classes
-- **Fetch Deadlines:**
-  ```bash
-  deadliner fetch
-  ```
-- **Fetch KSE Classes (Next 7 days):**
-  ```bash
-  deadliner schedule fetch
-  ```
-  *(Options: `--days 14`, `--from 2026-09-01 --till 2026-09-10`)*
+```text
+==========================================================
+  DEADLINER — Academic Hub & Calendar Sync
+==========================================================
+[ Deadlines & Coursework ]
+  1. Fetch upcoming deadlines (Moodle & Classroom)
+  2. Sync deadlines to Google Calendar [Red]
 
-#### Sync to Google Calendar
-- **Sync Everything (Deadlines + KSE Classes):**
-  ```bash
-  deadliner sync-all
-  ```
-- **Sync Deadlines only (Tomato Red):**
-  ```bash
-  deadliner sync
-  ```
-- **Sync KSE Classes only (Sage Green):**
-  ```bash
-  deadliner schedule sync
-  ```
+[ KSE University Schedule ]
+  3. Fetch KSE class schedule (Next 7 days)
+  4. Sync KSE class schedule to Google Calendar [Green]
 
-#### 24h Background Auto-Sync (Cron)
-Automatically sync Deadlines and KSE classes every day in the background without keeping the app open:
-- **Enable daily sync (e.g. at 08:00 AM):**
-  ```bash
-  deadliner cron enable --time 08:00
-  ```
-- **Check schedule status & next run:**
-  ```bash
-  deadliner cron status
-  ```
-- **View auto-sync execution logs (`~/.deadliner/sync.log`):**
-  ```bash
-  deadliner logs
-  ```
-- **Disable auto-sync:**
-  ```bash
-  deadliner cron disable
-  ```
+[ Automation & All-in-One ]
+  5. Sync Everything [Deadlines + KSE Schedule]
+  6. Auto-Sync Background Scheduler       [Active @ 08:00]
+
+[ Account & Settings ]
+  7. Login / Configure Services (Moodle / Google / KSE)
+  8. Exit
+==========================================================
+Select an option [1-8]:
+```
 
 ---
 
-### 4. Run Tests
+## 🔐 Authentication & Service Setup
 
-Run the full test suite with one command:
+Configure all services in one place via `deadliner menu` -> **Option 7**, or use standalone commands:
+
+### 1. Moodle LMS
 ```bash
-pytest -v tests/
+deadliner login moodle
+```
+- **Moodle URL:** `https://teaching.kse.org.ua` (press Enter to accept default).
+- **Username & Password:** Enter your login credentials.
+- *Tip for Google SSO users:* If you normally sign in with the Google button on the web, ensure your account has a local password set, or consult the setup prompt tip.
+
+### 2. Google OAuth (Classroom & Calendar)
+```bash
+deadliner login google
+```
+- Deadliner prompts you to paste your Google OAuth `client_secret.json` or enter your Client ID & Secret directly.
+- **Need a Google Cloud project?** Follow our step-by-step Ukrainian tutorial:
+  - 📖 [Google Cloud Setup Guide (Markdown)](docs/specs/google_setup_guide.md)
+  - 🌐 [Web Guide (HTML)](https://vkatsel.github.io/deadliner/google_setup_guide.html)
+- *Import secrets directly without login:* `deadliner menu` -> Option `7` -> `e`.
+
+### 3. KSE University Schedule
+```bash
+deadliner login kse
+```
+- Opens `schedule.kse.ua` in your browser.
+- Open DevTools (`F12`) -> **Application** -> **Local Storage** -> Copy the `auth` token.
+- Paste it into the terminal (or Deadliner reads it automatically from your clipboard with 1-click sync).
+- Tokens are automatically refreshed in the background!
+
+---
+
+## 💻 Complete CLI Reference
+
+| Command | Description |
+|---|---|
+| `deadliner` or `deadliner menu` | Open the interactive navigation menu |
+| `deadliner fetch` | Print upcoming deadlines from Moodle and Google Classroom |
+| `deadliner sync` | Sync deadlines to Google Calendar as Tomato Red events |
+| `deadliner schedule fetch` | Print upcoming KSE classes (default: next 7 days) |
+| `deadliner schedule fetch --days 14` | Fetch KSE schedule for a custom time range |
+| `deadliner schedule sync` | Sync KSE classes to Google Calendar with color coding |
+| `deadliner sync-all` | Run complete sync: deadlines + KSE class schedule |
+| `deadliner config classroom [on\|off\|status]` | Enable, disable, or view Google Classroom sync state |
+| `deadliner cron enable [--time HH:MM]` | Enable automated daily background synchronization (default: 08:00) |
+| `deadliner cron status` | Check status of the background scheduler and next run time |
+| `deadliner cron disable` | Remove background sync task |
+| `deadliner logs` | View recent auto-sync execution logs (`~/.deadliner/sync.log`) |
+| `deadliner login moodle` | Interactive Moodle login prompt |
+| `deadliner login google` | Authenticate Google Calendar & Classroom via OAuth2 |
+| `deadliner login kse` | Connect KSE university schedule account |
+
+---
+
+## ⏰ 24h Background Auto-Sync
+
+Never worry about opening the terminal before class. Deadliner integrates natively with your OS task scheduler:
+- **Windows:** Configured via `schtasks` (runs silently in the background).
+- **macOS / Linux:** Configured via native `crontab`.
+
+```bash
+# Enable daily sync every morning at 08:00 AM
+deadliner cron enable --time 08:00
+
+# Inspect recent background execution logs
+deadliner logs
 ```
 
+---
 
+## 🛠️ Architecture & Development
+
+Deadliner follows strict Clean Architecture and Single Responsibility principles:
+
+```text
+src/deadliner/
+├── auth.py             # Moodle web service authentication & token management
+├── calendar_sync.py    # Google Calendar synchronization, deduplication & color coding
+├── classroom_fetcher.py# Google Classroom Coursework API client
+├── cli.py              # CLI argument parser, interactive menu & subcommands
+├── formatter.py        # Terminal formatting & midnight cutoff calculations
+├── google_auth.py      # Google OAuth2 InstalledAppFlow & secrets management
+├── kse_auth.py         # KSE schedule token extraction & auto-refresh
+├── kse_fetcher.py      # KSE schedule REST API client
+├── moodle_fetcher.py   # Moodle core_calendar API client
+└── scheduler.py        # OS-native task scheduler (Windows schtasks / Unix cron)
+```
+
+### Running Tests
+Deadliner is backed by a comprehensive test suite (134 tests) with zero external network dependencies (mocked via `responses` and `monkeypatch`):
+
+```bash
+pytest
+```
+
+---
+
+## ❓ FAQ & Troubleshooting
+
+### Q: Google displays "Google hasn't verified this app" during login.
+**A:** Because you created a personal Google Cloud project, Google displays this warning for unverified desktop apps. Click **Advanced** &rarr; **Go to Deadliner (unsafe)** &rarr; Grant calendar permissions. Your tokens remain strictly local on your machine.
+
+### Q: Error 403: `access_denied` during Google login.
+**A:** In your Google Cloud Console, ensure you added your personal email to the **Test Users** list under **OAuth Consent Screen**.
+
+### Q: Can I use Deadliner without Google Classroom?
+**A:** Yes! Run `deadliner config classroom off`. Deadliner will only fetch and sync Moodle deadlines and KSE classes.
+
+---
+
+## 📄 Legal & Compliance
+
+- **Privacy Policy:** [docs/privacy.html](https://vkatsel.github.io/deadliner/privacy.html)
+- **Terms of Service:** [docs/terms.html](https://vkatsel.github.io/deadliner/terms.html)
+- **License:** [MIT License](LICENSE)

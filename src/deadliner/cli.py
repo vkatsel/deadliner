@@ -428,47 +428,148 @@ def _cmd_cron_logs(args: argparse.Namespace | None = None) -> int:
 
 
 
-def _cmd_login_google(args: argparse.Namespace) -> int:
-    from deadliner.google_auth import find_client_secrets_path, get_token_path, run_oauth_flow
+def _interactive_setup_client_secrets() -> bool:
+    """Prompt user to paste client_secret.json, enter keys, or specify a file path."""
+    from deadliner.google_auth import (
+        construct_client_secrets_from_keys,
+        find_client_secrets_path,
+        save_client_secrets_json,
+    )
     import shutil
+    import webbrowser
 
-    secrets_path = getattr(args, "client_secrets", None)
-    if not secrets_path:
-        found = find_client_secrets_path()
-        if not found:
-            print("\n" + "=" * 65)
-            print("  Google OAuth Setup")
-            print("=" * 65)
-            print("Could not automatically locate client_secret.json.")
-            print("1. Download client_secret.json from Google Cloud Console.")
-            print("2. Enter the path to your downloaded file below")
-            print("   (or drag & drop the file into this terminal):\n")
+    print("\n" + "=" * 65)
+    print("  Google OAuth Setup — Credentials Configuration")
+    print("=" * 65)
+    print("Deadliner requires Google Cloud OAuth credentials to sync with")
+    print("Google Calendar and Google Classroom.")
+    print("\nChoose how to provide your credentials:")
+    print("  1) Paste raw JSON content from downloaded client_secret.json")
+    print("  2) Enter path to downloaded client_secret.json (or drag & drop)")
+    print("  3) Enter Client ID and Client Secret manually")
+    print("  4) Open Google Cloud setup guide in browser")
+    print("  5) Cancel")
+    print("-" * 65)
+
+    try:
+        choice = input("Select an option [1-5]: ").strip()
+    except (KeyboardInterrupt, EOFError):
+        print("\nSetup cancelled.")
+        return False
+
+    match choice:
+        case "1":
+            print("\nPaste the content of your client_secret.json below.")
+            print("(Paste your JSON, then press Enter twice or send EOF):")
+            lines = []
             try:
-                user_in = input("Path to client_secret.json: ").strip().strip('"').strip("'")
+                while True:
+                    line = input()
+                    if not line and lines:
+                        break
+                    lines.append(line)
+            except EOFError:
+                pass
+            raw_text = "\n".join(lines).strip()
+            if not raw_text:
+                print("Error: No JSON content provided.", file=sys.stderr)
+                return False
+            try:
+                dest = save_client_secrets_json(raw_text)
+                print(f"\033[92mSaved credentials successfully to {dest}\033[0m")
+                return True
+            except ValueError as e:
+                print(f"\033[91mError: {e}\033[0m", file=sys.stderr)
+                return False
+
+        case "2":
+            try:
+                user_in = input("\nEnter path to client_secret.json (or drag & drop): ").strip().strip('"').strip("'")
             except (KeyboardInterrupt, EOFError):
-                print("\nGoogle authentication cancelled.")
-                return 130
+                print("\nSetup cancelled.")
+                return False
 
             if not user_in or not os.path.isfile(user_in):
                 print(f"Error: File '{user_in}' does not exist.", file=sys.stderr)
-                return 1
+                return False
 
-            # Save to ~/.deadliner/client_secret.json for permanent discovery
             dest_dir = Path.home() / ".deadliner"
             dest_dir.mkdir(parents=True, exist_ok=True)
             dest_file = dest_dir / "client_secret.json"
             try:
                 shutil.copyfile(user_in, dest_file)
-                print(f"Saved copy to {dest_file}")
-                secrets_path = str(dest_file)
+                print(f"\033[92mSaved copy to {dest_file}\033[0m")
+                return True
+            except Exception as e:
+                print(f"\033[91mError copying file: {e}\033[0m", file=sys.stderr)
+                return False
+
+        case "3":
+            try:
+                cid = input("\nEnter Client ID: ").strip()
+                csec = input("Enter Client Secret: ").strip()
+            except (KeyboardInterrupt, EOFError):
+                print("\nSetup cancelled.")
+                return False
+
+            if not cid or not csec:
+                print("Error: Client ID and Secret cannot be empty.", file=sys.stderr)
+                return False
+
+            try:
+                data = construct_client_secrets_from_keys(cid, csec)
+                dest = save_client_secrets_json(data)
+                print(f"\033[92mSaved credentials successfully to {dest}\033[0m")
+                return True
+            except Exception as e:
+                print(f"\033[91mError: {e}\033[0m", file=sys.stderr)
+                return False
+
+        case "4":
+            guide_url = "https://vkatsel.github.io/deadliner/google_setup_guide.html"
+            local_guide = Path(__file__).resolve().parent.parent.parent / "docs" / "specs" / "google_setup_guide.md"
+            print(f"\nOpening setup guide...")
+            print(f"Online: {guide_url}")
+            if local_guide.is_file():
+                print(f"Local file: {local_guide}")
+            try:
+                webbrowser.open(guide_url)
             except Exception:
-                secrets_path = user_in
-        else:
+                pass
+            return _interactive_setup_client_secrets()
+
+        case "5" | "q" | "cancel":
+            print("Setup cancelled.")
+            return False
+
+        case _:
+            print("Invalid option selected.")
+            return False
+
+
+def _cmd_login_google(args: argparse.Namespace) -> int:
+    from deadliner.google_auth import (
+        DEFAULT_CLIENT_ID,
+        DEFAULT_CLIENT_SECRET,
+        find_client_secrets_path,
+        get_token_path,
+        run_oauth_flow,
+    )
+
+    secrets_path = getattr(args, "client_secrets", None)
+    if not secrets_path:
+        found = find_client_secrets_path()
+        if found:
             secrets_path = str(found)
+        elif not (DEFAULT_CLIENT_ID and DEFAULT_CLIENT_SECRET):
+            success = _interactive_setup_client_secrets()
+            if not success:
+                return 1
+            secrets_path = str(find_client_secrets_path() or "")
 
     try:
-        run_oauth_flow(secrets_path)
-        print(f"Google authentication successful. Token saved to {get_token_path()}")
+        run_oauth_flow(secrets_path or None)
+        print(f"\033[92mGoogle authentication successful. Token saved to {get_token_path()}\033[0m")
         return 0
     except FileNotFoundError as e:
         print(str(e), file=sys.stderr)
@@ -477,7 +578,7 @@ def _cmd_login_google(args: argparse.Namespace) -> int:
         print("\nGoogle authentication cancelled by user.", file=sys.stderr)
         return 130
     except Exception as e:
-        print(f"Google authentication failed: {e}", file=sys.stderr)
+        print(f"\033[91mGoogle authentication failed: {e}\033[0m", file=sys.stderr)
         return 1
 
 
@@ -602,9 +703,10 @@ def _cmd_menu(args: argparse.Namespace | None = None) -> int:
                 print("  b) Google OAuth (Classroom & Calendar)")
                 print("  c) KSE Schedule Token")
                 print(f"  d) Toggle Google Classroom Sync {cr_badge}")
-                print("  e) Back")
+                print("  e) Import / Update Google Client Secrets (client_secret.json)")
+                print("  f) Back")
                 try:
-                    sub_choice = input("Choice [a/b/c/d/e]: ").strip().lower()
+                    sub_choice = input("Choice [a/b/c/d/e/f]: ").strip().lower()
                 except (KeyboardInterrupt, EOFError):
                     continue
                 match sub_choice:
@@ -624,7 +726,9 @@ def _cmd_menu(args: argparse.Namespace | None = None) -> int:
                         set_classroom_sync_enabled(new_state)
                         msg = "enabled" if new_state else "disabled"
                         print(f"Google Classroom sync {msg}.")
-                    case "e" | "q" | "back":
+                    case "e":
+                        _interactive_setup_client_secrets()
+                    case "f" | "q" | "back":
                         pass
                     case _:
                         print("Invalid choice.")
