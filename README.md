@@ -59,12 +59,16 @@ pip install git+https://github.com/vkatsel/deadliner.git
 
 ---
 
-### 2. Interactive Navigation (Recommended)
+### 2. Launch & Interactive Navigation
 
-Simply type `deadliner` with no arguments to launch the full-featured interactive menu:
+Launch the interactive command center:
 
 ```bash
+# If 'deadliner' is already in your PATH:
 deadliner
+
+# Or run directly via Python (on first launch, Deadliner will automatically detect if it's in your PATH and prompt to add it with 1 click!):
+python -m deadliner
 ```
 
 ```text
@@ -184,7 +188,7 @@ src/deadliner/
 ```
 
 ### Running Tests
-Deadliner is backed by a comprehensive test suite (141 tests) with zero external network dependencies (mocked via `responses` and `monkeypatch`):
+Deadliner is backed by a comprehensive test suite (145 tests) with zero external network dependencies (mocked via `responses` and `monkeypatch`):
 
 ```bash
 pytest

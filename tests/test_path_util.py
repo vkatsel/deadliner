@@ -120,3 +120,77 @@ def test_add_to_path_already_present(monkeypatch, tmp_path):
     success, msg = path_util.add_to_path()
     assert success is True
     assert "already" in msg.lower()
+
+
+def test_check_and_prompt_path_setup_not_tty(monkeypatch):
+    from deadliner import cli
+
+    called = False
+
+    def fake_add():
+        nonlocal called
+        called = True
+        return True, "ok"
+
+    monkeypatch.setattr(path_util, "is_on_path", lambda: False)
+    monkeypatch.setattr(path_util, "add_to_path", fake_add)
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: False)
+
+    cli._check_and_prompt_path_setup()
+    assert called is False
+
+
+def test_check_and_prompt_path_setup_already_on_path(monkeypatch):
+    from deadliner import cli
+
+    called = False
+
+    def fake_add():
+        nonlocal called
+        called = True
+        return True, "ok"
+
+    monkeypatch.setattr(path_util, "is_on_path", lambda: True)
+    monkeypatch.setattr(path_util, "add_to_path", fake_add)
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
+
+    cli._check_and_prompt_path_setup()
+    assert called is False
+
+
+def test_check_and_prompt_path_setup_user_accepts(monkeypatch):
+    from deadliner import cli
+
+    called = False
+
+    def fake_add():
+        nonlocal called
+        called = True
+        return True, "Added successfully"
+
+    monkeypatch.setattr(path_util, "is_on_path", lambda: False)
+    monkeypatch.setattr(path_util, "add_to_path", fake_add)
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
+    monkeypatch.setattr("builtins.input", lambda prompt: "y")
+
+    cli._check_and_prompt_path_setup()
+    assert called is True
+
+
+def test_check_and_prompt_path_setup_user_declines(monkeypatch):
+    from deadliner import cli
+
+    called = False
+
+    def fake_add():
+        nonlocal called
+        called = True
+        return True, "Added successfully"
+
+    monkeypatch.setattr(path_util, "is_on_path", lambda: False)
+    monkeypatch.setattr(path_util, "add_to_path", fake_add)
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
+    monkeypatch.setattr("builtins.input", lambda prompt: "n")
+
+    cli._check_and_prompt_path_setup()
+    assert called is False

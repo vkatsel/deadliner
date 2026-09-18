@@ -647,9 +647,40 @@ def _get_cron_badge() -> str:
         return ""
 
 
+def _check_and_prompt_path_setup() -> None:
+    """Prompt the user to add Deadliner to PATH if it's not present and running interactively."""
+    from deadliner import path_util
+
+    if not sys.stdin.isatty():
+        return
+
+    if path_util.is_on_path():
+        return
+
+    print("\n\033[33m" + "=" * 58)
+    print("  💡 Deadliner is not in your system PATH yet.")
+    print("=" * 58 + "\033[0m")
+    print("  Adding it allows you to type 'deadliner' from any terminal,")
+    print("  without needing 'python -m deadliner'.")
+    print("\033[33m" + "=" * 58 + "\033[0m")
+    try:
+        ans = input("  Add 'deadliner' to PATH automatically? [Y/n]: ").strip().lower()
+    except (KeyboardInterrupt, EOFError):
+        return
+
+    if ans in ("", "y", "yes"):
+        success, msg = path_util.add_to_path()
+        if success:
+            print(f"  \033[92m✓ {msg}\033[0m\n")
+        else:
+            print(f"  \033[91m✗ {msg}\033[0m\n", file=sys.stderr)
+
+
 def _cmd_menu(args: argparse.Namespace | None = None) -> int:
     """Interactive CLI menu for seamless workflow navigation."""
     from deadliner import scheduler
+
+    _check_and_prompt_path_setup()
 
     while True:
         cron_badge = _get_cron_badge()
