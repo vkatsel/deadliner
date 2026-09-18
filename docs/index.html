@@ -9,6 +9,8 @@
   <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
+  <!-- Dynamic Illuminating Glow -->
+  <div class="ambient-glow" id="ambient-glow" aria-hidden="true"></div>
 
   <!-- Site Header / Navigation -->
   <header class="site-header">
@@ -16,7 +18,7 @@
       <a href="index.html" class="brand-link" aria-label="Deadliner Home">
         <img src="assets/logo.png" alt="Deadliner Logo" class="brand-logo" width="44" height="44">
         <span class="brand-title">Deadliner</span>
-        <span class="brand-badge">v2.0</span>
+        <span class="brand-badge">v1.5.6</span>
       </a>
       <nav class="main-nav" aria-label="Main Navigation">
         <a href="#features" class="nav-link">Features</a>
@@ -238,13 +240,21 @@
             <div class="step-num">1</div>
             <div class="step-body">
               <div class="step-header">
-                <h3 class="step-title">Install from GitHub</h3>
+                <h3 class="step-title">Install from Source</h3>
                 <span class="badge-tag badge-sage">Python 3.10+</span>
               </div>
-              <p class="step-desc">Install directly into your Python environment via pip:</p>
+              <p class="step-desc">Clone the repository and install into your environment:</p>
               <div class="code-box">
-                <code>pip install git+https://github.com/vkatsel/deadliner.git</code>
-                <button class="btn-copy" onclick="copyCode(this, 'pip install git+https://github.com/vkatsel/deadliner.git')">Copy</button>
+                <code>git clone https://github.com/vkatsel/deadliner.git &amp;&amp; cd deadliner &amp;&amp; pip install -e .</code>
+                <button class="btn-copy" onclick="copyCode(this, 'git clone https://github.com/vkatsel/deadliner.git && cd deadliner && pip install -e .')">Copy</button>
+              </div>
+              <div class="install-alt-wrap">
+                <span class="or-separator">OR</span>
+                <a href="https://github.com/vkatsel/deadliner/releases/latest" class="btn-release" target="_blank" rel="noopener noreferrer">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                  <span>Get from GitHub Releases</span>
+                  <span class="release-tag-badge">v1.5.6</span>
+                </a>
               </div>
             </div>
           </div>
@@ -558,6 +568,34 @@
           btn.textContent = orig;
           btn.style.color = '';
         }, 2000);
+      });
+    }
+
+    // Dynamic Illuminating Ambient Glow (tracks pointer & reacts to scroll)
+    const glow = document.getElementById('ambient-glow');
+    if (glow) {
+      let mouseX = window.innerWidth / 2;
+      let mouseY = 260;
+      let currentX = mouseX;
+      let currentY = mouseY;
+
+      window.addEventListener('pointermove', (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+      });
+
+      function animateGlow() {
+        currentX += (mouseX - currentX) * 0.08;
+        currentY += (mouseY - currentY) * 0.08;
+        glow.style.transform = `translate(${currentX}px, ${currentY}px) translate(-50%, -50%)`;
+        requestAnimationFrame(animateGlow);
+      }
+      animateGlow();
+
+      window.addEventListener('scroll', () => {
+        const scrollY = window.scrollY;
+        const opacity = Math.max(0.35, 1 - scrollY / 1200);
+        glow.style.opacity = opacity;
       });
     }
   </script>

@@ -97,6 +97,11 @@ When configuring Google Cloud Console for public distribution:
   - Author: `vkatsel <vkatsel@kse.org.ua>`.
 - **Testing Gate:**
   - Every commit must pass all pytest unit tests (`pytest`).
+- **Release Tag & Web Synchronization:**
+  - Whenever a new release tag is cut (e.g. `v1.5.6`, `v2.0.0`), agents MUST immediately update:
+    1. The version badge in `docs/index.html` header (`<span class="brand-badge">vX.Y.Z</span>`).
+    2. The release tag badge in the quickstart section (`<span class="release-tag-badge">vX.Y.Z</span>`).
+    3. The GitHub release link (`https://github.com/vkatsel/deadliner/releases/latest`).
 
 ---
 
