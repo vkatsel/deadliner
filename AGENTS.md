@@ -97,3 +97,34 @@ When configuring Google Cloud Console for public distribution:
   - Author: `vkatsel <vkatsel@kse.org.ua>`.
 - **Testing Gate:**
   - Every commit must pass all pytest unit tests (`pytest`).
+
+---
+
+## 5. Design System: Slick, Chic, Sharp & Vector-Only
+
+All design, branding, and web assets created for Deadliner must adhere to the following non-negotiable design principles:
+
+### 📐 Visual Philosophy
+- **Pure Vector Only (No Photorealistic AI Renders):**
+  - Absolute prohibition on generated 3D photorealistic raster images, fake chrome renders, or blurry raster icons.
+  - Logos, badges, and decorative diagrams must be crafted as mathematically clean **SVG vectors** (`docs/assets/logo.svg`).
+  - Google OAuth requires PNG for upload: always render/rasterize the exact SVG cleanly at 120x120px without compression artifacts.
+- **Sharp & Bordered Architecture:**
+  - Crisp, technical 1px borders (`rgba(255, 255, 255, 0.08)` to `rgba(255, 255, 255, 0.16)`).
+  - Subtle technical grid markers, crosshairs (`+`), and hairline coordinate indicators.
+  - No bloated, rounded "bubble" elements. Corners use precise radii (`4px` to `8px` for inputs/cards, `24px` for square app icon).
+- **Monochrome Foundation + Strict Semantic Accents:**
+  - 95% of UI consists of deep pitch-black (`#050508`), rich graphite (`#0D0D12`), and crisp typography (`#FFFFFF` and `#9AA0A6`).
+  - Color is reserved exclusively for functional academic indicators:
+    - 🔴 **Tomato Red (`#D50000` / `#FF5252`):** Deadlines, urgency, midnight cutoff alerts.
+    - 🟢 **Sage Green (`#33B679`):** KSE Lectures, verified status.
+    - 🔵 **Peacock Blue (`#039BE5`):** KSE Practices, seminars, interactive links.
+  - No cheap rainbow neons or generic purple gradients.
+
+### 💻 Technical Honesty & Copywriting
+- **Accurate Installation Instructions:**
+  - Never state `pip install deadliner` unless the package is officially published to PyPI.
+  - Always provide accurate git-based commands:
+    * `pip install git+https://github.com/vkatsel/deadliner.git`
+    * `git clone https://github.com/vkatsel/deadliner.git && cd deadliner && pip install -e .`
+

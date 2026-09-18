@@ -58,28 +58,6 @@ body {
   flex-direction: column;
 }
 
-.hero-graphic-card {
-  margin: 2.5rem 0 1rem 0;
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05);
-  background: #000;
-  transition: var(--transition);
-}
-
-.hero-graphic-card:hover {
-  border-color: rgba(255, 255, 255, 0.25);
-  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.1);
-}
-
-.hero-graphic-card img {
-  width: 100%;
-  height: auto;
-  display: block;
-  object-fit: cover;
-}
-
 a {
   color: var(--color-peacock-light);
   text-decoration: none;
