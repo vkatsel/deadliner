@@ -33,17 +33,35 @@ To ensure changes are trackable and testable, the work is split into three disti
 
 ---
 
-### Phase 3: Google Auth Embedded Client (Zero-Setup)
-**Context:** Users currently need to create their own Google Cloud Project and download `client_secret.json`. This is a huge barrier to entry. We will embed a default "Desktop App" OAuth Client ID directly into the CLI.
+### Phase 3: Google Auth Usability & Flexibility (Direct Secrets Paste & Setup Guide)
+**Context:** Users currently need to download `client_secret.json` and figure out where to place it. We will make Google authentication frictionless by allowing direct paste of secrets, providing a step-by-step GCP guide, and supporting embedded fallback credentials.
 **Proposed Changes:**
+- **`docs/google_setup_guide.md` [NEW]**: Detailed, step-by-step guide in Ukrainian for creating a GCP project, enabling Calendar & Classroom APIs, setting up Desktop App OAuth, and downloading credentials.
 - **`src/deadliner/google_auth.py`**:
-  - Introduce `DEFAULT_CLIENT_ID` and `DEFAULT_CLIENT_SECRET` constants (provided by the project maintainer).
-  - Modify `run_oauth_flow` so that if no local `client_secret.json` is found, it automatically falls back to generating a temporary `client_config` dict in-memory using the embedded credentials.
+  - Add `DEFAULT_CLIENT_ID` / `DEFAULT_CLIENT_SECRET` fallback support.
+  - Implement `save_client_secrets_json()` to validate and save pasted JSON or credentials directly to `~/.deadliner/client_secret.json`.
+- **`src/deadliner/cli.py`**:
+  - Upgrade `_cmd_login_google`: allow pasting raw JSON directly into the terminal, entering a file path, or entering Client ID & Secret manually.
+  - Add Google Secrets management option under Option 7 in `deadliner menu`.
 **Verification:**
-- **Automated Tests:** Update `tests/test_google_auth.py` to test the fallback logic.
-- **Manual Check:** Remove `client_secret.json`, run `deadliner login google`, and ensure the Google Auth browser window opens successfully using the embedded credentials.
+- **Automated Tests:** Add `tests/test_google_secrets_import.py` and update `tests/test_google_auth.py` to test raw JSON parsing, manual credentials entry, and fallback logic.
+- **Manual Check:** Run `deadliner login google`, paste a client secrets JSON string, and verify it correctly creates `~/.deadliner/client_secret.json` and initiates OAuth.
+
+---
+
+### Phase 4: Comprehensive README & Interactive Menu Documentation
+**Context:** The README needs to be rewritten to reflect the complete set of features (Moodle, KSE Schedule with Sage/Peacock coloring, cancellation reconciliation, 24h cron auto-sync, Classroom toggle, interactive menu, and authentication guides).
+**Proposed Changes:**
+- **`README.md`**:
+  - Product overview & visual indicators.
+  - Interactive menu guide (`deadliner menu`).
+  - Full CLI command reference.
+  - Setup guides for Moodle, Google, and KSE Schedule.
+  - Troubleshooting & FAQ.
+**Verification:**
+- Markdown linting and link verification.
 
 ---
 
 ## Open Questions & Review
-- Do we have the default `Client ID` and `Client Secret` ready for Phase 3? If not, Phase 1 and 2 can be executed while the GCP project is being set up by the maintainer.
+- All phases are fully defined and ready for execution.
