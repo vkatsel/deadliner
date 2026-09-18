@@ -17,6 +17,35 @@ from deadliner.models import AuthError
 CONFIG_PATH = Path.home() / ".deadliner.json"
 
 
+def is_classroom_sync_enabled(cfg: dict | None = None) -> bool:
+    """Return True if Google Classroom sync is enabled (defaults to True)."""
+    if cfg is None:
+        if CONFIG_PATH.exists():
+            try:
+                cfg = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                cfg = {}
+        else:
+            cfg = {}
+    val = cfg.get("sync_classroom")
+    if val is None:
+        return True
+    return bool(val)
+
+
+def set_classroom_sync_enabled(enabled: bool) -> None:
+    """Persist the sync_classroom setting in ~/.deadliner.json."""
+    cfg = {}
+    if CONFIG_PATH.exists():
+        try:
+            cfg = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            cfg = {}
+    cfg["sync_classroom"] = bool(enabled)
+    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    CONFIG_PATH.write_text(json.dumps(cfg, indent=4), encoding="utf-8")
+
+
 def _load_credentials() -> tuple[str, str, str, str]:
     """Read Moodle, Google, and KSE credentials from env vars, falling back to ~/.deadliner.json.
 
@@ -56,7 +85,9 @@ def _load_credentials() -> tuple[str, str, str, str]:
     return base_url, token, g_token, kse_token
 
 
-def _collect_assignments(base_url: str, token: str, g_token: str) -> tuple[list, list[str]]:
+def _collect_assignments(
+    base_url: str, token: str, g_token: str, sync_classroom: bool | None = None
+) -> tuple[list, list[str]]:
     """Fetch deadlines from every configured source, tolerating per-source failures."""
     from deadliner import classroom_fetcher
 
@@ -71,7 +102,10 @@ def _collect_assignments(base_url: str, token: str, g_token: str) -> tuple[list,
         except ConnectionError as e:
             warnings.append(f"warning: moodle connection: {e}")
 
-    if g_token:
+    if sync_classroom is None:
+        sync_classroom = is_classroom_sync_enabled()
+
+    if g_token and sync_classroom:
         try:
             assignments.extend(classroom_fetcher.fetch_classroom({"access_token": g_token}))
         except AuthError as e:
@@ -447,6 +481,30 @@ def _cmd_login_google(args: argparse.Namespace) -> int:
         return 1
 
 
+def _cmd_config_classroom(args: argparse.Namespace) -> int:
+    """Toggle or show Google Classroom sync status."""
+    state = getattr(args, "state", None)
+    if isinstance(state, str):
+        state = state.strip().lower()
+
+    if state == "on":
+        set_classroom_sync_enabled(True)
+        print("Google Classroom sync enabled.")
+        return 0
+    elif state == "off":
+        set_classroom_sync_enabled(False)
+        print("Google Classroom sync disabled.")
+        return 0
+    elif state in (None, "status"):
+        enabled = is_classroom_sync_enabled()
+        status_str = "ENABLED" if enabled else "DISABLED"
+        print(f"Google Classroom sync is currently: {status_str}")
+        return 0
+    else:
+        print(f"error: Invalid state '{state}'. Expected 'on' or 'off'.", file=sys.stderr)
+        return 2
+
+
 def _get_cron_badge() -> str:
     from deadliner import scheduler
 
@@ -538,13 +596,15 @@ def _cmd_menu(args: argparse.Namespace | None = None) -> int:
                     case _:
                         print("Invalid choice.")
             case "7":
+                cr_badge = "\033[92m[Enabled]\033[0m" if is_classroom_sync_enabled() else "\033[90m[Disabled]\033[0m"
                 print("\nSelect service to configure:")
                 print("  a) Moodle Login")
                 print("  b) Google OAuth (Classroom & Calendar)")
                 print("  c) KSE Schedule Token")
-                print("  d) Back")
+                print(f"  d) Toggle Google Classroom Sync {cr_badge}")
+                print("  e) Back")
                 try:
-                    sub_choice = input("Choice [a/b/c/d]: ").strip().lower()
+                    sub_choice = input("Choice [a/b/c/d/e]: ").strip().lower()
                 except (KeyboardInterrupt, EOFError):
                     continue
                 match sub_choice:
@@ -558,7 +618,13 @@ def _cmd_menu(args: argparse.Namespace | None = None) -> int:
                         from deadliner.kse_auth import _cmd_login_kse
 
                         _cmd_login_kse(argparse.Namespace())
-                    case "d" | "q" | "back":
+                    case "d":
+                        current = is_classroom_sync_enabled()
+                        new_state = not current
+                        set_classroom_sync_enabled(new_state)
+                        msg = "enabled" if new_state else "disabled"
+                        print(f"Google Classroom sync {msg}.")
+                    case "e" | "q" | "back":
                         pass
                     case _:
                         print("Invalid choice.")
@@ -638,6 +704,23 @@ def main(argv: list[str] | None = None) -> None:
         # deadliner logs (shortcut for deadliner cron logs)
         logs_parser = subparsers.add_parser("logs", help="view recent auto-sync logs (~/.deadliner/sync.log)")
         logs_parser.set_defaults(func=_cmd_cron_logs)
+
+        # deadliner config classroom [on|off]
+        config_parser = subparsers.add_parser("config", help="manage configuration settings")
+        config_subparsers = config_parser.add_subparsers(dest="config_cmd", required=True)
+
+        classroom_config_parser = config_subparsers.add_parser(
+            "classroom", help="toggle Google Classroom sync (on / off / status)"
+        )
+        classroom_config_parser.add_argument(
+            "state",
+            nargs="?",
+            default=None,
+            type=str.lower,
+            choices=["on", "off", "status"],
+            help="enable (on), disable (off), or check status of Google Classroom sync",
+        )
+        classroom_config_parser.set_defaults(func=_cmd_config_classroom)
 
         # deadliner login [moodle|google|kse]
         login_parser = subparsers.add_parser("login", help="log in to a service")
