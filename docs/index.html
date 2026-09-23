@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deadliner — Academic Hub &amp; Calendar Sync</title>
+  <meta name="description" content="Never miss a university deadline again. Automatic sync from Moodle &amp; KSE Schedule directly to your Google Calendar.">
+  <link rel="icon" type="image/png" href="assets/logo.png">
+  <link rel="stylesheet" href="assets/style.css">
+  <meta name="google-site-verification" content="aEbnSVAT5-mh2hJIc8EtZsvRGz0whY2GfawaGZKs8vk" />
+</head>
+<body>
+  <!-- Site Header / Navigation -->
+  <header class="site-header">
+    <div class="container nav-wrap">
+      <a href="index.html" class="brand-link" aria-label="Deadliner Home">
+        <img src="assets/logo.png" alt="Deadliner Logo" class="brand-logo" width="44" height="44">
+        <span class="brand-title">Deadliner</span>
+        <span class="brand-badge">v1.5.6</span>
+      </a>
+      <nav class="main-nav" aria-label="Main Navigation">
+        <a href="#features" class="nav-link">Features</a>
+        <a href="#quickstart" class="nav-link">Quickstart</a>
+        <a href="google_setup_guide.html" class="nav-link">Google Guide</a>
+        <a href="#menu-showcase" class="nav-link">Interactive CLI</a>
+        <a href="#security" class="nav-link">Security</a>
+        <a href="privacy.html" class="nav-link">Privacy</a>
+        <a href="terms.html" class="nav-link">Terms</a>
+        <div class="lang-switch" aria-label="Language Switcher">
+          <span class="lang-opt active" aria-current="page">EN</span>
+          <a href="uk/" class="lang-opt" title="Українська версія">UA</a>
+        </div>
+        <a href="https://github.com/vkatsel/deadliner" class="btn-github" target="_blank" rel="noopener noreferrer">
+          <svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+          </svg>
+          GitHub
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <main>
+    <section class="hero-section">
+      <div class="container hero-content">
+        <div class="hero-pill">
+          <span class="dot"></span>
+          <span>Zero-Knowledge &bull; Local-First &bull; ADHD-Friendly</span>
+        </div>
+
+        <h1 class="hero-title">
+          Deadliner<br>
+          <span class="gradient-text">Academic Hub &amp; Automatic Google Calendar Sync</span>
+        </h1>
+
+        <p class="hero-subtitle">
+          Eliminate fragmented portals, login fatigue, and missed midnight cutoffs.
+          Deadliner aggregates your academic life into one color-coded, high-visibility timeline with zero cloud telemetry.
+        </p>
+
+        <div class="hero-actions">
+          <a href="#quickstart" class="btn-primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            Get Started in 60s
+          </a>
+          <a href="#menu-showcase" class="btn-secondary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+            Explore Interactive CLI
+          </a>
+          <a href="https://github.com/vkatsel/deadliner" class="btn-secondary" target="_blank" rel="noopener noreferrer">
+            Star on GitHub
+          </a>
+        </div>
+
+        <!-- Live Calendar Visualization Card -->
+        <div class="hero-preview" aria-label="Live Calendar Preview">
+          <div class="preview-topbar">
+            <div class="window-dots">
+              <span class="window-dot dot-red"></span>
+              <span class="window-dot dot-yellow"></span>
+              <span class="window-dot dot-green"></span>
+            </div>
+            <span class="preview-title">Google Calendar &bull; Deadliner Unified View</span>
+            <span style="font-size: 0.75rem; color: #8b949e;">Live Status: Sync OK</span>
+          </div>
+
+          <div class="calendar-mockup">
+            <!-- Event 1: Red Deadline -->
+            <div class="calendar-row">
+              <div class="calendar-time">23:45 – 00:00</div>
+              <div class="calendar-event">
+                <div class="event-details">
+                  <span class="event-indicator indicator-tomato" title="Tomato Red Deadline"></span>
+                  <span class="event-title">[Moodle] Software Engineering Practices — Lab 4</span>
+                </div>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                  <span class="badge-tag badge-warning">midnight cutoff</span>
+                  <span class="badge-tag badge-tomato">🔴 Tomato Red</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Event 2: Green Lecture -->
+            <div class="calendar-row">
+              <div class="calendar-time">10:00 – 11:20</div>
+              <div class="calendar-event">
+                <div class="event-details">
+                  <span class="event-indicator indicator-sage" title="Sage Green Lecture"></span>
+                  <span class="event-title">KSE Lecture: Linear Algebra &amp; Vector Spaces (Room 302)</span>
+                </div>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                  <span class="badge-tag badge-sage">🟢 Sage Green</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Event 3: Blue Practice -->
+            <div class="calendar-row">
+              <div class="calendar-time">13:30 – 14:50</div>
+              <div class="calendar-event">
+                <div class="event-details">
+                  <span class="event-indicator indicator-peacock" title="Peacock Blue Practice"></span>
+                  <span class="event-title">KSE Practice: Algorithms &amp; Data Structures (Group A)</span>
+                </div>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                  <span class="badge-tag badge-peacock">🔵 Peacock Blue</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Visual Features Section -->
+    <section id="features" class="features-section">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-subtitle-badge">Architected for Students</span>
+          <h2 class="section-title">Visual Clarity, Zero Friction</h2>
+          <p class="section-description">
+            Built specifically to tackle portal fragmentation and the cognitive friction that leads to missed assignments.
+          </p>
+        </div>
+
+        <div class="features-grid">
+          <!-- Feature 1: Tomato Red Deadlines -->
+          <article class="feature-card card-tomato">
+            <div class="feature-icon-wrap">🔴</div>
+            <h3 class="feature-title">Tomato Red Deadlines</h3>
+            <p class="feature-desc">
+              All Moodle and Google Classroom submissions sync as vibrant Tomato Red (Google colorId 11). Deadliner places a crisp 15-minute event pointing right at the exact cutoff moment so you never confuse midnight (00:00) with end-of-day (23:59).
+            </p>
+            <div class="feature-meta">
+              <span>Google Calendar Color #11</span>
+              <span>Explicit Cutoff Badging</span>
+            </div>
+          </article>
+
+          <!-- Feature 2: Sage Green Lectures -->
+          <article class="feature-card card-sage">
+            <div class="feature-icon-wrap">🟢</div>
+            <h3 class="feature-title">KSE Schedule Lectures</h3>
+            <p class="feature-desc">
+              Direct ingestion from schedule.kse.ua automatically categorizes theory lectures into calming Sage Green (Google colorId 2). Classrooms, professors, and zoom links are neatly placed into the calendar event description.
+            </p>
+            <div class="feature-meta">
+              <span>Google Calendar Color #2</span>
+              <span>Classroom &amp; Lecturer Auto-fill</span>
+            </div>
+          </article>
+
+          <!-- Feature 3: Peacock Blue Practices -->
+          <article class="feature-card card-peacock">
+            <div class="feature-icon-wrap">🔵</div>
+            <h3 class="feature-title">KSE Schedule Practices</h3>
+            <p class="feature-desc">
+              Practice sessions, labs, and interactive seminars sync in Peacock Blue (Google colorId 7). Deadliner parses your subgroup designations (e.g. Group A / B) so you only see the sessions you actually need to attend.
+            </p>
+            <div class="feature-meta">
+              <span>Google Calendar Color #7</span>
+              <span>Subgroup-Aware Filtering</span>
+            </div>
+          </article>
+
+          <!-- Feature 4: 1-Click Clipboard Login -->
+          <article class="feature-card card-cyan">
+            <div class="feature-icon-wrap">⚡</div>
+            <h3 class="feature-title">1-Click Clipboard Login</h3>
+            <p class="feature-desc">
+              No developer tools hacking or manual JSON copying. Simply launch <code style="color: #79c0ff;">deadliner login kse</code>, log in via your browser, copy your session token to clipboard, and Deadliner automatically captures it instantly.
+            </p>
+            <div class="feature-meta">
+              <span>schedule.kse.ua Integration</span>
+              <span>Zero-Pain Auth</span>
+            </div>
+          </article>
+
+          <!-- Feature 5: 24h Background Auto-Sync -->
+          <article class="feature-card card-purple">
+            <div class="feature-icon-wrap">⏰</div>
+            <h3 class="feature-title">24h Background Auto-Sync</h3>
+            <p class="feature-desc">
+              Set it and forget it. Deadliner configures native OS schedulers (Windows Task Scheduler via <code style="color: #79c0ff;">schtasks</code> or standard UNIX <code style="color: #79c0ff;">cron</code>) to sync your calendar silently every morning without battery drain.
+            </p>
+            <div class="feature-meta">
+              <span>Windows &bull; Linux &bull; macOS</span>
+              <span>Zero Background Daemon</span>
+            </div>
+          </article>
+
+          <!-- Feature 6: Automatic Cancellation Reconciliation -->
+          <article class="feature-card card-amber">
+            <div class="feature-icon-wrap">🧹</div>
+            <h3 class="feature-title">Cancellation Reconciliation</h3>
+            <p class="feature-desc">
+              When a professor reschedules, cancels a lecture, or retracts an assignment on Moodle, Deadliner uses SHA-256 stable tracking IDs (<code style="color: #79c0ff;">extendedProperties</code>) to automatically prune deleted events cleanly.
+            </p>
+            <div class="feature-meta">
+              <span>Deterministic Idempotency</span>
+              <span>Zero Ghost Events</span>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quickstart / Installation Guide -->
+    <section id="quickstart" class="quickstart-section">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-subtitle-badge">Get Up &amp; Running</span>
+          <h2 class="section-title">Fast, Zero-Config Setup</h2>
+          <p class="section-description">
+            Deadliner is written in modern Python with minimal dependencies. You can be fully synced in under 2 minutes.
+          </p>
+        </div>
+
+        <div class="steps-list">
+          <!-- Step 1 -->
+          <div class="step-item">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <div class="step-header">
+                <h3 class="step-title">Install from Source</h3>
+                <span class="badge-tag badge-sage">Python 3.10+</span>
+              </div>
+              <p class="step-desc">Clone the repository and install into your environment:</p>
+              <div class="code-box">
+                <code>git clone https://github.com/vkatsel/deadliner.git &amp;&amp; cd deadliner &amp;&amp; pip install -e .</code>
+                <button class="btn-copy" onclick="copyCode(this, 'git clone https://github.com/vkatsel/deadliner.git && cd deadliner && pip install -e .')">Copy</button>
+              </div>
+              <div class="install-alt-wrap">
+                <span class="or-separator">OR</span>
+                <a href="https://github.com/vkatsel/deadliner/releases/latest" class="btn-release" target="_blank" rel="noopener noreferrer">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                  <span>Get from GitHub Releases</span>
+                  <span class="release-tag-badge">v1.5.6</span>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2 -->
+          <div class="step-item">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <div class="step-header">
+                <h3 class="step-title">First Launch &amp; Auto-PATH Setup</h3>
+                <span class="badge-tag badge-peacock">Zero-Friction</span>
+              </div>
+              <p class="step-desc">
+                By default, <code>pip</code> installs CLI binaries into Python's internal scripts folder, which is usually missing from your system <code>PATH</code>. On first launch, run directly via Python:
+              </p>
+              <div class="code-box">
+                <code>python -m deadliner</code>
+                <button class="btn-copy" onclick="copyCode(this, 'python -m deadliner')">Copy</button>
+              </div>
+              <p style="margin-top: 0.6rem; font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5;">
+                <span style="color: #33b679; font-weight: 600;">✓ 1-Click Auto Setup:</span> Deadliner automatically detects that it is not in your <code>PATH</code> yet and prompts to add itself permanently. Once accepted, open any new terminal and simply type <code>deadliner</code> from anywhere!
+              </p>
+              <p style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-secondary);">
+                Need to set up Google Calendar &amp; Classroom access? Follow our 3-minute 
+                <a href="google_setup_guide.html" style="color: var(--color-peacock-light); text-decoration: underline; font-weight: 600;">Google Cloud Setup Guide &rarr;</a>
+              </p>
+            </div>
+          </div>
+
+          <!-- Step 3 -->
+          <div class="step-item">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <div class="step-header">
+                <h3 class="step-title">One-Command Full Sync</h3>
+                <span class="badge-tag badge-tomato">Deadlines + Schedule</span>
+              </div>
+              <p class="step-desc">Push your latest deadlines and KSE classes straight to your Google Calendar:</p>
+              <div class="code-box">
+                <code>deadliner sync-all</code>
+                <button class="btn-copy" onclick="copyCode(this, 'deadliner sync-all')">Copy</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 4 -->
+          <div class="step-item">
+            <div class="step-num">4</div>
+            <div class="step-body">
+              <div class="step-header">
+                <h3 class="step-title">Enable Daily Background Automation</h3>
+                <span class="badge-tag badge-sage">Set &amp; Forget</span>
+              </div>
+              <p class="step-desc">Register a native daily task (e.g. 08:00 AM every day):</p>
+              <div class="code-box">
+                <code>deadliner cron enable --time 08:00</code>
+                <button class="btn-copy" onclick="copyCode(this, 'deadliner cron enable --time 08:00')">Copy</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive Menu Showcase -->
+    <section id="menu-showcase" class="menu-section">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-subtitle-badge">Interactive Terminal</span>
+          <h2 class="section-title">The Deadliner Control Center</h2>
+          <p class="section-description">
+            Run <code style="color: #79c0ff;">deadliner menu</code> at any time to access the guided workflow. Click any option below to inspect its behavior:
+          </p>
+        </div>
+
+        <div class="menu-layout">
+          <!-- Terminal View -->
+          <div class="terminal-window">
+            <div class="terminal-header">
+              <div class="window-dots">
+                <span class="window-dot dot-red"></span>
+                <span class="window-dot dot-yellow"></span>
+                <span class="window-dot dot-green"></span>
+              </div>
+              <span class="preview-title">user@terminal: ~/deadliner</span>
+              <span style="font-size: 0.75rem; color: #8b949e;">Python 3.11</span>
+            </div>
+
+            <div class="terminal-body" id="terminal-options">
+              <div class="terminal-title-bar">==========================================================<br>DEADLINER — Academic Hub &amp; Calendar Sync<br>==========================================================</div>
+
+              <div class="term-section-header">[ Deadlines &amp; Coursework ]</div>
+              <div class="term-opt active" data-opt="1" onclick="selectOption('1')">
+                <span class="num">1.</span>
+                <span class="text">Fetch upcoming deadlines</span>
+                <span class="badge-dim">(Moodle &amp; Classroom)</span>
+              </div>
+              <div class="term-opt" data-opt="2" onclick="selectOption('2')">
+                <span class="num">2.</span>
+                <span class="text">Sync deadlines to Google Calendar</span>
+                <span class="badge-red">[Red]</span>
+              </div>
+
+              <div class="term-section-header">[ KSE University Schedule ]</div>
+              <div class="term-opt" data-opt="3" onclick="selectOption('3')">
+                <span class="num">3.</span>
+                <span class="text">Fetch KSE class schedule</span>
+                <span class="badge-dim">(Next 7 days)</span>
+              </div>
+              <div class="term-opt" data-opt="4" onclick="selectOption('4')">
+                <span class="num">4.</span>
+                <span class="text">Sync KSE class schedule to Google Calendar</span>
+                <span class="badge-green">[Green]</span>
+              </div>
+
+              <div class="term-section-header">[ Automation &amp; All-in-One ]</div>
+              <div class="term-opt" data-opt="5" onclick="selectOption('5')">
+                <span class="num">5.</span>
+                <span class="text">Sync Everything</span>
+                <span class="badge-green">[Deadlines + KSE Schedule]</span>
+              </div>
+              <div class="term-opt" data-opt="6" onclick="selectOption('6')">
+                <span class="num">6.</span>
+                <span class="text">Auto-Sync Background Scheduler</span>
+                <span class="badge-green">[Active]</span>
+              </div>
+
+              <div class="term-section-header">[ Account &amp; Settings ]</div>
+              <div class="term-opt" data-opt="7" onclick="selectOption('7')">
+                <span class="num">7.</span>
+                <span class="text">Login / Configure Services</span>
+                <span class="badge-dim">(Moodle / Google / KSE)</span>
+              </div>
+              <div class="term-opt" data-opt="8" onclick="selectOption('8')">
+                <span class="num">8.</span>
+                <span class="text">Exit</span>
+              </div>
+
+              <div style="margin-top: 1rem; color: #58a6ff;">Select an option [1-8]: <span id="term-input-cursor">_</span></div>
+            </div>
+          </div>
+
+          <!-- Inspector View -->
+          <div class="menu-inspector">
+            <span class="inspector-tag" id="inspector-badge">OPTION 1 OF 8</span>
+            <h3 class="inspector-title" id="inspector-title">Fetch upcoming deadlines</h3>
+            <p class="inspector-desc" id="inspector-desc">
+              Connects to your configured Moodle portal and Google Classroom accounts, pulls all pending tasks, and outputs an urgent, date-sorted list with unambiguous cutoff markings.
+            </p>
+            <div class="inspector-cmd-preview" id="inspector-cmd">
+              $ deadliner fetch<br>
+              <span style="color: #8b949e;">&gt; Fetching Moodle tasks... 4 found.<br>&gt; Fetching Classroom assignments... 2 found.<br>&gt; [moodle] SE Practicum Lab 3 (midnight cutoff) — 2026-06-01 00:00</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Local-First & Zero-Knowledge Architecture -->
+    <section id="security" class="security-section">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-subtitle-badge">Privacy By Design</span>
+          <h2 class="section-title">Zero Remote Servers. Zero Telemetry.</h2>
+          <p class="section-description">
+            Your university assignments, grades, and schedules are personal. Deadliner is strictly client-side.
+          </p>
+        </div>
+
+        <div class="security-grid">
+          <div class="security-card">
+            <h3>🔒 Local Token Storage</h3>
+            <p>
+              OAuth tokens, Moodle session tokens, and KSE credentials are stored strictly in your local home directory (<code style="color: #79c0ff;">~/.deadliner.json</code>). They never leave your device.
+            </p>
+          </div>
+
+          <div class="security-card">
+            <h3>🌐 Direct University APIs</h3>
+            <p>
+              Network requests travel directly between your personal machine and Moodle, Google, and schedule.kse.ua APIs. There is no intermediate Deadliner backend proxy.
+            </p>
+          </div>
+
+          <div class="security-card">
+            <h3>🛡️ Minimal Google Scopes</h3>
+            <p>
+              Deadliner only requests the Google Calendar and Classroom scopes strictly required for synchronization. It adheres 100% to Google Limited Use requirements.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <div class="footer-logo-row">
+            <img src="assets/logo.png" alt="Deadliner Logo" width="32" height="32" style="border-radius: 4px;">
+            <span class="footer-brand-title">Deadliner</span>
+          </div>
+          <p class="footer-tagline">
+            Autonomous academic deadline &amp; schedule sync engine. Built with empathy for students living with ADHD and cognitive overload.
+          </p>
+        </div>
+
+        <div class="footer-nav-col">
+          <h4>Navigation</h4>
+          <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#quickstart">Quickstart</a></li>
+            <li><a href="google_setup_guide.html">Google Setup Guide (EN)</a> / <a href="uk/google_setup_guide.html">UA</a></li>
+            <li><a href="#menu-showcase">Interactive Menu</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-nav-col">
+          <h4>Compliance &amp; Legal</h4>
+          <ul>
+            <li><a href="privacy.html">Privacy Policy (EN)</a> / <a href="uk/privacy.html">UA</a></li>
+            <li><a href="terms.html">Terms of Service (EN)</a> / <a href="uk/terms.html">UA</a></li>
+            <li><a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer">Google User Data Policy</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-nav-col">
+          <h4>Open Source</h4>
+          <ul>
+            <li><a href="https://github.com/vkatsel/deadliner" target="_blank" rel="noopener noreferrer">GitHub Repository</a></li>
+            <li><a href="https://github.com/vkatsel/deadliner/issues" target="_blank" rel="noopener noreferrer">Issue Tracker</a></li>
+            <li><a href="https://github.com/vkatsel/deadliner/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT License</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>&copy; 2026 Deadliner Team. Distributed under the MIT Open Source License.</div>
+        <div>Kyiv School of Economics (KSE) &bull; Student Engineering Initiative</div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Interactive Menu Script & Copy Utilities -->
+  <script>
+    const optionData = {
+      "1": {
+        badge: "OPTION 1 OF 8",
+        title: "Fetch upcoming deadlines",
+        desc: "Connects to your configured Moodle portal and Google Classroom accounts, pulls all pending tasks, and outputs an urgent, date-sorted list with unambiguous cutoff markings.",
+        cmd: "$ deadliner fetch\n> [moodle] SE Practicum Lab 3 (midnight cutoff) — 2026-06-01 00:00\n> [classroom] Microeconomics Quiz 2 — 2026-06-02 18:00\n6 deadlines found."
+      },
+      "2": {
+        badge: "OPTION 2 OF 8",
+        title: "Sync deadlines to Google Calendar",
+        desc: "Pushes your aggregated Moodle & Google Classroom deadlines directly into Google Calendar as impossible-to-miss Tomato Red (#d50000) events anchored 15 minutes before the due date.",
+        cmd: "$ deadliner sync\n> Synchronizing deadlines to Google Calendar...\n> Created 3 new events [Tomato Red]\n> Updated 1 existing event\n> 0 errors. Sync complete."
+      },
+      "3": {
+        badge: "OPTION 3 OF 8",
+        title: "Fetch KSE class schedule",
+        desc: "Pulls your upcoming class schedule directly from schedule.kse.ua for the next 7 days, showing discipline, professor, room, and subgroup allocation.",
+        cmd: "$ deadliner schedule fetch --days 7\n> 2026-06-01 | 10:00-11:20 | Linear Algebra (Lecture) | Room 302\n> 2026-06-01 | 13:30-14:50 | Algorithms (Practice Group A) | Room 204"
+      },
+      "4": {
+        badge: "OPTION 4 OF 8",
+        title: "Sync KSE class schedule to Google Calendar",
+        desc: "Pushes your university schedule into Google Calendar with visual distinction: Lectures in Sage Green (#33b679) and Practices in Peacock Blue (#039be5).",
+        cmd: "$ deadliner schedule sync --days 7\n> Syncing KSE schedule (7 days)...\n> Synced 12 classes (8 Lectures [Green], 4 Practices [Blue]).\n> Reconciled canceled classes."
+      },
+      "5": {
+        badge: "OPTION 5 OF 8",
+        title: "Sync Everything (All-in-One)",
+        desc: "The ultimate one-step command: fetches and updates all deadlines from Moodle & Classroom in Red, plus all KSE lectures in Green and practices in Blue, reconciling cancellations.",
+        cmd: "$ deadliner sync-all\n> [1/2] Syncing deadlines... 5 events updated.\n> [2/2] Syncing schedule... 14 events updated.\n> All systems synchronized cleanly."
+      },
+      "6": {
+        badge: "OPTION 6 OF 8",
+        title: "Auto-Sync Background Scheduler",
+        desc: "Configures or monitors 24h background synchronization using native OS task managers (Windows Task Scheduler or UNIX cron) at your preferred daily time (default 08:00).",
+        cmd: "$ deadliner cron status\n> Daily Auto-Sync: ENABLED\n> Scheduled Time: 08:00 daily\n> Next Run: Tomorrow at 08:00 AM\n> Log: ~/.deadliner/sync.log"
+      },
+      "7": {
+        badge: "OPTION 7 OF 8",
+        title: "Login / Configure Services",
+        desc: "Manage authentication tokens with one-click clipboard capture for schedule.kse.ua, browser OAuth flow for Google Calendar and Classroom, and Moodle credentials.",
+        cmd: "$ deadliner login kse\n> Browser opened to schedule.kse.ua\n> Waiting for session token from clipboard...\n> Token detected! Credentials saved to ~/.deadliner.json."
+      },
+      "8": {
+        badge: "OPTION 8 OF 8",
+        title: "Exit",
+        desc: "Closes the interactive CLI menu safely, preserving all active background schedules and cached configurations.",
+        cmd: "$ deadliner menu\n> Selection: 8\n> Goodbye!"
+      }
+    };
+
+    function selectOption(optNum) {
+      document.querySelectorAll('.term-opt').forEach(el => el.classList.remove('active'));
+      const activeEl = document.querySelector(`.term-opt[data-opt="${optNum}"]`);
+      if (activeEl) activeEl.classList.add('active');
+
+      const data = optionData[optNum];
+      if (data) {
+        document.getElementById('inspector-badge').textContent = data.badge;
+        document.getElementById('inspector-title').textContent = data.title;
+        document.getElementById('inspector-desc').textContent = data.desc;
+        document.getElementById('inspector-cmd').innerHTML = data.cmd.replace(/\n/g, '<br>');
+        document.getElementById('term-input-cursor').textContent = optNum;
+      }
+    }
+
+    function copyCode(btn, text) {
+      navigator.clipboard.writeText(text).then(() => {
+        const orig = btn.textContent;
+        btn.textContent = 'Copied!';
+        btn.style.color = '#7ee787';
+        setTimeout(() => {
+          btn.textContent = orig;
+          btn.style.color = '';
+        }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>

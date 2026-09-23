@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Посібник із налаштування Google Cloud — Deadliner</title>
+  <meta name="description" content="Покроковий посібник із налаштування Google Cloud Project, отримання OAuth 2.0 Client ID та підключення до Deadliner.">
+  <link rel="icon" type="image/png" href="../assets/logo.png">
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="container nav-wrap">
+      <a href="index.html" class="brand-link" aria-label="Deadliner Головна">
+        <img src="../assets/logo.png" alt="Логотип Deadliner" class="brand-logo" width="44" height="44">
+        <span class="brand-title">Deadliner</span>
+      </a>
+      <nav class="main-nav" aria-label="Головна навігація">
+        <a href="index.html" class="nav-link">Головна</a>
+        <a href="index.html#features" class="nav-link">Можливості</a>
+        <a href="index.html#quickstart" class="nav-link">Швидкий старт</a>
+        <a href="google_setup_guide.html" class="nav-link" style="color: var(--text-primary); font-weight: 700;">Google Інструкція</a>
+        <a href="privacy.html" class="nav-link">Конфіденційність</a>
+        <a href="terms.html" class="nav-link">Умови</a>
+        <div class="lang-switch" aria-label="Вибір мови">
+          <a href="../google_setup_guide.html" class="lang-opt" title="English version">EN</a>
+          <span class="lang-opt active" aria-current="page">UA</span>
+        </div>
+        <a href="https://github.com/vkatsel/deadliner" class="btn-github" target="_blank" rel="noopener noreferrer">
+          <svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+          </svg>
+          GitHub
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container">
+    <article class="legal-content-wrap">
+      <h1>Посібник: Налаштування Google Cloud Project</h1>
+      <div class="legal-meta">
+        <span>Час налаштування: 3–5 хвилин</span> &bull; 
+        <span>Оновлено: 23 вересня 2026 р.</span> &bull;
+        <span>Версія: 2.1</span>
+      </div>
+
+      <div class="callout-box callout-green">
+        <strong>Zero-Knowledge &amp; Повна Приватність:</strong> Deadliner працює повністю локально на вашому комп'ютері. Налаштування персонального проєкту в Google Cloud гарантує, що жодні ваші облікові дані чи події календаря не потрапляють на сторонні сервери. Створення Desktop OAuth клієнта є 100% безкоштовним і не вимагає платіжних даних.
+      </div>
+
+      <h2>Крок 1. Відкрийте Google Cloud Console</h2>
+      <p>
+        Перейдіть за посиланням <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer">console.cloud.google.com</a> та увійдіть під своїм Google-акаунтом (наприклад, університетським <code>@kse.org.ua</code> або особистим <code>@gmail.com</code>).
+      </p>
+
+      <h2>Крок 2. Створіть новий проєкт</h2>
+      <ol style="color: var(--text-secondary); padding-left: 1.5rem; margin-bottom: 1rem; line-height: 1.7;">
+        <li>У верхньому лівому кутку натисніть на меню вибору проєкту поруч із логотипом <em>Google Cloud</em>.</li>
+        <li>У діалоговому вікні натисніть <strong>New Project</strong> (Новий проєкт).</li>
+        <li>Введіть назву проєкту (наприклад, <code>Deadliner-Sync</code>) та натисніть <strong>Create</strong>.</li>
+        <li>Зачекайте декілька секунд і переконайтеся, що створений проєкт вибрано у верхній панелі.</li>
+      </ol>
+
+      <h2>Крок 3. Увімкніть Google Calendar &amp; Classroom API</h2>
+      <ol style="color: var(--text-secondary); padding-left: 1.5rem; margin-bottom: 1rem; line-height: 1.7;">
+        <li>Перейдіть до бібліотеки API: <a href="https://console.cloud.google.com/apis/library" target="_blank" rel="noopener noreferrer">console.cloud.google.com/apis/library</a>.</li>
+        <li>Знайдіть <strong>Google Calendar API</strong> та натисніть кнопку <strong>Enable</strong> (Увімкнути).</li>
+        <li>Поверніться до бібліотеки, знайдіть <strong>Google Classroom API</strong> та також натисніть <strong>Enable</strong>.</li>
+      </ol>
+
+      <h2>Крок 4. Налаштуйте OAuth Consent Screen (Вікно згоди)</h2>
+      <ol style="color: var(--text-secondary); padding-left: 1.5rem; margin-bottom: 1rem; line-height: 1.7;">
+        <li>Перейдіть до сторінки налаштування екрана згоди: <a href="https://console.cloud.google.com/apis/credentials/consent" target="_blank" rel="noopener noreferrer">console.cloud.google.com/apis/credentials/consent</a>.</li>
+        <li>Оберіть тип користувача <strong>External</strong> (Зовнішній) та натисніть <strong>Create</strong>.</li>
+        <li>Заповніть обов'язкові поля:
+          <ul>
+            <li><strong>App name:</strong> <code>Deadliner</code></li>
+            <li><strong>User support email:</strong> оберіть вашу адресу електронної пошти.</li>
+            <li><strong>Developer contact email:</strong> вкажіть вашу адресу електронної пошти.</li>
+          </ul>
+        </li>
+        <li>Натисніть <strong>Save and Continue</strong>.</li>
+        <li>Розділ <em>Scopes</em> можна пропустити (натисніть <strong>Save and Continue</strong>).</li>
+        <li><strong>Вкладка Test Users (Важливо):</strong> Натисніть <strong>+ ADD USERS</strong> та додайте свій власний email, під яким ви будете авторизуватися в Deadliner. Натисніть <strong>Save and Continue</strong>.</li>
+      </ol>
+
+      <h2>Крок 5. Створіть OAuth Client ID</h2>
+      <ol style="color: var(--text-secondary); padding-left: 1.5rem; margin-bottom: 1rem; line-height: 1.7;">
+        <li>Перейдіть до розділу облікових даних: <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer">console.cloud.google.com/apis/credentials</a>.</li>
+        <li>Натисніть <strong>+ Create Credentials</strong> у верхній панелі &rarr; оберіть <strong>OAuth client ID</strong>.</li>
+        <li>У випадаючому списку <strong>Application type</strong> оберіть <strong>Desktop app</strong> (Десктопний додаток).</li>
+        <li>У полі назви введіть <code>Deadliner Desktop Client</code> та натисніть <strong>Create</strong>.</li>
+        <li>У спливаючому діалоговому вікні натисніть <strong>Download JSON</strong> (або скопіюйте Client ID та Client Secret).</li>
+      </ol>
+
+      <h2>Крок 6. Додайте ключі в Deadliner (Швидкий імпорт в 1 клік)</h2>
+      <p>Deadliner підтримує швидку вставку ключів прямо в терміналі через інтерактивне меню:</p>
+      <div style="background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.75rem 1rem; margin-bottom: 1rem; font-family: var(--font-mono); color: #79c0ff;">
+        <code>deadliner menu</code>
+      </div>
+      <ol style="color: var(--text-secondary); padding-left: 1.5rem; margin-bottom: 1rem; line-height: 1.7;">
+        <li>У головному меню оберіть пункт <code>7</code> (<strong>Login / Configure Services</strong>).</li>
+        <li>Оберіть підпункт <code>e</code> (<strong>Import / Update Google Client Secrets</strong>).</li>
+        <li>Оберіть опцію <code>1</code> (<strong>Paste raw JSON content</strong>) та вставте весь вміст завантаженого файлу в термінал!</li>
+      </ol>
+      <p>
+        Deadliner автоматично перевірить структуру даних та збереже файл у <code>~/.deadliner/client_secret.json</code>.
+      </p>
+
+      <h2>❓ Вирішення поширених запитань (FAQ)</h2>
+      <h3>Попередження "Google hasn’t verified this app" під час входу</h3>
+      <p>
+        Це стандартне системне повідомлення платформи Google для особистих проєктів, які перебувають на етапі тестування. Натисніть <strong>Advanced</strong> (Додатково) &rarr; <strong>Go to Deadliner (unsafe)</strong> &rarr; підтвердьте дозвіл на синхронізацію календаря.
+      </p>
+
+      <h3>Помилка 403: access_denied</h3>
+      <p>
+        Переконайтеся, що на Кроці 4 у розділі <em>Test users (Тестові користувачі)</em> ви вказали саме той Google-акаунт, під яким ви авторизуєтеся в системі.
+      </p>
+    </article>
+  </main>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <div class="footer-logo-row">
+            <img src="../assets/logo.png" alt="Логотип Deadliner" width="32" height="32" style="border-radius: 4px;">
+            <span class="footer-brand-title">Deadliner</span>
+          </div>
+          <p class="footer-tagline">
+            Автономний рушій синхронізації навчальних дедлайнів та розкладу. Створений з турботою про студентів з СДУГ та захистом від інформаційного перевантаження.
+          </p>
+        </div>
+
+        <div class="footer-nav-col">
+          <h4>Навігація</h4>
+          <ul>
+            <li><a href="index.html">Головна</a></li>
+            <li><a href="index.html#features">Можливості</a></li>
+            <li><a href="index.html#quickstart">Швидкий старт</a></li>
+            <li><a href="../google_setup_guide.html">Google Інструкція (EN)</a> / <a href="google_setup_guide.html">UA</a></li>
+            <li><a href="index.html#menu-showcase">Інтерактивне меню</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-nav-col">
+          <h4>Правова інформація</h4>
+          <ul>
+            <li><a href="../privacy.html">Privacy Policy (EN)</a> / <a href="privacy.html">UA</a></li>
+            <li><a href="../terms.html">Terms of Service (EN)</a> / <a href="terms.html">UA</a></li>
+            <li><a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer">Google User Data Policy</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-nav-col">
+          <h4>Відкритий код</h4>
+          <ul>
+            <li><a href="https://github.com/vkatsel/deadliner" target="_blank" rel="noopener noreferrer">Репозиторій GitHub</a></li>
+            <li><a href="https://github.com/vkatsel/deadliner/issues" target="_blank" rel="noopener noreferrer">Повідомити про проблему</a></li>
+            <li><a href="https://github.com/vkatsel/deadliner/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">Ліцензія MIT</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>&copy; 2026 Deadliner Team. Поширюється за відкритою ліцензією MIT.</div>
+        <div>Київська школа економіки (KSE) &bull; Студентська інженерна ініціатива</div>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
