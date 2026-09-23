@@ -260,15 +260,20 @@
             <div class="step-num">2</div>
             <div class="step-body">
               <div class="step-header">
-                <h3 class="step-title">Launch Interactive Menu</h3>
-                <span class="badge-tag badge-peacock">All-in-One CLI</span>
+                <h3 class="step-title">First Launch &amp; Auto-PATH Setup</h3>
+                <span class="badge-tag badge-peacock">Zero-Friction</span>
               </div>
-              <p class="step-desc">Open the interactive command center (or run <code>python -m deadliner</code> &mdash; Deadliner automatically prompts to add itself to your PATH on first launch):</p>
+              <p class="step-desc">
+                By default, <code>pip</code> installs CLI binaries into Python's internal scripts folder, which is usually missing from your system <code>PATH</code>. On first launch, run directly via Python:
+              </p>
               <div class="code-box">
-                <code>deadliner menu</code>
-                <button class="btn-copy" onclick="copyCode(this, 'deadliner menu')">Copy</button>
+                <code>python -m deadliner</code>
+                <button class="btn-copy" onclick="copyCode(this, 'python -m deadliner')">Copy</button>
               </div>
-              <p style="margin-top: 0.75rem; font-size: 0.85rem; color: var(--text-secondary);">
+              <p style="margin-top: 0.6rem; font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5;">
+                <span style="color: #33b679; font-weight: 600;">✓ 1-Click Auto Setup:</span> Deadliner automatically detects that it is not in your <code>PATH</code> yet and prompts to add itself permanently. Once accepted, open any new terminal and simply type <code>deadliner</code> from anywhere!
+              </p>
+              <p style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-secondary);">
                 Need to set up Google Calendar &amp; Classroom access? Follow our 3-minute 
                 <a href="google_setup_guide.html" style="color: var(--color-peacock-light); text-decoration: underline; font-weight: 600;">Google Cloud Setup Guide &rarr;</a>
               </p>

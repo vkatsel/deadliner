@@ -59,16 +59,35 @@ pip install git+https://github.com/vkatsel/deadliner.git
 
 ---
 
-### 2. Launch & Interactive Navigation
+### 2. First Launch & Automatic PATH Configuration
 
-Launch the interactive command center:
+When installing Python CLI tools via `pip`, Python places executable scripts into its internal scripts directory (e.g., `%APPDATA%\Python\Python3xx\Scripts\` on Windows or `~/.local/bin/` on macOS/Linux). On most systems, this directory is **not** included in the system `PATH` by default, causing terminal shells to report `deadliner: command not found`.
+
+To solve this with zero manual environment variable editing, launch Deadliner for the first time using Python directly:
 
 ```bash
-# If 'deadliner' is already in your PATH:
-deadliner
-
-# Or run directly via Python (on first launch, Deadliner will automatically detect if it's in your PATH and prompt to add it with 1 click!):
 python -m deadliner
+```
+
+**What happens on first launch:**
+Deadliner immediately detects that its binary is missing from your system `PATH` and presents a 1-click automatic setup prompt:
+```text
+==========================================================
+  💡 Deadliner is not in your system PATH yet.
+==========================================================
+  Adding it allows you to type 'deadliner' from any terminal,
+  without needing 'python -m deadliner'.
+==========================================================
+  Add 'deadliner' to PATH automatically? [Y/n]: 
+```
+Simply press **Enter** (`Y`):
+- **Windows:** Permanently appends Python's Scripts folder to `HKCU\Environment\Path` in the Windows Registry and broadcasts `WM_SETTINGCHANGE` (no system reboot required).
+- **macOS / Linux:** Automatically appends the export directive to `~/.bashrc` and `~/.zshrc`.
+
+From this point forward, open any new terminal and simply type `deadliner` directly!
+
+```bash
+deadliner
 ```
 
 ```text
