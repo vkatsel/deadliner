@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deadliner — Академічний хаб та синхронізація з календарем</title>
+  <meta name="description" content="Більше жодних пропущених дедлайнів в університеті. Автоматична синхронізація з Moodle та розкладом KSE напряму до вашого Google Календаря.">
+  <link rel="icon" type="image/png" href="assets/logo.png">
+  <link rel="stylesheet" href="assets/style.css">
+  <meta name="google-site-verification" content="aEbnSVAT5-mh2hJIc8EtZsvRGz0whY2GfawaGZKs8vk" />
+</head>
+<body>
+  <!-- Site Header / Navigation -->
+  <header class="site-header">
+    <div class="container nav-wrap">
+      <a href="index_uk.html" class="brand-link" aria-label="Deadliner Головна">
+        <img src="assets/logo.png" alt="Логотип Deadliner" class="brand-logo" width="44" height="44">
+        <span class="brand-title">Deadliner</span>
+        <span class="brand-badge">v1.5.6</span>
+      </a>
+      <nav class="main-nav" aria-label="Головна навігація">
+        <a href="#features" class="nav-link">Можливості</a>
+        <a href="#quickstart" class="nav-link">Швидкий старт</a>
+        <a href="google_setup_guide_uk.html" class="nav-link">Google Інструкція</a>
+        <a href="#menu-showcase" class="nav-link">Інтерактивний CLI</a>
+        <a href="#security" class="nav-link">Безпека</a>
+        <a href="privacy_uk.html" class="nav-link">Конфіденційність</a>
+        <a href="terms_uk.html" class="nav-link">Умови</a>
+        <div class="lang-switch" aria-label="Вибір мови">
+          <a href="index.html" class="lang-opt" title="English version">EN</a>
+          <span class="lang-opt active" aria-current="page">UA</span>
+        </div>
+        <a href="https://github.com/vkatsel/deadliner" class="btn-github" target="_blank" rel="noopener noreferrer">
+          <svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+          </svg>
+          GitHub
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <main>
+    <section class="hero-section">
+      <div class="container hero-content">
+        <div class="hero-pill">
+          <span class="dot"></span>
+          <span>Zero-Knowledge &bull; Локальна робота &bull; Зручно при СДУГ</span>
+        </div>
+
+        <h1 class="hero-title">
+          Deadliner<br>
+          <span class="gradient-text">Академічний хаб та автосинхронізація з Google Календарем</span>
+        </h1>
+
+        <p class="hero-subtitle">
+          Забудьте про хаос розрізнених порталів, втому від постійних авторизацій та пропущені опівнічні дедлайни.
+          Deadliner об'єднує ваше студентське життя в єдину наочну часову шкалу з кольоровим кодуванням і нульовим збором даних.
+        </p>
+
+        <div class="hero-actions">
+          <a href="#quickstart" class="btn-primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            Почати за 60 секунд
+          </a>
+          <a href="#menu-showcase" class="btn-secondary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+            Інтерактивний CLI
+          </a>
+          <a href="https://github.com/vkatsel/deadliner" class="btn-secondary" target="_blank" rel="noopener noreferrer">
+            Поставити зірку на GitHub
+          </a>
+        </div>
+
+        <!-- Live Calendar Visualization Card -->
+        <div class="hero-preview" aria-label="Попередній перегляд календаря">
+          <div class="preview-topbar">
+            <div class="window-dots">
+              <span class="window-dot dot-red"></span>
+              <span class="window-dot dot-yellow"></span>
+              <span class="window-dot dot-green"></span>
+            </div>
+            <span class="preview-title">Google Календар &bull; Єдиний розклад Deadliner</span>
+            <span style="font-size: 0.75rem; color: #8b949e;">Статус: Синхронізовано</span>
+          </div>
+
+          <div class="calendar-mockup">
+            <!-- Event 1: Red Deadline -->
+            <div class="calendar-row">
+              <div class="calendar-time">23:45 – 00:00</div>
+              <div class="calendar-event">
+                <div class="event-details">
+                  <span class="event-indicator indicator-tomato" title="Tomato Red Дедлайн"></span>
+                  <span class="event-title">[Moodle] Software Engineering Practices — Лабораторна 4</span>
+                </div>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                  <span class="badge-tag badge-warning">опівнічний дедлайн</span>
+                  <span class="badge-tag badge-tomato">🔴 Tomato Red</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Event 2: Green Lecture -->
+            <div class="calendar-row">
+              <div class="calendar-time">10:00 – 11:20</div>
+              <div class="calendar-event">
+                <div class="event-details">
+                  <span class="event-indicator indicator-sage" title="Sage Green Лекція"></span>
+                  <span class="event-title">KSE Лекція: Linear Algebra &amp; Vector Spaces (Ауд. 302)</span>
+                </div>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                  <span class="badge-tag badge-sage">🟢 Sage Green</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Event 3: Blue Practice -->
+            <div class="calendar-row">
+              <div class="calendar-time">13:30 – 14:50</div>
+              <div class="calendar-event">
+                <div class="event-details">
+                  <span class="event-indicator indicator-peacock" title="Peacock Blue Практика"></span>
+                  <span class="event-title">KSE Практика: Algorithms &amp; Data Structures (Група A)</span>
+                </div>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                  <span class="badge-tag badge-peacock">🔵 Peacock Blue</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Visual Features Section -->
+    <section id="features" class="features-section">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-subtitle-badge">Створено студентами для студентів</span>
+          <h2 class="section-title">Візуальна ясність, нуль зайвих зусиль</h2>
+          <p class="section-description">
+            Розроблено спеціально для подолання фрагментації навчальних платформ та когнітивного навантаження, через які губляться дедлайни.
+          </p>
+        </div>
+
+        <div class="features-grid">
+          <!-- Feature 1: Tomato Red Deadlines -->
+          <article class="feature-card card-tomato">
+            <div class="feature-icon-wrap">🔴</div>
+            <h3 class="feature-title">Червоні дедлайни (Tomato Red)</h3>
+            <p class="feature-desc">
+              Усі завдання з Moodle та Google Classroom потрапляють у календар у яскраво-червоному кольорі (Google colorId 11). Deadliner створює чітку 15-хвилинну подію перед дедлайном, тож ви більше ніколи не сплутаєте північ (00:00) із кінцем дня (23:59).
+            </p>
+            <div class="feature-meta">
+              <span>Google Calendar Color #11</span>
+              <span>Чітке маркування дедлайнів</span>
+            </div>
+          </article>
+
+          <!-- Feature 2: Sage Green Lectures -->
+          <article class="feature-card card-sage">
+            <div class="feature-icon-wrap">🟢</div>
+            <h3 class="feature-title">Лекції розкладу KSE</h3>
+            <p class="feature-desc">
+              Пряма інтеграція зі schedule.kse.ua класифікує теоретичні заняття у спокійний шавлієвий колір (Sage Green, Google colorId 2). Аудиторії, імена викладачів та Zoom-посилання акуратно вносяться в опис події календаря.
+            </p>
+            <div class="feature-meta">
+              <span>Google Calendar Color #2</span>
+              <span>Автозаповнення аудиторій і викладачів</span>
+            </div>
+          </article>
+
+          <!-- Feature 3: Peacock Blue Practices -->
+          <article class="feature-card card-peacock">
+            <div class="feature-icon-wrap">🔵</div>
+            <h3 class="feature-title">Практики розкладу KSE</h3>
+            <p class="feature-desc">
+              Практичні заняття, семінари та лабораторні позначаються блакитним (Peacock Blue, Google colorId 7). Deadliner розпізнає розподіл за підгрупами (наприклад, Група А / B), відображаючи лише ті пари, які призначені саме вам.
+            </p>
+            <div class="feature-meta">
+              <span>Google Calendar Color #7</span>
+              <span>Фільтрація підгруп</span>
+            </div>
+          </article>
+
+          <!-- Feature 4: 1-Click Clipboard Login -->
+          <article class="feature-card card-cyan">
+            <div class="feature-icon-wrap">⚡</div>
+            <h3 class="feature-title">Вхід у 1 клік через буфер</h3>
+            <p class="feature-desc">
+              Жодних пошуків у консолі розробника браузера чи ручного копіювання JSON. Запустіть <code style="color: #79c0ff;">deadliner login kse</code>, увійдіть у браузері, скопіюйте токен сесії — і Deadliner миттєво збереже його сам.
+            </p>
+            <div class="feature-meta">
+              <span>Інтеграція schedule.kse.ua</span>
+              <span>Миттєва автентифікація</span>
+            </div>
+          </article>
+
+          <!-- Feature 5: 24h Background Auto-Sync -->
+          <article class="feature-card card-purple">
+            <div class="feature-icon-wrap">⏰</div>
+            <h3 class="feature-title">24h фонова автосинхронізація</h3>
+            <p class="feature-desc">
+              Налаштуйте один раз і забудьте. Deadliner інтегрується у системні планувальники завдань вашої ОС (Windows Task Scheduler через <code style="color: #79c0ff;">schtasks</code> або стандартний UNIX <code style="color: #79c0ff;">cron</code>) для щоденної фонової синхронізації без витрат батареї.
+            </p>
+            <div class="feature-meta">
+              <span>Windows &bull; Linux &bull; macOS</span>
+              <span>Без постійних фонових процесів</span>
+            </div>
+          </article>
+
+          <!-- Feature 6: Automatic Cancellation Reconciliation -->
+          <article class="feature-card card-amber">
+            <div class="feature-icon-wrap">🧹</div>
+            <h3 class="feature-title">Прибирання скасованих подій</h3>
+            <p class="feature-desc">
+              Якщо викладач переніс, скасував пару або відкликав завдання у Moodle, Deadliner використовує стабільні SHA-256 ідентифікатори (<code style="color: #79c0ff;">extendedProperties</code>), автоматично та акуратно видаляючи застарілі події.
+            </p>
+            <div class="feature-meta">
+              <span>Детермінована ідемпотентність</span>
+              <span>Нуль подій-привидів</span>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quickstart / Installation Guide -->
+    <section id="quickstart" class="quickstart-section">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-subtitle-badge">Швидкий старт</span>
+          <h2 class="section-title">Миттєве встановлення без зайвих налаштувань</h2>
+          <p class="section-description">
+            Deadliner написаний на сучасному Python з мінімальною кількістю залежностей. Повна синхронізація займає менше 2 хвилин.
+          </p>
+        </div>
+
+        <div class="steps-list">
+          <!-- Step 1 -->
+          <div class="step-item">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <div class="step-header">
+                <h3 class="step-title">Встановлення з репозиторію</h3>
+                <span class="badge-tag badge-sage">Python 3.10+</span>
+              </div>
+              <p class="step-desc">Склонуйте репозиторій та встановіть пакет у середовище:</p>
+              <div class="code-box">
+                <code>git clone https://github.com/vkatsel/deadliner.git &amp;&amp; cd deadliner &amp;&amp; pip install -e .</code>
+                <button class="btn-copy" onclick="copyCode(this, 'git clone https://github.com/vkatsel/deadliner.git && cd deadliner && pip install -e .')">Скопіювати</button>
+              </div>
+              <div class="install-alt-wrap">
+                <span class="or-separator">АБО</span>
+                <a href="https://github.com/vkatsel/deadliner/releases/latest" class="btn-release" target="_blank" rel="noopener noreferrer">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                  <span>Завантажити з GitHub Releases</span>
+                  <span class="release-tag-badge">v1.5.6</span>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2 -->
+          <div class="step-item">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <div class="step-header">
+                <h3 class="step-title">Перший запуск та автоналаштування PATH</h3>
+                <span class="badge-tag badge-peacock">Без клопоту</span>
+              </div>
+              <p class="step-desc">
+                За замовчуванням <code>pip</code> встановлює консольні утиліти у внутрішній каталог скриптів Python, який часто відсутній у системній змінній <code>PATH</code>. При першому запуску виконайте команду напряму через модуль Python:
+              </p>
+              <div class="code-box">
+                <code>python -m deadliner</code>
+                <button class="btn-copy" onclick="copyCode(this, 'python -m deadliner')">Скопіювати</button>
+              </div>
+              <p style="margin-top: 0.6rem; font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5;">
+                <span style="color: #33b679; font-weight: 600;">✓ Автоналаштування в 1 клік:</span> Deadliner автоматично помітить відсутність у <code>PATH</code> та запропонує додати себе до системних шляхів. Після підтвердження просто відкрийте новий термінал і вводьте команду <code>deadliner</code> з будь-якого місця!
+              </p>
+              <p style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-secondary);">
+                Потрібно підключити доступ до Google Календаря та Classroom? Скористайтеся нашою 3-хвилинною 
+                <a href="google_setup_guide_uk.html" style="color: var(--color-peacock-light); text-decoration: underline; font-weight: 600;">Google Інструкцією з налаштування &rarr;</a>
+              </p>
+            </div>
+          </div>
+
+          <!-- Step 3 -->
+          <div class="step-item">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <div class="step-header">
+                <h3 class="step-title">Повна синхронізація однією командою</h3>
+                <span class="badge-tag badge-tomato">Дедлайни + Розклад</span>
+              </div>
+              <p class="step-desc">Миттєво надішліть усі дедлайни та розклад KSE до Google Календаря:</p>
+              <div class="code-box">
+                <code>deadliner sync-all</code>
+                <button class="btn-copy" onclick="copyCode(this, 'deadliner sync-all')">Скопіювати</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 4 -->
+          <div class="step-item">
+            <div class="step-num">4</div>
+            <div class="step-body">
+              <div class="step-header">
+                <h3 class="step-title">Увімкнення щоденної фонової автосинхронізації</h3>
+                <span class="badge-tag badge-sage">Налаштував і забув</span>
+              </div>
+              <p class="step-desc">Створіть системне фонове завдання (наприклад, о 08:00 щоранку):</p>
+              <div class="code-box">
+                <code>deadliner cron enable --time 08:00</code>
+                <button class="btn-copy" onclick="copyCode(this, 'deadliner cron enable --time 08:00')">Скопіювати</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive Menu Showcase -->
+    <section id="menu-showcase" class="menu-section">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-subtitle-badge">Інтерактивний термінал</span>
+          <h2 class="section-title">Центр керування Deadliner</h2>
+          <p class="section-description">
+            Виконайте <code style="color: #79c0ff;">deadliner menu</code> в будь-який момент для інтерактивної роботи. Натисніть на пункт меню для перегляду деталей:
+          </p>
+        </div>
+
+        <div class="menu-layout">
+          <!-- Terminal View -->
+          <div class="terminal-window">
+            <div class="terminal-header">
+              <div class="window-dots">
+                <span class="window-dot dot-red"></span>
+                <span class="window-dot dot-yellow"></span>
+                <span class="window-dot dot-green"></span>
+              </div>
+              <span class="preview-title">user@terminal: ~/deadliner</span>
+              <span style="font-size: 0.75rem; color: #8b949e;">Python 3.11</span>
+            </div>
+
+            <div class="terminal-body" id="terminal-options">
+              <div class="terminal-title-bar">==========================================================<br>DEADLINER — Академічний хаб та синхронізація<br>==========================================================</div>
+
+              <div class="term-section-header">[ Дедлайни та завдання ]</div>
+              <div class="term-opt active" data-opt="1" onclick="selectOption('1')">
+                <span class="num">1.</span>
+                <span class="text">Отримати найближчі дедлайни</span>
+                <span class="badge-dim">(Moodle &amp; Classroom)</span>
+              </div>
+              <div class="term-opt" data-opt="2" onclick="selectOption('2')">
+                <span class="num">2.</span>
+                <span class="text">Синхронізувати дедлайни з Google Календарем</span>
+                <span class="badge-red">[Червоний]</span>
+              </div>
+
+              <div class="term-section-header">[ Розклад пар KSE ]</div>
+              <div class="term-opt" data-opt="3" onclick="selectOption('3')">
+                <span class="num">3.</span>
+                <span class="text">Отримати розклад пар KSE</span>
+                <span class="badge-dim">(На 7 днів)</span>
+              </div>
+              <div class="term-opt" data-opt="4" onclick="selectOption('4')">
+                <span class="num">4.</span>
+                <span class="text">Синхронізувати розклад KSE з Google Календарем</span>
+                <span class="badge-green">[Зелений]</span>
+              </div>
+
+              <div class="term-section-header">[ Автоматизація та All-in-One ]</div>
+              <div class="term-opt" data-opt="5" onclick="selectOption('5')">
+                <span class="num">5.</span>
+                <span class="text">Синхронізувати все (All-in-One)</span>
+                <span class="badge-green">[Дедлайни + Розклад]</span>
+              </div>
+              <div class="term-opt" data-opt="6" onclick="selectOption('6')">
+                <span class="num">6.</span>
+                <span class="text">Планувальник фонової автосинхронізації</span>
+                <span class="badge-green">[Активно]</span>
+              </div>
+
+              <div class="term-section-header">[ Акаунти та налаштування ]</div>
+              <div class="term-opt" data-opt="7" onclick="selectOption('7')">
+                <span class="num">7.</span>
+                <span class="text">Вхід / Налаштування сервісів</span>
+                <span class="badge-dim">(Moodle / Google / KSE)</span>
+              </div>
+              <div class="term-opt" data-opt="8" onclick="selectOption('8')">
+                <span class="num">8.</span>
+                <span class="text">Вихід</span>
+              </div>
+
+              <div style="margin-top: 1rem; color: #58a6ff;">Оберіть пункт [1-8]: <span id="term-input-cursor">_</span></div>
+            </div>
+          </div>
+
+          <!-- Inspector View -->
+          <div class="menu-inspector">
+            <span class="inspector-tag" id="inspector-badge">ОПЦІЯ 1 З 8</span>
+            <h3 class="inspector-title" id="inspector-title">Отримати найближчі дедлайни</h3>
+            <p class="inspector-desc" id="inspector-desc">
+              Підключається до ваших облікових записів у Moodle та Google Classroom, завантажує всі активні завдання та виводить терміновий список з чітким сортуванням за датою здачі.
+            </p>
+            <div class="inspector-cmd-preview" id="inspector-cmd">
+              $ deadliner fetch<br>
+              <span style="color: #8b949e;">&gt; Отримання завдань Moodle... знайдено 4.<br>&gt; Отримання завдань Classroom... знайдено 2.<br>&gt; [moodle] SE Practicum Lab 3 (midnight cutoff) — 2026-06-01 00:00</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Local-First & Zero-Knowledge Architecture -->
+    <section id="security" class="security-section">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-subtitle-badge">Приватність за замовчуванням</span>
+          <h2 class="section-title">Нуль віддалених серверів. Нуль телеметрії.</h2>
+          <p class="section-description">
+            Ваші університетські завдання, оцінки та розклад — це ваші особисті дані. Deadliner працює суворо локально.
+          </p>
+        </div>
+
+        <div class="security-grid">
+          <div class="security-card">
+            <h3>🔒 Локальне збереження токенів</h3>
+            <p>
+              OAuth-токени, токени сесії Moodle та облікові дані KSE зберігаються виключно у вашому домашньому каталозі (<code style="color: #79c0ff;">~/.deadliner.json</code>). Вони ніколи не залишають ваш пристрій.
+            </p>
+          </div>
+
+          <div class="security-card">
+            <h3>🌐 Прямі запити до офіційних API</h3>
+            <p>
+              Мережевий трафік шифрується і йде напряму між вашим комп'ютером та API Moodle, Google і schedule.kse.ua. Жодних проміжних серверів-посередників чи проксі.
+            </p>
+          </div>
+
+          <div class="security-card">
+            <h3>🛡️ Мінімальні дозволи Google Scopes</h3>
+            <p>
+              Deadliner запитує лише ті дозволи Google Calendar і Classroom, які критично необхідні для синхронізації. Повна відповідність вимогам Google Limited Use.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <div class="footer-logo-row">
+            <img src="assets/logo.png" alt="Логотип Deadliner" width="32" height="32" style="border-radius: 4px;">
+            <span class="footer-brand-title">Deadliner</span>
+          </div>
+          <p class="footer-tagline">
+            Автономний рушій синхронізації навчальних дедлайнів та розкладу. Створений з турботою про студентів з СДУГ та захистом від інформаційного перевантаження.
+          </p>
+        </div>
+
+        <div class="footer-nav-col">
+          <h4>Навігація</h4>
+          <ul>
+            <li><a href="index_uk.html">Головна</a></li>
+            <li><a href="#features">Можливості</a></li>
+            <li><a href="#quickstart">Швидкий старт</a></li>
+            <li><a href="google_setup_guide.html">Google Інструкція (EN)</a> / <a href="google_setup_guide_uk.html">UA</a></li>
+            <li><a href="#menu-showcase">Інтерактивне меню</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-nav-col">
+          <h4>Правова інформація</h4>
+          <ul>
+            <li><a href="privacy.html">Privacy Policy (EN)</a> / <a href="privacy_uk.html">UA</a></li>
+            <li><a href="terms.html">Terms of Service (EN)</a> / <a href="terms_uk.html">UA</a></li>
+            <li><a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer">Google User Data Policy</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-nav-col">
+          <h4>Відкритий код</h4>
+          <ul>
+            <li><a href="https://github.com/vkatsel/deadliner" target="_blank" rel="noopener noreferrer">Репозиторій GitHub</a></li>
+            <li><a href="https://github.com/vkatsel/deadliner/issues" target="_blank" rel="noopener noreferrer">Повідомити про проблему</a></li>
+            <li><a href="https://github.com/vkatsel/deadliner/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">Ліцензія MIT</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>&copy; 2026 Deadliner Team. Поширюється за відкритою ліцензією MIT.</div>
+        <div>Київська школа економіки (KSE) &bull; Студентська інженерна ініціатива</div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Interactive Menu Script & Copy Utilities -->
+  <script>
+    const optionData = {
+      "1": {
+        badge: "ОПЦІЯ 1 З 8",
+        title: "Отримати найближчі дедлайни",
+        desc: "Підключається до ваших облікових записів у Moodle та Google Classroom, завантажує всі активні завдання та виводить терміновий список з чітким сортуванням за датою здачі.",
+        cmd: "$ deadliner fetch\n> [moodle] SE Practicum Lab 3 (midnight cutoff) — 2026-06-01 00:00\n> [classroom] Microeconomics Quiz 2 — 2026-06-02 18:00\nЗнайдено 6 дедлайнів."
+      },
+      "2": {
+        badge: "ОПЦІЯ 2 З 8",
+        title: "Синхронізувати дедлайни з Google Календарем",
+        desc: "Додає всі завдання з Moodle та Google Classroom до Google Календаря як яскраві червоні події (Tomato Red, #d50000), розташовані за 15 хвилин до строку здачі.",
+        cmd: "$ deadliner sync\n> Синхронізація дедлайнів з Google Календарем...\n> Створено 3 нові події [Tomato Red]\n> Оновлено 1 існуючу подію\n> 0 помилок. Синхронізацію завершено."
+      },
+      "3": {
+        badge: "ОПЦІЯ 3 З 8",
+        title: "Отримати розклад пар KSE",
+        desc: "Отримує розклад занять безпосередньо зі schedule.kse.ua на наступні 7 днів з назвами дисциплін, викладачами, аудиторіями та підгрупами.",
+        cmd: "$ deadliner schedule fetch --days 7\n> 2026-06-01 | 10:00-11:20 | Linear Algebra (Лекція) | Ауд. 302\n> 2026-06-01 | 13:30-14:50 | Algorithms (Практика Група А) | Ауд. 204"
+      },
+      "4": {
+        badge: "ОПЦІЯ 4 З 8",
+        title: "Синхронізувати розклад KSE з Google Календарем",
+        desc: "Переносить університетський розклад до Google Календаря з чітким розділенням: Лекції зеленим (Sage Green, #33b679), а Практики синім (Peacock Blue, #039be5).",
+        cmd: "$ deadliner schedule sync --days 7\n> Синхронізація розкладу KSE (7 днів)...\n> Синхронізовано 12 занять (8 Лекцій [Зелені], 4 Практики [Сині]).\n> Скасовані пари успішно видалено з календаря."
+      },
+      "5": {
+        badge: "ОПЦІЯ 5 З 8",
+        title: "Синхронізувати все (All-in-One)",
+        desc: "Єдина універсальна команда: оновлює всі дедлайни з Moodle і Classroom (червоні), а також лекції (зелені) та практики (сині) з розкладу KSE, прибираючи скасовані події.",
+        cmd: "$ deadliner sync-all\n> [1/2] Синхронізація дедлайнів... оновлено 5 подій.\n> [2/2] Синхронізація розкладу... оновлено 14 подій.\n> Усі системи успішно синхронізовано."
+      },
+      "6": {
+        badge: "ОПЦІЯ 6 З 8",
+        title: "Планувальник фонової автосинхронізації",
+        desc: "Налаштовує щоденну автоматичну фонову синхронізацію через системний планувальник ОС (Windows Task Scheduler або UNIX cron) у бажаний час (за замовчуванням о 08:00 щоранку).",
+        cmd: "$ deadliner cron status\n> Щоденна автосинхронізація: УВІМКНЕНО\n> Запланований час: 08:00 щоденно\n> Наступний запуск: Завтра о 08:00\n> Журнал: ~/.deadliner/sync.log"
+      },
+      "7": {
+        badge: "ОПЦІЯ 7 З 8",
+        title: "Вхід / Налаштування сервісів",
+        desc: "Керування токенами автентифікації: перехоплення токена schedule.kse.ua з буфера обміну в 1 клік, OAuth-вхід Google Календаря/Classroom у браузері та налаштування Moodle.",
+        cmd: "$ deadliner login kse\n> Відкрито браузер на schedule.kse.ua\n> Очікування токена сесії з буфера обміну...\n> Токен виявлено! Дані збережено в ~/.deadliner.json."
+      },
+      "8": {
+        badge: "ОПЦІЯ 8 З 8",
+        title: "Вихід",
+        desc: "Безпечно закриває інтерактивне меню, зберігаючи всі фонові завдання та кешовані налаштування.",
+        cmd: "$ deadliner menu\n> Вибір: 8\n> До побачення!"
+      }
+    };
+
+    function selectOption(optNum) {
+      document.querySelectorAll('.term-opt').forEach(el => el.classList.remove('active'));
+      const activeEl = document.querySelector(`.term-opt[data-opt="${optNum}"]`);
+      if (activeEl) activeEl.classList.add('active');
+
+      const data = optionData[optNum];
+      if (data) {
+        document.getElementById('inspector-badge').textContent = data.badge;
+        document.getElementById('inspector-title').textContent = data.title;
+        document.getElementById('inspector-desc').textContent = data.desc;
+        document.getElementById('inspector-cmd').innerHTML = data.cmd.replace(/\n/g, '<br>');
+        document.getElementById('term-input-cursor').textContent = optNum;
+      }
+    }
+
+    function copyCode(btn, text) {
+      navigator.clipboard.writeText(text).then(() => {
+        const orig = btn.textContent;
+        btn.textContent = 'Скопійовано!';
+        btn.style.color = '#7ee787';
+        setTimeout(() => {
+          btn.textContent = orig;
+          btn.style.color = '';
+        }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>
