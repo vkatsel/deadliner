@@ -131,11 +131,15 @@ deadliner login moodle
 ```bash
 deadliner login google
 ```
-- Deadliner prompts you to paste your Google OAuth `client_secret.json` or enter your Client ID & Secret directly.
-- **Need a Google Cloud project?** Follow our step-by-step Ukrainian tutorial:
-  - 📖 [Google Cloud Setup Guide (Markdown)](docs/specs/google_setup_guide.md)
-  - 🌐 [Web Guide (HTML)](https://vkatsel.github.io/deadliner/google_setup_guide.html)
-- *Import secrets directly without login:* `deadliner menu` -> Option `7` -> `e`.
+
+Deadliner supports two flexible, privacy-focused deployment models:
+- **Model 1: Zero-Config (Public Release):** Once public Google verification is completed, simply launch the command and approve access in your browser.
+- **Model 2: Local-First / BYOK (Bring Your Own Keys):** Complete sovereignty with zero shared cloud project dependencies. Students create their own free personal Google Cloud project and paste their `client_secret.json` directly into Deadliner.
+  - Step-by-step tutorial:
+    - 🌐 [Web Guide in English](https://vkatsel.github.io/deadliner/google_setup_guide.html)
+    - 🌐 [Web Guide in Ukrainian](https://vkatsel.github.io/deadliner/google_setup_guide_uk.html)
+    - 📖 [Local Markdown Guide](docs/specs/google_setup_guide.md)
+  - *Direct import wizard:* `deadliner menu` &rarr; Option `7` &rarr; `e` (supports terminal paste, drag-and-drop file path, or manual Client ID/Secret entry).
 
 ### 3. KSE University Schedule
 ```bash
