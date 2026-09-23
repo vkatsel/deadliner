@@ -24,7 +24,16 @@
         <a href="google_setup_guide.html" class="nav-link">Google Guide</a>
         <a href="privacy.html" class="nav-link">Privacy</a>
         <a href="terms.html" class="nav-link" style="color: var(--text-primary); font-weight: 700;">Terms</a>
-        <a href="https://github.com/vkatsel/deadliner" class="btn-github" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <div class="lang-switch" aria-label="Language Switcher">
+          <span class="lang-opt active" aria-current="page">EN</span>
+          <a href="terms_uk.html" class="lang-opt" title="Українська версія">UA</a>
+        </div>
+        <a href="https://github.com/vkatsel/deadliner" class="btn-github" target="_blank" rel="noopener noreferrer">
+          <svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+          </svg>
+          GitHub
+        </a>
       </nav>
     </div>
   </header>
@@ -33,29 +42,35 @@
   <main class="container">
     <article class="legal-content-wrap">
       <h1>Terms of Service</h1>
-      <div class="legal-meta">
-        <span>Effective Date: June 11, 2026</span> &bull; 
-        <span>Last Updated: September 18, 2026</span> &bull;
-        <span>Version 2.0</span>
+      <div class="legal-header-bar">
+        <div class="legal-meta">
+          <span>Effective Date: June 11, 2026</span> &bull; 
+          <span>Last Updated: September 23, 2026</span> &bull;
+          <span>Version 2.1</span>
+        </div>
+        <div class="lang-switch" aria-label="Language selection">
+          <span class="lang-opt active" aria-current="page">EN</span>
+          <a href="terms_uk.html" class="lang-opt" title="Перейти на українську версію">UA</a>
+        </div>
       </div>
 
       <div class="callout-box">
-        <strong>Open Source License:</strong> Deadliner is free software provided under the terms of the 
+        <strong>Open Source License:</strong> Deadliner is free open-source software provided under the terms of the 
         <a href="https://github.com/vkatsel/deadliner/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT License</a>.
-        By downloading, installing, or using the software, you agree to these Terms.
+        By downloading, installing, configuring, or using the software, you agree to these Terms.
       </div>
 
       <h2>1. Acceptance of Terms</h2>
       <p>
-        These Terms of Service ("Terms") govern your use of the Deadliner application, its command-line interface, and this documentation website. By using Deadliner, you accept and agree to be bound by these Terms. If you do not agree to these Terms, do not install or use the application.
+        These Terms of Service ("Terms") govern your use of the Deadliner application, its command-line interface, scripts, and this documentation website. By using Deadliner, you accept and agree to be bound by these Terms. If you do not agree to these Terms, do not install or use the application.
       </p>
 
       <h2>2. Description of the Service</h2>
       <p>
-        Deadliner is a client-side productivity tool designed to help students aggregate coursework assignments and class schedules from learning management systems (e.g., Moodle, Google Classroom) and university scheduling portals (e.g., schedule.kse.ua), synchronizing them into Google Calendar.
+        Deadliner is a client-side productivity tool designed to help university students aggregate coursework assignments and class schedules from learning management systems (e.g., Moodle, Google Classroom) and university scheduling portals (e.g., schedule.kse.ua), synchronizing them into Google Calendar.
       </p>
       <p>
-        Deadliner operates as a standalone local CLI. It does not provide server-side hosted services or continuous cloud infrastructure.
+        Deadliner operates as a standalone local CLI. It does not provide server-side hosted services or continuous cloud infrastructure. All operations run strictly on your local computer.
       </p>
 
       <h2>3. Acceptable Use and User Responsibilities</h2>
@@ -64,40 +79,60 @@
         <li>Use the tool only with your own personal student credentials and authorized academic accounts.</li>
         <li>Comply with the Acceptable Use Policies and Terms of Service of your university (including Kyiv School of Economics) and connected platforms (Google, Moodle).</li>
         <li>Not use Deadliner to scrape, harvest, or disrupt university servers or third-party APIs beyond normal academic usage.</li>
-        <li>Safeguard your local machine and credential configuration files (<code>~/.deadliner.json</code>).</li>
+        <li>Safeguard your local machine and credential configuration files (<code>~/.deadliner.json</code>, <code>~/.deadliner_google_token.json</code>, <code>~/.deadliner/client_secret.json</code>).</li>
       </ul>
 
       <h2>4. Intellectual Property &amp; Open Source</h2>
       <p>
-        The software source code is licensed under the permissive <strong>MIT License</strong>. You are free to inspect, modify, fork, and distribute the software in accordance with the license conditions. All trademarks and service marks associated with third-party services (Google, Moodle) belong to their respective owners.
+        The software source code is licensed under the permissive <strong>MIT License</strong>. You are free to inspect, modify, fork, and distribute the software in accordance with the license conditions. All trademarks, service marks, and trade names associated with third-party services (Google, Google Calendar, Google Classroom, Moodle) belong to their respective owners.
       </p>
 
-      <h2>5. Disclaimer of Warranties</h2>
+      <h2>5. Important Academic Disclaimer &amp; Disclaimer of Warranties</h2>
+      <div class="callout-box callout-green">
+        <strong>Academic Disclaimer:</strong> Deadliner is an auxiliary organizational utility built to enhance deadline visibility. It is not an official university grading, registrar, or submission portal. You remain solely responsible for verifying your assignment deadlines, exam timetables, and submission requirements on official university channels (Moodle and Google Classroom).
+      </div>
       <p>
         DEADLINER IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT.
       </p>
       <p>
-        While Deadliner is engineered with high rigor (including comprehensive test suites, timezone checks, and fail-loudly error policies), you acknowledge that network changes, API updates, or local misconfigurations may occasionally delay or prevent synchronization. You remain ultimately responsible for monitoring and meeting your academic deadlines.
+        While Deadliner is engineered with high rigor (including comprehensive test suites, timezone checks, and fail-loudly error policies), you acknowledge that network disruptions, upstream LMS API alterations, or local misconfigurations may delay or prevent synchronization.
       </p>
 
       <h2>6. Limitation of Liability</h2>
       <p>
-        IN NO EVENT SHALL THE AUTHORS, MAINTAINERS, OR KYIV SCHOOL OF ECONOMICS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY (INCLUDING ACADEMIC PENALTIES, MISSED ASSIGNMENTS, OR SYSTEM FAILURES) ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+        IN NO EVENT SHALL THE AUTHORS, MAINTAINERS, CONTRIBUTORS, OR KYIV SCHOOL OF ECONOMICS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY (INCLUDING DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES, INCLUDING MISSED ASSIGNMENTS, ACADEMIC PENALTIES, SYSTEM FAILURES, OR LOSS OF DATA) ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       </p>
 
-      <h2>7. Modifications to Terms</h2>
+      <h2>7. Termination &amp; Data Erasure</h2>
+      <p>
+        You may terminate your use of Deadliner at any time by simply deleting the local CLI executable and removing your local configuration files:
+      </p>
+      <ul>
+        <li><code>~/.deadliner.json</code></li>
+        <li><code>~/.deadliner_google_token.json</code></li>
+        <li><code>~/.deadliner/client_secret.json</code></li>
+      </ul>
+      <p>
+        You may also revoke Google OAuth permissions at any time via <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer">myaccount.google.com/permissions</a>.
+      </p>
+
+      <h2>8. Modifications to Terms</h2>
       <p>
         We reserve the right to modify these Terms at any time. Updated versions will be published on this website with an updated "Last Updated" timestamp. Continued use of Deadliner following changes constitutes acceptance of the updated Terms.
       </p>
 
-      <h2>8. Governing Law &amp; Contact</h2>
+      <h2>9. Governing Law &amp; Contact</h2>
       <p>
         These Terms are governed by applicable open-source legal principles and the laws of Ukraine.
       </p>
       <p>
-        For inquiries regarding these Terms, please contact the maintainers via our official repository:
-        <a href="https://github.com/vkatsel/deadliner" target="_blank" rel="noopener noreferrer">https://github.com/vkatsel/deadliner</a>.
+        For inquiries regarding these Terms or compliance, please contact the maintainers:
       </p>
+      <ul>
+        <li><strong>Maintainer:</strong> Vladyslav Katsel (<a href="mailto:vkatsel@kse.org.ua">vkatsel@kse.org.ua</a>)</li>
+        <li><strong>Institution:</strong> Kyiv School of Economics (KSE)</li>
+        <li><strong>Official Repository:</strong> <a href="https://github.com/vkatsel/deadliner" target="_blank" rel="noopener noreferrer">https://github.com/vkatsel/deadliner</a></li>
+      </ul>
     </article>
   </main>
 
@@ -121,7 +156,7 @@
             <li><a href="index.html">Home</a></li>
             <li><a href="index.html#features">Features</a></li>
             <li><a href="index.html#quickstart">Quickstart</a></li>
-            <li><a href="google_setup_guide.html">Google Setup Guide</a></li>
+            <li><a href="google_setup_guide.html">Google Setup Guide (EN)</a> / <a href="google_setup_guide_uk.html">UA</a></li>
             <li><a href="index.html#menu-showcase">Interactive Menu</a></li>
           </ul>
         </div>
@@ -129,8 +164,8 @@
         <div class="footer-nav-col">
           <h4>Compliance &amp; Legal</h4>
           <ul>
-            <li><a href="privacy.html">Privacy Policy</a></li>
-            <li><a href="terms.html">Terms of Service</a></li>
+            <li><a href="privacy.html">Privacy Policy (EN)</a> / <a href="privacy_uk.html">UA</a></li>
+            <li><a href="terms.html">Terms of Service (EN)</a> / <a href="terms_uk.html">UA</a></li>
             <li><a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer">Google User Data Policy</a></li>
           </ul>
         </div>

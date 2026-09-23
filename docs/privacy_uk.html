@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Політика конфіденційності — Deadliner</title>
+  <meta name="description" content="Політика конфіденційності Deadliner: Локальна академічна синхронізація без телеметрії з повним дотриманням Google API Services User Data Policy та Limited Use Requirements.">
+  <link rel="icon" type="image/png" href="assets/logo.png">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="container nav-wrap">
+      <a href="index.html" class="brand-link" aria-label="Deadliner Головна">
+        <img src="assets/logo.png" alt="Логотип Deadliner" class="brand-logo" width="44" height="44">
+        <span class="brand-title">Deadliner</span>
+      </a>
+      <nav class="main-nav" aria-label="Головна навігація">
+        <a href="index.html" class="nav-link">Головна</a>
+        <a href="index.html#features" class="nav-link">Можливості</a>
+        <a href="index.html#quickstart" class="nav-link">Швидкий старт</a>
+        <a href="google_setup_guide_uk.html" class="nav-link">Google Інструкція</a>
+        <a href="privacy_uk.html" class="nav-link" style="color: var(--text-primary); font-weight: 700;">Конфіденційність</a>
+        <a href="terms_uk.html" class="nav-link">Умови</a>
+        <div class="lang-switch" aria-label="Вибір мови">
+          <a href="privacy.html" class="lang-opt" title="English version">EN</a>
+          <span class="lang-opt active" aria-current="page">UA</span>
+        </div>
+        <a href="https://github.com/vkatsel/deadliner" class="btn-github" target="_blank" rel="noopener noreferrer">
+          <svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+          </svg>
+          GitHub
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Legal Main Content -->
+  <main class="container">
+    <article class="legal-content-wrap">
+      <h1>Політика конфіденційності</h1>
+      <div class="legal-header-bar">
+        <div class="legal-meta">
+          <span>Дата набрання чинності: 11 червня 2026 р.</span> &bull; 
+          <span>Останнє оновлення: 23 вересня 2026 р.</span> &bull;
+          <span>Версія 2.1</span>
+        </div>
+        <div class="lang-switch" aria-label="Перемикач мови">
+          <a href="privacy.html" class="lang-opt" title="Switch to English version">EN</a>
+          <span class="lang-opt active" aria-current="page">UA</span>
+        </div>
+      </div>
+
+      <div class="callout-box callout-green">
+        <strong>Ключове зобов'язання щодо конфіденційності:</strong> Deadliner є <em>локальним додатком з нульовим збором інформації (Local-First & Zero-Knowledge)</em>. Ми не керуємо зовнішніми базами даних, віддаленими серверами чи системами збору телеметрії. Ваші академічні облікові дані, токени та дані про навчальні предмети завжди залишаються виключно на вашому власному комп'ютері.
+      </div>
+
+      <h2>1. Огляд та архітектурна модель</h2>
+      <p>
+        Deadliner — це інструмент командного рядка (CLI) з відкритим вихідним кодом, створений студентами для студентів з метою автоматичної агрегації навчальних завдань і розкладу занять із платформ Moodle, Google Classroom та розкладу Київської школи економіки (schedule.kse.ua) до особистого Google Календаря.
+      </p>
+      <p>
+        Deadliner не передає жодних персональних даних стороннім особам або серверам. Усі мережеві запити відбуваються безпосередньо та захищено між вашим локальним терміналом і офіційними API-інтерфейсами Moodle, Google та schedule.kse.ua через протокол HTTPS/TLS.
+      </p>
+
+      <h2>2. Інформація, до якої здійснюється доступ, та мета її використання</h2>
+      <p>
+        Під час виконання Deadliner звертається виключно до тих даних, які суворо необхідні для відображення або синхронізації ваших завдань і розкладу:
+      </p>
+      <ul>
+        <li><strong>Навчальні завдання та дедлайни:</strong> назви робіт, терміни здачі, назви курсів і посилання на завдання з Moodle та Google Classroom.</li>
+        <li><strong>Розклад пар:</strong> назви дисциплін, типи занять (лекція/практика), заплановані проміжки часу та аудиторії з розкладу schedule.kse.ua.</li>
+        <li><strong>Події календаря:</strong> події, створені додатком Deadliner у вашому Google Календарі, для додавання, оновлення або видалення синхронізованих записів.</li>
+      </ul>
+
+      <h2>3. Дозволи Google API та обмежене використання (Limited Use)</h2>
+      <div class="callout-box">
+        <strong>Обов'язкове розкриття інформації щодо Google API:</strong><br>
+        Використання додатком Deadliner інформації, отриманої від Google API, та її передача будь-яким іншим додаткам здійснюється у повній відповідності до 
+        <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer">Політики щодо даних користувачів у службах Google API (Google API Services User Data Policy)</a>, 
+        включно з <strong>Вимогами щодо обмеженого використання (Limited Use Requirements)</strong>.
+      </div>
+
+      <p>Deadliner запитує виключно такі області доступу OAuth 2.0 для синхронізації навчального календаря студента:</p>
+      <ul>
+        <li><code>https://www.googleapis.com/auth/calendar.events</code>: використовується суворо для створення, оновлення та видалення нагадувань про навчальні дедлайни та розклад занять у вашому основному Google Календарі з чітким кольоровим маркуванням (Tomato Red для дедлайнів, Sage Green для лекцій, Peacock Blue для практик). Deadliner позначає створені ним події унікальним метатегом (<code>deadliner_id</code>) і <strong>ніколи не переглядає, не змінює та не видаляє особисті події у вашому календарі, створені іншими програмами або вами особисто</strong>.</li>
+        <li><code>https://www.googleapis.com/auth/classroom.courses.readonly</code>: використовується виключно для отримання списку активних курсів, на які ви зараховані як студент.</li>
+        <li><code>https://www.googleapis.com/auth/classroom.coursework.me.readonly</code> та <code>https://www.googleapis.com/auth/classroom.coursework.students.readonly</code>: використовуються суворо для отримання призначених вам навчальних завдань, статусів здачі та строків виконання з Google Classroom.</li>
+      </ul>
+
+      <h3>Принципи дотримання вимог Limited Use</h3>
+      <p>Відповідно до вимог Google Limited Use:</p>
+      <ul>
+        <li><strong>Жодної передачі третім сторонам (No External Transfer):</strong> Deadliner ніколи не передає дані користувачів Google третім сторонам, стороннім аналітичним службам або віддаленим серверам. Усі відповіді API обробляються виключно в оперативній пам'яті та на вашому локальному накопичувачі.</li>
+        <li><strong>Заборона реклами (No Advertising):</strong> дані користувачів Google ніколи не використовуються і не передаються для показу або таргетування реклами (зокрема персоналізованої чи контекстної).</li>
+        <li><strong>Заборона навчання ШІ (No AI/ML Training):</strong> дані користувачів Google ніколи не використовуються для навчання генеративних моделей штучного інтелекту, великих мовних моделей чи алгоритмів машинного навчання.</li>
+        <li><strong>Заборона перегляду людиною (Human Access Restrictions):</strong> жодна людина (включно з розробниками чи адміністраторами Deadliner) не має доступу до ваших даних користувача Google і не переглядає їх. Програмне забезпечення функціонує повністю автономно на вашому комп'ютері.</li>
+      </ul>
+
+      <h2>4. Локальне збереження та безпека даних</h2>
+      <p>
+        Токени автентифікації (токени оновлення Google OAuth, токени Moodle та сесії KSE Schedule) та конфігурація клієнта зберігаються виключно на вашому персональному комп'ютері в домашньому каталозі користувача:
+      </p>
+      <ul>
+        <li><code>~/.deadliner.json</code> — загальна конфігурація та токени академічних платформ.</li>
+        <li><code>~/.deadliner_google_token.json</code> — токени доступу та оновлення Google OAuth.</li>
+        <li><code>~/.deadliner/client_secret.json</code> — облікові дані десктопного OAuth-клієнта Google.</li>
+      </ul>
+      <p>
+        Ці файли захищені стандартною моделлю прав доступу операційної системи. Deadliner ніколи не надсилає ці файли у хмару та не поширює їх у загальнодоступних репозиторіях.
+      </p>
+
+      <h2>5. Відсутність сторонньої телеметрії та відстеження</h2>
+      <ul>
+        <li>Ми не продаємо, не орендуємо та не монетизуємо ваші дані у будь-який спосіб.</li>
+        <li>У коді нашого CLI-інструменту та на цьому сайті документації відсутні будь-які сторонні трекери, аналітичні cookie або шпигунські бібліотеки.</li>
+        <li>Весь мережевий трафік шифрується за протоколом HTTPS/TLS безпосередньо між вашим комп'ютером і відповідними сервісами (Google LLC, Moodle, KSE).</li>
+      </ul>
+
+      <h2>6. Збереження даних та порядок відкликання доступу</h2>
+      <p>
+        Оскільки Deadliner не зберігає інформацію на віддалених серверах, відкликання доступу та повне видалення слідів є миттєвим і повністю перебуває під вашим контролем:
+      </p>
+      <ul>
+        <li><strong>Видалення локальних файлів:</strong> ви можете у будь-який момент видалити всі налаштування та збережені токени через термінал:
+          <pre style="background: var(--bg-tertiary); padding: 0.5rem 0.75rem; border-radius: 4px; margin: 0.5rem 0; color: #79c0ff;"># Для macOS та Linux:
+rm -f ~/.deadliner.json ~/.deadliner_google_token.json ~/.deadliner/client_secret.json
+
+# Для Windows (PowerShell):
+Remove-Item "$HOME\.deadliner.json", "$HOME\.deadliner_google_token.json", "$HOME\.deadliner\client_secret.json" -ErrorAction SilentlyContinue</pre>
+        </li>
+        <li><strong>Відкликання дозволів Google OAuth:</strong> ви можете відкликати доступ додатку в будь-який час на сторінці безпеки облікового запису Google: <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer">myaccount.google.com/permissions</a>. Google миттєво анулює всі видані токени.</li>
+        <li><strong>Видалення подій календаря:</strong> вимкнення синхронізації або очищення подій Deadliner у Google Календарі видаляє їх остаточно без створення залишкових копій.</li>
+      </ul>
+
+      <h2>7. Контакти та інформація про розробників</h2>
+      <p>
+        Deadliner розробляється та підтримується як проєкт з відкритим вихідним кодом Владиславом Кацелем та студентською інженерною командою Київської школи економіки (KSE).
+      </p>
+      <p>
+        Для запитів щодо комплаєнсу, повідомлень про помилки або запитань щодо приватності звертайтеся:
+      </p>
+      <ul>
+        <li><strong>Розробник:</strong> Владислав Кацель (<a href="mailto:vkatsel@kse.org.ua">vkatsel@kse.org.ua</a>)</li>
+        <li><strong>Заклад:</strong> Київська школа економіки (Kyiv School of Economics, KSE)</li>
+        <li><strong>Трекер запитів GitHub:</strong> <a href="https://github.com/vkatsel/deadliner/issues" target="_blank" rel="noopener noreferrer">https://github.com/vkatsel/deadliner/issues</a></li>
+        <li><strong>Репозиторій проєкту:</strong> <a href="https://github.com/vkatsel/deadliner" target="_blank" rel="noopener noreferrer">https://github.com/vkatsel/deadliner</a></li>
+      </ul>
+    </article>
+  </main>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <div class="footer-logo-row">
+            <img src="assets/logo.png" alt="Логотип Deadliner" width="32" height="32" style="border-radius: 4px;">
+            <span class="footer-brand-title">Deadliner</span>
+          </div>
+          <p class="footer-tagline">
+            Автономний рушій синхронізації навчальних дедлайнів та розкладу. Створений з турботою про студентів з СДУГ та захистом від інформаційного перевантаження.
+          </p>
+        </div>
+
+        <div class="footer-nav-col">
+          <h4>Навігація</h4>
+          <ul>
+            <li><a href="index.html">Головна</a></li>
+            <li><a href="index.html#features">Можливості</a></li>
+            <li><a href="index.html#quickstart">Швидкий старт</a></li>
+            <li><a href="google_setup_guide.html">Google Інструкція (EN)</a> / <a href="google_setup_guide_uk.html">UA</a></li>
+            <li><a href="index.html#menu-showcase">Інтерактивне меню</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-nav-col">
+          <h4>Правова інформація</h4>
+          <ul>
+            <li><a href="privacy.html">Privacy Policy (EN)</a> / <a href="privacy_uk.html">UA</a></li>
+            <li><a href="terms.html">Terms of Service (EN)</a> / <a href="terms_uk.html">UA</a></li>
+            <li><a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer">Google User Data Policy</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-nav-col">
+          <h4>Відкритий код</h4>
+          <ul>
+            <li><a href="https://github.com/vkatsel/deadliner" target="_blank" rel="noopener noreferrer">Репозиторій GitHub</a></li>
+            <li><a href="https://github.com/vkatsel/deadliner/issues" target="_blank" rel="noopener noreferrer">Повідомити про проблему</a></li>
+            <li><a href="https://github.com/vkatsel/deadliner/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">Ліцензія MIT</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>&copy; 2026 Deadliner Team. Поширюється за відкритою ліцензією MIT.</div>
+        <div>Київська школа економіки (KSE) &bull; Студентська інженерна ініціатива</div>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

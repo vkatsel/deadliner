@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Privacy Policy — Deadliner</title>
-  <meta name="description" content="Deadliner Privacy Policy: Local-first, zero-telemetry academic synchronization adhering to Google API Services User Data Policy.">
+  <meta name="description" content="Deadliner Privacy Policy: Local-first, zero-telemetry academic synchronization strictly adhering to Google API Services User Data Policy and Limited Use Requirements.">
   <link rel="icon" type="image/png" href="assets/logo.png">
   <link rel="stylesheet" href="assets/style.css">
 </head>
@@ -24,7 +24,16 @@
         <a href="google_setup_guide.html" class="nav-link">Google Guide</a>
         <a href="privacy.html" class="nav-link" style="color: var(--text-primary); font-weight: 700;">Privacy</a>
         <a href="terms.html" class="nav-link">Terms</a>
-        <a href="https://github.com/vkatsel/deadliner" class="btn-github" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <div class="lang-switch" aria-label="Language Switcher">
+          <span class="lang-opt active" aria-current="page">EN</span>
+          <a href="privacy_uk.html" class="lang-opt" title="Українська версія">UA</a>
+        </div>
+        <a href="https://github.com/vkatsel/deadliner" class="btn-github" target="_blank" rel="noopener noreferrer">
+          <svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+          </svg>
+          GitHub
+        </a>
       </nav>
     </div>
   </header>
@@ -33,14 +42,20 @@
   <main class="container">
     <article class="legal-content-wrap">
       <h1>Privacy Policy</h1>
-      <div class="legal-meta">
-        <span>Effective Date: June 11, 2026</span> &bull; 
-        <span>Last Updated: September 18, 2026</span> &bull;
-        <span>Version 2.0</span>
+      <div class="legal-header-bar">
+        <div class="legal-meta">
+          <span>Effective Date: June 11, 2026</span> &bull; 
+          <span>Last Updated: September 23, 2026</span> &bull;
+          <span>Version 2.1</span>
+        </div>
+        <div class="lang-switch" aria-label="Language selection">
+          <span class="lang-opt active" aria-current="page">EN</span>
+          <a href="privacy_uk.html" class="lang-opt" title="Перейти на українську версію">UA</a>
+        </div>
       </div>
 
       <div class="callout-box callout-green">
-        <strong>Summary of Core Commitment:</strong> Deadliner is a <em>local-first, zero-knowledge application</em>. We do not operate an external database, remote server, or telemetry collector. Your academic credentials and course data remain on your own computer at all times.
+        <strong>Core Privacy Commitment:</strong> Deadliner is a <em>local-first, zero-knowledge application</em>. We do not operate an external database, remote server, or telemetry collector. Your academic credentials, tokens, and course data remain on your local computer at all times.
       </div>
 
       <h2>1. Overview &amp; Architectural Model</h2>
@@ -48,7 +63,7 @@
         Deadliner is an open-source command-line tool built by university students for university students to aggregate academic coursework and class schedules from Moodle, Google Classroom, and Kyiv School of Economics (KSE) Schedule into personal calendars.
       </p>
       <p>
-        Deadliner does not transmit personal data to third parties. All network communication occurs directly between your local client machine and the official APIs of Moodle, Google, and schedule.kse.ua.
+        Deadliner does not transmit personal data to third parties. All network communication occurs directly and securely between your local client machine and the official APIs of Moodle, Google, and schedule.kse.ua via TLS/HTTPS.
       </p>
 
       <h2>2. Information We Access and How It Is Used</h2>
@@ -62,57 +77,78 @@
       </ul>
 
       <h2>3. Google API Scopes &amp; Limited Use Disclosure</h2>
-      <p>
+      <div class="callout-box">
+        <strong>Mandatory Google API Disclosure:</strong><br>
         Deadliner's use and transfer to any other app of information received from Google APIs will adhere to the 
         <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer">Google API Services User Data Policy</a>, 
         including the <strong>Limited Use</strong> requirements.
-      </p>
-      <p>Deadliner requests the following OAuth 2.0 scopes:</p>
+      </div>
+
+      <p>Deadliner requests the following OAuth 2.0 scopes strictly to provide student calendar synchronization:</p>
       <ul>
-        <li><code>https://www.googleapis.com/auth/calendar.events</code>: Used solely to create, update, and delete color-coded events (Tomato Red for deadlines, Sage Green for lectures, Peacock Blue for practices) on your personal Google Calendar. Deadliner never accesses or modifies events it did not create.</li>
-        <li><code>https://www.googleapis.com/auth/classroom.courses.readonly</code>: Used solely to list the courses in which you are enrolled.</li>
-        <li><code>https://www.googleapis.com/auth/classroom.coursework.me.readonly</code> &amp; <code>https://www.googleapis.com/auth/classroom.coursework.students.readonly</code>: Used solely to retrieve coursework deadlines assigned to your student account.</li>
+        <li><code>https://www.googleapis.com/auth/calendar.events</code>: Used solely to create, update, and delete academic deadline reminders and timetable entries on your primary Google Calendar (color-coded: Tomato Red for deadlines, Sage Green for lectures, Peacock Blue for practices). Deadliner tags its events with private metadata (<code>deadliner_id</code>) and <strong>never reads, modifies, or deletes calendar events that it did not create</strong>.</li>
+        <li><code>https://www.googleapis.com/auth/classroom.courses.readonly</code>: Used solely to list the active academic courses in which you are enrolled as a student.</li>
+        <li><code>https://www.googleapis.com/auth/classroom.coursework.me.readonly</code> &amp; <code>https://www.googleapis.com/auth/classroom.coursework.students.readonly</code>: Used solely to retrieve your student coursework assignments, submission statuses, and deadlines.</li>
+      </ul>
+
+      <h3>Limited Use Compliance Pillars</h3>
+      <p>In accordance with Google's Limited Use requirements:</p>
+      <ul>
+        <li><strong>No External Transfer:</strong> Deadliner never transfers Google user data to third parties or remote servers. All API responses are processed in-memory and on your local disk.</li>
+        <li><strong>No Advertising:</strong> Google user data is never used or transferred to serve advertisements, including personalized, contextual, or interest-based ads.</li>
+        <li><strong>No AI/ML Training:</strong> Google user data is never used or transferred to train generalized artificial intelligence or machine learning models.</li>
+        <li><strong>Human Access Restrictions:</strong> No human beings (including Deadliner developers or maintainers) ever read or inspect your Google user data. The software operates entirely autonomously on your local workstation.</li>
       </ul>
 
       <h2>4. Local Storage &amp; Security</h2>
       <p>
-        Authentication tokens (Google OAuth refresh tokens, Moodle tokens, and KSE schedule tokens) are written strictly to your local machine under your user home directory:
+        Authentication tokens (Google OAuth refresh tokens, Moodle tokens, and KSE schedule tokens) and OAuth client configurations are written strictly to your local machine under your user home directory:
       </p>
       <ul>
         <li><code>~/.deadliner.json</code> — General configuration and platform tokens.</li>
         <li><code>~/.deadliner_google_token.json</code> — Google OAuth access and refresh tokens.</li>
+        <li><code>~/.deadliner/client_secret.json</code> — Google OAuth Desktop Client credentials.</li>
       </ul>
       <p>
-        These files are restricted to standard local filesystem permissions. We strongly advise users never to commit these files to public repositories.
+        These files are protected by your operating system's local user access permissions. Deadliner never uploads these credentials to any cloud server or repository.
       </p>
 
       <h2>5. Zero Third-Party Sharing &amp; Telemetry</h2>
       <ul>
         <li>We do not sell, rent, or monetize your data.</li>
-        <li>We do not include third-party tracking scripts, advertising SDKs, or analytics cookies in our CLI or on this website.</li>
-        <li>We do not use your data to train artificial intelligence or machine learning models.</li>
+        <li>We do not include third-party tracking scripts, analytics cookies, or behavioral telemetry in our CLI or on this documentation website.</li>
+        <li>All network traffic is encrypted via standard HTTPS/TLS directly between your device and the respective official service providers (Google LLC, Moodle, KSE).</li>
       </ul>
 
       <h2>6. Data Retention and How to Revoke Access</h2>
       <p>
-        Because Deadliner stores no data remotely, revoking access is instantaneous and completely under your control:
+        Because Deadliner stores no data remotely, revoking access and removing all traces is instantaneous and completely under your control:
       </p>
       <ul>
-        <li><strong>Local Data Deletion:</strong> Remove the config files from your terminal:
-          <pre style="background: var(--bg-tertiary); padding: 0.5rem 0.75rem; border-radius: 4px; margin: 0.5rem 0; color: #79c0ff;">rm ~/.deadliner.json ~/.deadliner_google_token.json</pre>
+        <li><strong>Local Data Deletion:</strong> You can delete all configuration files and cached tokens at any time:
+          <pre style="background: var(--bg-tertiary); padding: 0.5rem 0.75rem; border-radius: 4px; margin: 0.5rem 0; color: #79c0ff;"># macOS & Linux:
+rm -f ~/.deadliner.json ~/.deadliner_google_token.json ~/.deadliner/client_secret.json
+
+# Windows (PowerShell):
+Remove-Item "$HOME\.deadliner.json", "$HOME\.deadliner_google_token.json", "$HOME\.deadliner\client_secret.json" -ErrorAction SilentlyContinue</pre>
         </li>
-        <li><strong>Google OAuth Revocation:</strong> Revoke authorization at any time through your Google Account Security Dashboard at <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer">myaccount.google.com/permissions</a>.</li>
+        <li><strong>Google OAuth Revocation:</strong> Revoke authorization at any time through your Google Account Security Dashboard at <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer">myaccount.google.com/permissions</a>. Google will immediately invalidate all refresh tokens.</li>
         <li><strong>Calendar Event Removal:</strong> Disabling sync or deleting Deadliner events from Google Calendar permanently deletes them with no residual copies stored anywhere.</li>
       </ul>
 
       <h2>7. Contact &amp; Maintainer Information</h2>
       <p>
-        Deadliner is maintained as an open-source project by Vladyslav Katsel and the Deadliner engineering team at Kyiv School of Economics (KSE).
+        Deadliner is maintained as an open-source initiative by Vladyslav Katsel and the student engineering team at Kyiv School of Economics (KSE).
       </p>
       <p>
-        For inquiries, bug reports, or privacy questions, please open an issue on our GitHub repository: 
-        <a href="https://github.com/vkatsel/deadliner/issues" target="_blank" rel="noopener noreferrer">https://github.com/vkatsel/deadliner/issues</a>.
+        For inquiries, compliance questions, or security reports:
       </p>
+      <ul>
+        <li><strong>Maintainer:</strong> Vladyslav Katsel (<a href="mailto:vkatsel@kse.org.ua">vkatsel@kse.org.ua</a>)</li>
+        <li><strong>Institution:</strong> Kyiv School of Economics (KSE)</li>
+        <li><strong>Issue Tracker:</strong> <a href="https://github.com/vkatsel/deadliner/issues" target="_blank" rel="noopener noreferrer">https://github.com/vkatsel/deadliner/issues</a></li>
+        <li><strong>GitHub Repository:</strong> <a href="https://github.com/vkatsel/deadliner" target="_blank" rel="noopener noreferrer">https://github.com/vkatsel/deadliner</a></li>
+      </ul>
     </article>
   </main>
 
@@ -136,7 +172,7 @@
             <li><a href="index.html">Home</a></li>
             <li><a href="index.html#features">Features</a></li>
             <li><a href="index.html#quickstart">Quickstart</a></li>
-            <li><a href="google_setup_guide.html">Google Setup Guide</a></li>
+            <li><a href="google_setup_guide.html">Google Setup Guide (EN)</a> / <a href="google_setup_guide_uk.html">UA</a></li>
             <li><a href="index.html#menu-showcase">Interactive Menu</a></li>
           </ul>
         </div>
@@ -144,8 +180,8 @@
         <div class="footer-nav-col">
           <h4>Compliance &amp; Legal</h4>
           <ul>
-            <li><a href="privacy.html">Privacy Policy</a></li>
-            <li><a href="terms.html">Terms of Service</a></li>
+            <li><a href="privacy.html">Privacy Policy (EN)</a> / <a href="privacy_uk.html">UA</a></li>
+            <li><a href="terms.html">Terms of Service (EN)</a> / <a href="terms_uk.html">UA</a></li>
             <li><a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer">Google User Data Policy</a></li>
           </ul>
         </div>
