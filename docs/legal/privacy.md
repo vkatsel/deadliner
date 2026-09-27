@@ -2,7 +2,7 @@
 
 **Effective Date:** September 18, 2026  
 **Application Name:** Deadliner  
-**Maintainer:** Vladyslav Katsel ([vkatsel@kse.org.ua](mailto:vkatsel@kse.org.ua))  
+**Maintainer:** Vadym Katsel ([vkatsel@kse.org.ua](mailto:vkatsel@kse.org.ua))  
 **Repository:** [https://github.com/vkatsel/deadliner](https://github.com/vkatsel/deadliner)  
 
 ---
@@ -91,7 +91,7 @@ Deadliner is intended for university students, educators, and adult learners. We
 
 For any questions or compliance inquiries regarding Deadliner, please contact:
 
-- **Maintainer:** Vladyslav Katsel
+- **Maintainer:** Vadym Katsel
 - **Institution:** Kyiv School of Economics (KSE)
 - **Email:** [vkatsel@kse.org.ua](mailto:vkatsel@kse.org.ua)
 - **Repository:** [https://github.com/CS460-SEP-2026/greenfield](https://github.com/CS460-SEP-2026/greenfield)

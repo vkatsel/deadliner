@@ -3,7 +3,7 @@
 **Дата набрання чинності:** 11 червня 2026 р.  
 **Останнє оновлення:** 23 вересня 2026 р.  
 **Назва додатку:** Deadliner  
-**Розробник:** Владислав Кацель ([vkatsel@kse.org.ua](mailto:vkatsel@kse.org.ua))  
+**Розробник:** Вадим Кацель ([vkatsel@kse.org.ua](mailto:vkatsel@kse.org.ua))  
 **Заклад:** Київська школа економіки (Kyiv School of Economics, KSE)  
 **Репозиторій:** [https://github.com/vkatsel/deadliner](https://github.com/vkatsel/deadliner)  
 
@@ -53,7 +53,7 @@ Deadliner поширюється на умовах **Ліцензії MIT**. К�
 
 ## 6. Контактна інформація
 
-- **Розробник:** Владислав Кацель
+- **Розробник:** Вадим Кацель
 - **Email:** [vkatsel@kse.org.ua](mailto:vkatsel@kse.org.ua)
 - **Заклад:** Київська школа економіки (Kyiv School of Economics, KSE)
 - **Репозиторій:** [https://github.com/vkatsel/deadliner](https://github.com/vkatsel/deadliner)

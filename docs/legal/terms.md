@@ -2,7 +2,7 @@
 
 **Last Revised:** September 18, 2026  
 **Application Name:** Deadliner  
-**Maintainer:** Vladyslav Katsel ([vkatsel@kse.org.ua](mailto:vkatsel@kse.org.ua))  
+**Maintainer:** Vadym Katsel ([vkatsel@kse.org.ua](mailto:vkatsel@kse.org.ua))  
 **Repository:** [https://github.com/vkatsel/deadliner](https://github.com/vkatsel/deadliner)  
 
 ---
@@ -96,7 +96,7 @@ You may terminate this agreement at any time by deleting the software and removi
 ## 9. Contact Information
 
 For questions regarding these Terms:
-- **Maintainer:** Vladyslav Katsel
+- **Maintainer:** Vadym Katsel
 - **Email:** [vkatsel@kse.org.ua](mailto:vkatsel@kse.org.ua)
 - **Institution:** Kyiv School of Economics (KSE)
 - **Repository:** [https://github.com/vkatsel/deadliner](https://github.com/vkatsel/deadliner)
