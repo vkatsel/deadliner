@@ -1,26 +1,78 @@
+"""Moodle authentication and credential management for Deadliner."""
+
+from __future__ import annotations
+
+import argparse
 import getpass
 import json
-import sys
-import requests
-import argparse
 from pathlib import Path
+import sys
+
+import requests
 
 CONFIG_PATH = Path.home() / ".deadliner.json"
+DEFAULT_MOODLE_URL = "https://teaching.kse.org.ua"
 
 
-def _cmd_login_moodle(args: argparse.Namespace) -> int:
-    base_url = input("Moodle Base URL (e.g. https://teaching.kse.org.ua): ").strip()
-    if not base_url:
-        print("Base URL is required.", file=sys.stderr)
-        return 1
+def normalize_moodle_url(raw_url: str) -> str:
+    """Normalize Moodle URL.
 
-    if not base_url.startswith("http://") and not base_url.startswith("https://"):
-        base_url = "https://" + base_url
+    - Defaults to DEFAULT_MOODLE_URL if raw_url is empty.
+    - Prepends 'https://' if no scheme is specified.
+    - Strips any trailing slashes.
+    """
+    cleaned = raw_url.strip()
+    if not cleaned:
+        return DEFAULT_MOODLE_URL
 
-    username = input("Username: ").strip()
-    password = getpass.getpass("Password: ")
+    if not cleaned.startswith("http://") and not cleaned.startswith("https://"):
+        cleaned = f"https://{cleaned}"
 
-    url = f"{base_url.rstrip('/')}/login/token.php"
+    return cleaned.rstrip("/")
+
+
+def save_moodle_config(base_url: str, token: str, config_path: Path | None = None) -> bool:
+    """Save Moodle credentials into configuration file, preserving existing settings.
+
+    Args:
+        base_url: Normalized base URL for Moodle.
+        token: Authenticated Moodle web service token.
+        config_path: Path to configuration file (defaults to CONFIG_PATH).
+
+    Returns:
+        True if credentials were saved successfully, False otherwise.
+    """
+    target = config_path if config_path is not None else CONFIG_PATH
+    cfg: dict = {}
+    if target.exists():
+        try:
+            loaded = json.loads(target.read_text(encoding="utf-8"))
+            if isinstance(loaded, dict):
+                cfg = loaded
+        except (OSError, ValueError):
+            cfg = {}
+
+    cfg["moodle_base_url"] = base_url
+    cfg["moodle_token"] = token
+
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(json.dumps(cfg, indent=4), encoding="utf-8")
+        return True
+    except OSError:
+        return False
+
+
+def _cmd_login_moodle(args: argparse.Namespace | None = None) -> int:
+    """Interactively log in to Moodle and save credentials to config."""
+    print("=== Moodle Login Setup ===")
+    raw_url = input(f"Moodle Base URL [{DEFAULT_MOODLE_URL}]: ")
+    base_url = normalize_moodle_url(raw_url)
+
+    username = input("Username (your KSE email e.g. name@kse.org.ua or Moodle login): ").strip()
+    password = getpass.getpass("Password (your Moodle password, not Google SSO password): ")
+
+    url = f"{base_url}/login/token.php"
     params = {"username": username, "password": password, "service": "moodle_mobile_app"}
 
     print("Authenticating...")
@@ -55,23 +107,27 @@ def _cmd_login_moodle(args: argparse.Namespace) -> int:
 
     if "token" in data:
         token = data["token"]
-        cfg = {}
-        if CONFIG_PATH.exists():
-            try:
-                cfg = json.loads(CONFIG_PATH.read_text())
-            except (OSError, ValueError):
-                pass
-
-        cfg["moodle_base_url"] = base_url
-        cfg["moodle_token"] = token
-
-        CONFIG_PATH.write_text(json.dumps(cfg, indent=4))
-        print("Successfully logged in and saved Moodle token!")
-        return 0
+        if save_moodle_config(base_url, token, CONFIG_PATH):
+            print("Successfully logged in and saved Moodle token!")
+            return 0
+        else:
+            print(f"Error: Failed to save Moodle credentials to {CONFIG_PATH}.", file=sys.stderr)
+            return 1
     else:
         err = data.get("error", "Unknown error")
-        if "Invalid login" in err or "wrong username or password" in err.lower():
+        err_lower = str(err).lower()
+        errorcode = str(data.get("errorcode", "")).lower()
+        if (
+            "invalid login" in err_lower
+            or "wrong username or password" in err_lower
+            or errorcode == "invalidlogin"
+        ):
             print("Error: Incorrect username or password. Please try again.", file=sys.stderr)
+            print(
+                "Tip: If you normally sign into Moodle via the Google button on the web, "
+                "Moodle requires setting a local password or checking your credentials in Moodle profile settings.",
+                file=sys.stderr,
+            )
         else:
             print(f"Login failed: {err}", file=sys.stderr)
         return 1

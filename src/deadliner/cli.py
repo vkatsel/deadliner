@@ -17,6 +17,35 @@ from deadliner.models import AuthError
 CONFIG_PATH = Path.home() / ".deadliner.json"
 
 
+def is_classroom_sync_enabled(cfg: dict | None = None) -> bool:
+    """Return True if Google Classroom sync is enabled (defaults to True)."""
+    if cfg is None:
+        if CONFIG_PATH.exists():
+            try:
+                cfg = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                cfg = {}
+        else:
+            cfg = {}
+    val = cfg.get("sync_classroom")
+    if val is None:
+        return True
+    return bool(val)
+
+
+def set_classroom_sync_enabled(enabled: bool) -> None:
+    """Persist the sync_classroom setting in ~/.deadliner.json."""
+    cfg = {}
+    if CONFIG_PATH.exists():
+        try:
+            cfg = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            cfg = {}
+    cfg["sync_classroom"] = bool(enabled)
+    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    CONFIG_PATH.write_text(json.dumps(cfg, indent=4), encoding="utf-8")
+
+
 def _load_credentials() -> tuple[str, str, str, str]:
     """Read Moodle, Google, and KSE credentials from env vars, falling back to ~/.deadliner.json.
 
@@ -56,7 +85,9 @@ def _load_credentials() -> tuple[str, str, str, str]:
     return base_url, token, g_token, kse_token
 
 
-def _collect_assignments(base_url: str, token: str, g_token: str) -> tuple[list, list[str]]:
+def _collect_assignments(
+    base_url: str, token: str, g_token: str, sync_classroom: bool | None = None
+) -> tuple[list, list[str]]:
     """Fetch deadlines from every configured source, tolerating per-source failures."""
     from deadliner import classroom_fetcher
 
@@ -71,7 +102,10 @@ def _collect_assignments(base_url: str, token: str, g_token: str) -> tuple[list,
         except ConnectionError as e:
             warnings.append(f"warning: moodle connection: {e}")
 
-    if g_token:
+    if sync_classroom is None:
+        sync_classroom = is_classroom_sync_enabled()
+
+    if g_token and sync_classroom:
         try:
             assignments.extend(classroom_fetcher.fetch_classroom({"access_token": g_token}))
         except AuthError as e:
@@ -394,47 +428,148 @@ def _cmd_cron_logs(args: argparse.Namespace | None = None) -> int:
 
 
 
-def _cmd_login_google(args: argparse.Namespace) -> int:
-    from deadliner.google_auth import find_client_secrets_path, get_token_path, run_oauth_flow
+def _interactive_setup_client_secrets() -> bool:
+    """Prompt user to paste client_secret.json, enter keys, or specify a file path."""
+    from deadliner.google_auth import (
+        construct_client_secrets_from_keys,
+        find_client_secrets_path,
+        save_client_secrets_json,
+    )
     import shutil
+    import webbrowser
 
-    secrets_path = getattr(args, "client_secrets", None)
-    if not secrets_path:
-        found = find_client_secrets_path()
-        if not found:
-            print("\n" + "=" * 65)
-            print("  Google OAuth Setup")
-            print("=" * 65)
-            print("Could not automatically locate client_secret.json.")
-            print("1. Download client_secret.json from Google Cloud Console.")
-            print("2. Enter the path to your downloaded file below")
-            print("   (or drag & drop the file into this terminal):\n")
+    print("\n" + "=" * 65)
+    print("  Google OAuth Setup — Credentials Configuration")
+    print("=" * 65)
+    print("Deadliner requires Google Cloud OAuth credentials to sync with")
+    print("Google Calendar and Google Classroom.")
+    print("\nChoose how to provide your credentials:")
+    print("  1) Paste raw JSON content from downloaded client_secret.json")
+    print("  2) Enter path to downloaded client_secret.json (or drag & drop)")
+    print("  3) Enter Client ID and Client Secret manually")
+    print("  4) Open Google Cloud setup guide in browser")
+    print("  5) Cancel")
+    print("-" * 65)
+
+    try:
+        choice = input("Select an option [1-5]: ").strip()
+    except (KeyboardInterrupt, EOFError):
+        print("\nSetup cancelled.")
+        return False
+
+    match choice:
+        case "1":
+            print("\nPaste the content of your client_secret.json below.")
+            print("(Paste your JSON, then press Enter twice or send EOF):")
+            lines = []
             try:
-                user_in = input("Path to client_secret.json: ").strip().strip('"').strip("'")
+                while True:
+                    line = input()
+                    if not line and lines:
+                        break
+                    lines.append(line)
+            except EOFError:
+                pass
+            raw_text = "\n".join(lines).strip()
+            if not raw_text:
+                print("Error: No JSON content provided.", file=sys.stderr)
+                return False
+            try:
+                dest = save_client_secrets_json(raw_text)
+                print(f"\033[92mSaved credentials successfully to {dest}\033[0m")
+                return True
+            except ValueError as e:
+                print(f"\033[91mError: {e}\033[0m", file=sys.stderr)
+                return False
+
+        case "2":
+            try:
+                user_in = input("\nEnter path to client_secret.json (or drag & drop): ").strip().strip('"').strip("'")
             except (KeyboardInterrupt, EOFError):
-                print("\nGoogle authentication cancelled.")
-                return 130
+                print("\nSetup cancelled.")
+                return False
 
             if not user_in or not os.path.isfile(user_in):
                 print(f"Error: File '{user_in}' does not exist.", file=sys.stderr)
-                return 1
+                return False
 
-            # Save to ~/.deadliner/client_secret.json for permanent discovery
             dest_dir = Path.home() / ".deadliner"
             dest_dir.mkdir(parents=True, exist_ok=True)
             dest_file = dest_dir / "client_secret.json"
             try:
                 shutil.copyfile(user_in, dest_file)
-                print(f"Saved copy to {dest_file}")
-                secrets_path = str(dest_file)
+                print(f"\033[92mSaved copy to {dest_file}\033[0m")
+                return True
+            except Exception as e:
+                print(f"\033[91mError copying file: {e}\033[0m", file=sys.stderr)
+                return False
+
+        case "3":
+            try:
+                cid = input("\nEnter Client ID: ").strip()
+                csec = input("Enter Client Secret: ").strip()
+            except (KeyboardInterrupt, EOFError):
+                print("\nSetup cancelled.")
+                return False
+
+            if not cid or not csec:
+                print("Error: Client ID and Secret cannot be empty.", file=sys.stderr)
+                return False
+
+            try:
+                data = construct_client_secrets_from_keys(cid, csec)
+                dest = save_client_secrets_json(data)
+                print(f"\033[92mSaved credentials successfully to {dest}\033[0m")
+                return True
+            except Exception as e:
+                print(f"\033[91mError: {e}\033[0m", file=sys.stderr)
+                return False
+
+        case "4":
+            guide_url = "https://vkatsel.github.io/deadliner/google_setup_guide.html"
+            local_guide = Path(__file__).resolve().parent.parent.parent / "docs" / "specs" / "google_setup_guide.md"
+            print(f"\nOpening setup guide...")
+            print(f"Online: {guide_url}")
+            if local_guide.is_file():
+                print(f"Local file: {local_guide}")
+            try:
+                webbrowser.open(guide_url)
             except Exception:
-                secrets_path = user_in
-        else:
+                pass
+            return _interactive_setup_client_secrets()
+
+        case "5" | "q" | "cancel":
+            print("Setup cancelled.")
+            return False
+
+        case _:
+            print("Invalid option selected.")
+            return False
+
+
+def _cmd_login_google(args: argparse.Namespace) -> int:
+    from deadliner.google_auth import (
+        DEFAULT_CLIENT_ID,
+        DEFAULT_CLIENT_SECRET,
+        find_client_secrets_path,
+        get_token_path,
+        run_oauth_flow,
+    )
+
+    secrets_path = getattr(args, "client_secrets", None)
+    if not secrets_path:
+        found = find_client_secrets_path()
+        if found:
             secrets_path = str(found)
+        elif not (DEFAULT_CLIENT_ID and DEFAULT_CLIENT_SECRET):
+            success = _interactive_setup_client_secrets()
+            if not success:
+                return 1
+            secrets_path = str(find_client_secrets_path() or "")
 
     try:
-        run_oauth_flow(secrets_path)
-        print(f"Google authentication successful. Token saved to {get_token_path()}")
+        run_oauth_flow(secrets_path or None)
+        print(f"\033[92mGoogle authentication successful. Token saved to {get_token_path()}\033[0m")
         return 0
     except FileNotFoundError as e:
         print(str(e), file=sys.stderr)
@@ -443,7 +578,56 @@ def _cmd_login_google(args: argparse.Namespace) -> int:
         print("\nGoogle authentication cancelled by user.", file=sys.stderr)
         return 130
     except Exception as e:
-        print(f"Google authentication failed: {e}", file=sys.stderr)
+        print(f"\033[91mGoogle authentication failed: {e}\033[0m", file=sys.stderr)
+        return 1
+
+
+def _cmd_config_classroom(args: argparse.Namespace) -> int:
+    """Toggle or show Google Classroom sync status."""
+    state = getattr(args, "state", None)
+    if isinstance(state, str):
+        state = state.strip().lower()
+
+    if state == "on":
+        set_classroom_sync_enabled(True)
+        print("Google Classroom sync enabled.")
+        return 0
+    elif state == "off":
+        set_classroom_sync_enabled(False)
+        print("Google Classroom sync disabled.")
+        return 0
+    elif state in (None, "status"):
+        enabled = is_classroom_sync_enabled()
+        status_str = "ENABLED" if enabled else "DISABLED"
+        print(f"Google Classroom sync is currently: {status_str}")
+        return 0
+    else:
+        print(f"error: Invalid state '{state}'. Expected 'on' or 'off'.", file=sys.stderr)
+        return 2
+
+
+def _cmd_setup_path(args: argparse.Namespace) -> int:
+    """Check and add Deadliner to the user's permanent PATH."""
+    from deadliner import path_util
+
+    print("\n" + "=" * 55)
+    print("  Deadliner System PATH Configuration")
+    print("=" * 55)
+    if path_util.is_on_path():
+        print("✓ The `deadliner` command is already configured in your PATH.")
+        print("You can run `deadliner` directly from any terminal window.")
+        print("=" * 55 + "\n")
+        return 0
+
+    print("Configuring PATH so you can type `deadliner` anywhere...")
+    success, msg = path_util.add_to_path()
+    if success:
+        print(f"\033[92m{msg}\033[0m")
+        print("=" * 55 + "\n")
+        return 0
+    else:
+        print(f"\033[91m{msg}\033[0m", file=sys.stderr)
+        print("=" * 55 + "\n")
         return 1
 
 
@@ -463,9 +647,40 @@ def _get_cron_badge() -> str:
         return ""
 
 
+def _check_and_prompt_path_setup() -> None:
+    """Prompt the user to add Deadliner to PATH if it's not present and running interactively."""
+    from deadliner import path_util
+
+    if not sys.stdin.isatty():
+        return
+
+    if path_util.is_on_path():
+        return
+
+    print("\n\033[33m" + "=" * 58)
+    print("  💡 Deadliner is not in your system PATH yet.")
+    print("=" * 58 + "\033[0m")
+    print("  Adding it allows you to type 'deadliner' from any terminal,")
+    print("  without needing 'python -m deadliner'.")
+    print("\033[33m" + "=" * 58 + "\033[0m")
+    try:
+        ans = input("  Add 'deadliner' to PATH automatically? [Y/n]: ").strip().lower()
+    except (KeyboardInterrupt, EOFError):
+        return
+
+    if ans in ("", "y", "yes"):
+        success, msg = path_util.add_to_path()
+        if success:
+            print(f"  \033[92m✓ {msg}\033[0m\n")
+        else:
+            print(f"  \033[91m✗ {msg}\033[0m\n", file=sys.stderr)
+
+
 def _cmd_menu(args: argparse.Namespace | None = None) -> int:
     """Interactive CLI menu for seamless workflow navigation."""
     from deadliner import scheduler
+
+    _check_and_prompt_path_setup()
 
     while True:
         cron_badge = _get_cron_badge()
@@ -538,13 +753,20 @@ def _cmd_menu(args: argparse.Namespace | None = None) -> int:
                     case _:
                         print("Invalid choice.")
             case "7":
+                from deadliner import path_util
+
+                cr_badge = "\033[92m[Enabled]\033[0m" if is_classroom_sync_enabled() else "\033[90m[Disabled]\033[0m"
+                path_badge = "\033[92m[In PATH]\033[0m" if path_util.is_on_path() else "\033[93m[Not in PATH]\033[0m"
                 print("\nSelect service to configure:")
                 print("  a) Moodle Login")
                 print("  b) Google OAuth (Classroom & Calendar)")
                 print("  c) KSE Schedule Token")
-                print("  d) Back")
+                print(f"  d) Toggle Google Classroom Sync {cr_badge}")
+                print("  e) Import / Update Google Client Secrets (client_secret.json)")
+                print(f"  f) Configure System PATH {path_badge}")
+                print("  g) Back")
                 try:
-                    sub_choice = input("Choice [a/b/c/d]: ").strip().lower()
+                    sub_choice = input("Choice [a/b/c/d/e/f/g]: ").strip().lower()
                 except (KeyboardInterrupt, EOFError):
                     continue
                 match sub_choice:
@@ -558,7 +780,17 @@ def _cmd_menu(args: argparse.Namespace | None = None) -> int:
                         from deadliner.kse_auth import _cmd_login_kse
 
                         _cmd_login_kse(argparse.Namespace())
-                    case "d" | "q" | "back":
+                    case "d":
+                        current = is_classroom_sync_enabled()
+                        new_state = not current
+                        set_classroom_sync_enabled(new_state)
+                        msg = "enabled" if new_state else "disabled"
+                        print(f"Google Classroom sync {msg}.")
+                    case "e":
+                        _interactive_setup_client_secrets()
+                    case "f":
+                        _cmd_setup_path(argparse.Namespace())
+                    case "g" | "q" | "back":
                         pass
                     case _:
                         print("Invalid choice.")
@@ -639,6 +871,23 @@ def main(argv: list[str] | None = None) -> None:
         logs_parser = subparsers.add_parser("logs", help="view recent auto-sync logs (~/.deadliner/sync.log)")
         logs_parser.set_defaults(func=_cmd_cron_logs)
 
+        # deadliner config classroom [on|off]
+        config_parser = subparsers.add_parser("config", help="manage configuration settings")
+        config_subparsers = config_parser.add_subparsers(dest="config_cmd", required=True)
+
+        classroom_config_parser = config_subparsers.add_parser(
+            "classroom", help="toggle Google Classroom sync (on / off / status)"
+        )
+        classroom_config_parser.add_argument(
+            "state",
+            nargs="?",
+            default=None,
+            type=str.lower,
+            choices=["on", "off", "status"],
+            help="enable (on), disable (off), or check status of Google Classroom sync",
+        )
+        classroom_config_parser.set_defaults(func=_cmd_config_classroom)
+
         # deadliner login [moodle|google|kse]
         login_parser = subparsers.add_parser("login", help="log in to a service")
         login_subparsers = login_parser.add_subparsers(dest="service", required=True)
@@ -665,6 +914,10 @@ def main(argv: list[str] | None = None) -> None:
             help="use manual token copy-paste instead of 1-click browser sync",
         )
         kse_login.set_defaults(func=_cmd_login_kse)
+
+        # deadliner setup-path
+        path_parser = subparsers.add_parser("setup-path", help="add deadliner to user environment PATH")
+        path_parser.set_defaults(func=_cmd_setup_path)
 
         args = parser.parse_args(argv)
         sys.exit(args.func(args))

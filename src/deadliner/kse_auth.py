@@ -213,21 +213,54 @@ def refresh_kse_token(refresh_token: str, session_id: str = "") -> str | None:
         return None
 
     try:
+        req_body: dict = {
+            "refresh_token": refresh_token,
+            "refreshToken": refresh_token,
+        }
+        if session_id:
+            req_body["session_id"] = session_id
+            req_body["sessionId"] = session_id
+
         response = requests.post(
             KSE_AUTH_REFRESH_URL,
             headers={"Content-Type": "application/json"},
-            json={"refresh_token": refresh_token, "session_id": session_id or None},
+            json=req_body,
             timeout=10,
         )
         if response.status_code != 200:
             logger.debug(f"KSE token refresh failed with status {response.status_code}")
             return None
 
-        data = response.json()
-        new_token = data.get("token")
-        new_refresh = data.get("refresh_token") or refresh_token
+        data = response.json() if response.content else {}
+        user_obj = data.get("user", data) if isinstance(data, dict) else {}
+        if not isinstance(user_obj, dict):
+            user_obj = {}
+
+        new_token = (
+            data.get("token")
+            or data.get("jwt")
+            or data.get("accessToken")
+            or user_obj.get("token")
+            or user_obj.get("jwt")
+            or user_obj.get("accessToken")
+        )
+        new_refresh = (
+            data.get("refreshToken")
+            or data.get("refresh_token")
+            or user_obj.get("refreshToken")
+            or user_obj.get("refresh_token")
+            or refresh_token
+        )
+        new_session = str(
+            data.get("sessionId")
+            or data.get("session_id")
+            or user_obj.get("sessionId")
+            or user_obj.get("session_id")
+            or session_id
+            or ""
+        )
         if new_token:
-            save_kse_credentials(new_token, new_refresh, session_id)
+            save_kse_credentials(new_token, new_refresh, new_session)
             return new_token
     except Exception as e:
         logger.debug(f"Error during KSE token refresh: {e}")
@@ -244,7 +277,13 @@ def is_kse_token_expired(token: str) -> bool:
     exp = payload.get("exp")
     if not exp:
         return False
-    return time.time() >= (exp - 60)
+    try:
+        exp_num = float(exp)
+        if exp_num > 1e11:  # In case server returns millisecond timestamp
+            exp_num = exp_num / 1000.0
+        return time.time() >= (exp_num - 60)
+    except (ValueError, TypeError):
+        return False
 
 
 def get_valid_kse_token() -> str:
