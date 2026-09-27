@@ -166,6 +166,7 @@ def fetch_kse_schedule(
 
     from datetime import timedelta
 
+    refreshed_attempt = False
     curr_start = start_d
     while curr_start <= end_d:
         curr_end = min(curr_start + timedelta(days=6), end_d)
@@ -183,6 +184,20 @@ def fetch_kse_schedule(
             raise ConnectionError(f"Failed to connect to KSE API: {e}")
 
         if response.status_code in (401, 403):
+            # Attempt automatic token refresh once if refresh credentials exist
+            if not refreshed_attempt:
+                refreshed_attempt = True
+                from deadliner.kse_auth import load_kse_credentials, refresh_kse_token
+
+                _, refresh_token, session_id = load_kse_credentials()
+                if refresh_token:
+                    logger.info("KSE token rejected (401/403), attempting auto-refresh...")
+                    new_token = refresh_kse_token(refresh_token, session_id)
+                    if new_token:
+                        token = new_token
+                        headers["Authorization"] = f"Bearer {token}"
+                        continue
+
             logger.debug(f"KSE token rejected by API with status {response.status_code}")
             raise AuthError(f"KSE authentication failed: status {response.status_code}")
 

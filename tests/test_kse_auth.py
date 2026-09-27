@@ -63,6 +63,54 @@ def test_refresh_kse_token_failure(tmp_path, monkeypatch):
     assert new_token is None
 
 
+@responses.activate
+def test_refresh_kse_token_rotation_camelcase(tmp_path, monkeypatch):
+    """Verify Bug 1 fix: React Admin camelCase refreshToken rotation is persisted."""
+    test_cfg = tmp_path / ".deadliner.json"
+    monkeypatch.setattr(kse_auth, "CONFIG_PATH", test_cfg)
+    monkeypatch.setenv("DEADLINER_KSE_TOKEN", "")
+    monkeypatch.setenv("DEADLINER_KSE_REFRESH_TOKEN", "")
+
+    responses.add(
+        responses.POST,
+        KSE_AUTH_REFRESH_URL,
+        json={
+            "accessToken": "new-access-jwt",
+            "refreshToken": "rotated-refresh-token-xyz",
+            "sessionId": "rotated-session-123",
+        },
+        status=200,
+    )
+
+    new_token = refresh_kse_token("stale-refresh-token", "old-sess")
+    assert new_token == "new-access-jwt"
+
+    saved_token, saved_refresh, saved_session = load_kse_credentials()
+    assert saved_token == "new-access-jwt"
+    assert saved_refresh == "rotated-refresh-token-xyz"
+    assert saved_session == "rotated-session-123"
+
+    # Also verify request sent both camelCase and snake_case
+    req_body = json.loads(responses.calls[0].request.body)
+    assert req_body["refresh_token"] == "stale-refresh-token"
+    assert req_body["refreshToken"] == "stale-refresh-token"
+    assert req_body["sessionId"] == "old-sess"
+
+
+def test_is_kse_token_expired_millisecond_timestamp():
+    import time
+    # Expiring in 10 minutes, but timestamp in milliseconds (13 digits)
+    future_ms = (time.time() + 600) * 1000
+    token_valid = f"eyJhbGciOi.{kse_auth.base64.urlsafe_b64encode(json.dumps({'exp': future_ms}).encode()).decode()}.sig"
+    assert not kse_auth.is_kse_token_expired(token_valid)
+
+    # Expired 10 minutes ago in milliseconds
+    past_ms = (time.time() - 600) * 1000
+    token_expired = f"eyJhbGciOi.{kse_auth.base64.urlsafe_b64encode(json.dumps({'exp': past_ms}).encode()).decode()}.sig"
+    assert kse_auth.is_kse_token_expired(token_expired)
+
+
+
 def test_get_valid_kse_token_falls_back_to_refresh(monkeypatch):
     monkeypatch.setattr(kse_auth, "load_kse_credentials", lambda: ("", "refresh-abc", "sess-1"))
     monkeypatch.setattr(kse_auth, "refresh_kse_token", lambda r, s: "refreshed-jwt")

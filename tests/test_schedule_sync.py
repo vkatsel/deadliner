@@ -209,4 +209,73 @@ def test_sync_schedule_does_not_delete_without_time_window():
     assert len(delete_calls) == 0
 
 
+@responses.activate
+def test_sync_schedule_preserves_deadline_events_in_deletion_window():
+    """Verify Bug 2 fix: schedule sync must NEVER delete assignment deadline events in the window."""
+    from deadliner.calendar_sync import _schedule_event_payload
+
+    event = _sample_schedule_event()
+    active_payload = _schedule_event_payload(event)
+    active_payload["id"] = "gcal-active-evt"
+
+    # Search for active event
+    responses.add(responses.GET, EVENTS_URL, json={"items": [active_payload]}, status=200)
+
+    # Window reconciliation returns:
+    # 1. The active schedule event
+    # 2. A cancelled schedule event (should be deleted)
+    # 3. A new-style deadline event with deadliner_type="deadline" (must NOT be deleted)
+    # 4. A legacy deadline event with "[DEADLINE]" in summary (must NOT be deleted)
+    cancelled_schedule_event = {
+        "id": "gcal-cancelled-evt",
+        "summary": "[CS440] Cancelled Class",
+        "extendedProperties": {
+            "private": {
+                "deadliner_id": "sha256_of_old_cancelled_class",
+                "deadliner_type": "schedule",
+            }
+        },
+    }
+    deadline_event_tagged = {
+        "id": "gcal-deadline-tagged-evt",
+        "summary": "[DEADLINE] [MATH101] Assignment 2",
+        "extendedProperties": {
+            "private": {
+                "deadliner_id": "sha256_of_assignment_tagged",
+                "deadliner_type": "deadline",
+            }
+        },
+    }
+    deadline_event_legacy = {
+        "id": "gcal-deadline-legacy-evt",
+        "summary": "[DEADLINE] [SE102] Final Project",
+        "extendedProperties": {
+            "private": {
+                "deadliner_id": "sha256_of_assignment_legacy",
+            }
+        },
+    }
+
+    responses.add(
+        responses.GET,
+        EVENTS_URL,
+        json={"items": [active_payload, cancelled_schedule_event, deadline_event_tagged, deadline_event_legacy]},
+        status=200,
+    )
+    responses.add(responses.DELETE, f"{EVENTS_URL}/gcal-cancelled-evt", status=204)
+
+    t_min = datetime(2026, 9, 1, 0, 0, tzinfo=timezone.utc)
+    t_max = datetime(2026, 9, 7, 23, 59, tzinfo=timezone.utc)
+
+    created, updated, skipped, deleted, statuses = sync_schedule_to_calendar(
+        [event], "google-token", time_min=t_min, time_max=t_max, return_details=True
+    )
+
+    assert deleted == 1
+    delete_calls = [c for c in responses.calls if c.request.method == "DELETE"]
+    assert len(delete_calls) == 1
+    assert delete_calls[0].request.url == f"{EVENTS_URL}/gcal-cancelled-evt"
+
+
+
 

@@ -72,7 +72,12 @@ def _event_payload(assignment: Assignment) -> dict:
         "start": {"dateTime": start.isoformat()},
         "end": {"dateTime": end.isoformat()},
         "colorId": EVENT_COLOR_ID,
-        "extendedProperties": {"private": {"deadliner_id": _stable_id(assignment)}},
+        "extendedProperties": {
+            "private": {
+                "deadliner_id": _stable_id(assignment),
+                "deadliner_type": "deadline",
+            }
+        },
     }
 
 
@@ -123,7 +128,12 @@ def _schedule_event_payload(event: ScheduleEvent) -> dict:
         "start": {"dateTime": event.start_utc.isoformat()},
         "end": {"dateTime": event.end_utc.isoformat()},
         "colorId": color_id,
-        "extendedProperties": {"private": {"deadliner_id": _schedule_stable_id(event)}},
+        "extendedProperties": {
+            "private": {
+                "deadliner_id": _schedule_stable_id(event),
+                "deadliner_type": "schedule",
+            }
+        },
     }
 
 
@@ -252,9 +262,18 @@ def _fetch_gcal_schedule_events(headers: dict, time_min_utc: datetime, time_max_
 
         data = _request("GET", f"{CALENDAR_API_BASE}/calendars/primary/events", headers, params=params)
         for item in data.get("items", []):
-            deadliner_id = item.get("extendedProperties", {}).get("private", {}).get("deadliner_id")
-            if deadliner_id:
-                events.append(item)
+            private_props = item.get("extendedProperties", {}).get("private", {})
+            deadliner_id = private_props.get("deadliner_id")
+            deadliner_type = private_props.get("deadliner_type")
+            summary = item.get("summary", "")
+
+            if not deadliner_id:
+                continue
+            # Strictly exclude deadline events from schedule event reconciliation
+            if deadliner_type == "deadline" or summary.startswith("[DEADLINE]"):
+                continue
+
+            events.append(item)
 
         page_token = data.get("nextPageToken")
         if not page_token:
@@ -298,13 +317,15 @@ def sync_schedule_to_calendar(
                 existing_event = _find_existing_event(headers, legacy_id)
 
         if existing_event:
+            existing_private = existing_event.get("extendedProperties", {}).get("private", {})
             needs_update = (
                 existing_event.get("summary") != payload["summary"]
                 or existing_event.get("location") != payload.get("location")
                 or existing_event.get("description") != payload.get("description")
                 or _parse_dt(existing_event.get("start", {}).get("dateTime")) != _parse_dt(payload["start"]["dateTime"])
                 or _parse_dt(existing_event.get("end", {}).get("dateTime")) != _parse_dt(payload["end"]["dateTime"])
-                or existing_event.get("extendedProperties", {}).get("private", {}).get("deadliner_id") != deadliner_id
+                or existing_private.get("deadliner_id") != deadliner_id
+                or existing_private.get("deadliner_type") != "schedule"
             )
             if needs_update:
                 event_id = existing_event["id"]
@@ -334,7 +355,15 @@ def sync_schedule_to_calendar(
         active_ids = {_schedule_stable_id(e) for e in events} | {_schedule_legacy_stable_id(e) for e in events}
         gcal_events = _fetch_gcal_schedule_events(headers, time_min, time_max)
         for gcal_item in gcal_events:
-            gcal_deadliner_id = gcal_item.get("extendedProperties", {}).get("private", {}).get("deadliner_id")
+            private_props = gcal_item.get("extendedProperties", {}).get("private", {})
+            gcal_deadliner_id = private_props.get("deadliner_id")
+            deadliner_type = private_props.get("deadliner_type")
+            summary = gcal_item.get("summary", "")
+
+            # Strict guard: NEVER delete deadline events
+            if deadliner_type == "deadline" or summary.startswith("[DEADLINE]"):
+                continue
+
             if gcal_deadliner_id and gcal_deadliner_id not in active_ids:
                 event_id = gcal_item["id"]
                 _request(
@@ -343,8 +372,8 @@ def sync_schedule_to_calendar(
                     headers,
                 )
                 deleted += 1
-                summary = gcal_item.get("summary", "Cancelled Class")
-                statuses.append((summary, "deleted"))
+                summary_text = summary or "Cancelled Class"
+                statuses.append((summary_text, "deleted"))
 
     logger.debug(
         f"KSE schedule sync done: {created} created, {updated} updated, {skipped} skipped, {deleted} deleted"
