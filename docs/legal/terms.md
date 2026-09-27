@@ -69,7 +69,7 @@ By using Deadliner, you agree to:
 
 ## 5. Third-Party Services & API Changes
 
-Deadliner interfaces with third-party APIs (Google LLC, Kyiv School of Economics). These external services may modify their endpoints, rate limits, authentication flows, or service availability at any time. The maintainers do not guarantee continuous or uninterrupted operation of third-party integrations.
+Deadliner interfaces with third-party APIs (Google LLC, University Schedule Provider). These external services may modify their endpoints, rate limits, authentication flows, or service availability at any time. The maintainers do not guarantee continuous or uninterrupted operation of third-party integrations.
 
 ---
 
@@ -98,5 +98,5 @@ You may terminate this agreement at any time by deleting the software and removi
 For questions regarding these Terms:
 - **Maintainer:** Vadym Katsel
 - **Email:** [vkatsel@kse.org.ua](mailto:vkatsel@kse.org.ua)
-- **Institution:** Kyiv School of Economics (KSE)
+- **Project Type:** Open-Source Student Initiative
 - **Repository:** [https://github.com/vkatsel/deadliner](https://github.com/vkatsel/deadliner)

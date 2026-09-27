@@ -4,7 +4,7 @@
 **Останнє оновлення:** 23 вересня 2026 р.  
 **Назва додатку:** Deadliner  
 **Розробник:** Вадим Кацель ([vkatsel@kse.org.ua](mailto:vkatsel@kse.org.ua))  
-**Заклад:** Київська школа економіки (Kyiv School of Economics, KSE)  
+**Заклад:** Університетський розклад (University Schedule Provider, KSE)  
 **Репозиторій:** [https://github.com/vkatsel/deadliner](https://github.com/vkatsel/deadliner)  
 
 ---
@@ -76,6 +76,6 @@ Remove-Item "$HOME\.deadliner.json", "$HOME\.deadliner_google_token.json", "$HOM
 ## 5. Контактна інформація
 
 - **Розробник:** Вадим Кацель
-- **Заклад:** Київська школа економіки (Kyiv School of Economics, KSE)
+- **Тип проєкту:** Відкрита студентська ініціатива (Open Source)
 - **Email:** [vkatsel@kse.org.ua](mailto:vkatsel@kse.org.ua)
 - **Репозиторій:** [https://github.com/vkatsel/deadliner](https://github.com/vkatsel/deadliner)

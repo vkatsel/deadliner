@@ -77,7 +77,7 @@ You can revoke Deadliner's authorization at any time via your Google Account Sec
 
 Deadliner communicates with external services on your behalf via official APIs:
 - **Google LLC:** Google Calendar API and Google Classroom API ([Google Privacy Policy](https://policies.google.com/privacy)).
-- **Kyiv School of Economics (KSE):** Moodle LMS ([teaching.kse.org.ua](https://teaching.kse.org.ua)) and KSE Schedule ([schedule.kse.ua](https://schedule.kse.ua)).
+- **University Schedule (schedule.kse.ua):** Moodle LMS ([teaching.kse.org.ua](https://teaching.kse.org.ua)) and KSE Schedule ([schedule.kse.ua](https://schedule.kse.ua)).
 
 ---
 
@@ -92,6 +92,6 @@ Deadliner is intended for university students, educators, and adult learners. We
 For any questions or compliance inquiries regarding Deadliner, please contact:
 
 - **Maintainer:** Vadym Katsel
-- **Institution:** Kyiv School of Economics (KSE)
+- **Project Type:** Open-Source Student Initiative
 - **Email:** [vkatsel@kse.org.ua](mailto:vkatsel@kse.org.ua)
 - **Repository:** [https://github.com/CS460-SEP-2026/greenfield](https://github.com/CS460-SEP-2026/greenfield)
