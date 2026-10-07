@@ -16,16 +16,20 @@
       <a href="index.html" class="brand-link" aria-label="Deadliner Головна">
         <img src="../assets/logo.png" alt="Логотип Deadliner" class="brand-logo" width="44" height="44">
         <span class="brand-title">Deadliner</span>
-        <span class="brand-badge">v1.5.6</span>
+        <span class="brand-badge">v2.0</span>
       </a>
-      <nav class="main-nav" aria-label="Головна навігація">
+      <nav class="main-nav" id="mainNav" aria-label="Головна навігація">
         <a href="#features" class="nav-link">Можливості</a>
         <a href="#quickstart" class="nav-link">Швидкий старт</a>
-        <a href="google_setup_guide.html" class="nav-link">Google Інструкція</a>
-        <a href="#menu-showcase" class="nav-link">Інтерактивний CLI</a>
+        <a href="google_setup_guide.html" class="nav-link">Google Ґайд</a>
+        <a href="#menu-showcase" class="nav-link">CLI Меню</a>
         <a href="#security" class="nav-link">Безпека</a>
-        <a href="privacy.html" class="nav-link">Конфіденційність</a>
-        <a href="terms.html" class="nav-link">Умови</a>
+        <div class="nav-mobile-only">
+          <a href="privacy.html" class="nav-link">Конфіденційність</a>
+          <a href="terms.html" class="nav-link">Умови використання</a>
+        </div>
+      </nav>
+      <div class="nav-actions">
         <div class="lang-switch" aria-label="Вибір мови">
           <a href="../index.html" class="lang-opt" title="English version">EN</a>
           <span class="lang-opt active" aria-current="page">UA</span>
@@ -34,9 +38,14 @@
           <svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
             <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
           </svg>
-          GitHub
+          <span>GitHub</span>
         </a>
-      </nav>
+        <button class="nav-mobile-toggle" id="navToggle" aria-label="Відкрити меню навігації" aria-expanded="false">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
     </div>
   </header>
 
@@ -46,7 +55,7 @@
       <div class="container hero-content">
         <div class="hero-pill">
           <span class="dot"></span>
-          <span>Zero-Knowledge &bull; Локальна робота &bull; Зручно при СДУГ</span>
+          <span>Локально на ПК &bull; Без передачі третім особам &bull; Для студентів</span>
         </div>
 
         <h1 class="hero-title">
@@ -581,6 +590,23 @@
           btn.textContent = orig;
           btn.style.color = '';
         }, 2000);
+      });
+    }
+
+    const navToggle = document.getElementById('navToggle');
+    const mainNav = document.getElementById('mainNav');
+    if (navToggle && mainNav) {
+      navToggle.addEventListener('click', () => {
+        const isOpen = mainNav.classList.toggle('open');
+        navToggle.classList.toggle('active', isOpen);
+        navToggle.setAttribute('aria-expanded', isOpen);
+      });
+      mainNav.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => {
+          mainNav.classList.remove('open');
+          navToggle.classList.remove('active');
+          navToggle.setAttribute('aria-expanded', 'false');
+        });
       });
     }
   </script>
