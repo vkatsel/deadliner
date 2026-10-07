@@ -55,7 +55,7 @@
       <div class="container hero-content">
         <div class="hero-pill">
           <span class="dot"></span>
-          <span>Zero-Knowledge &bull; Local-First &bull; ADHD-Friendly</span>
+          <span>Zero-Telemetry &bull; 100% Client-Side &bull; Built for Students</span>
         </div>
 
         <h1 class="hero-title">
@@ -105,7 +105,7 @@
                 </div>
                 <div style="display: flex; gap: 0.5rem; align-items: center;">
                   <span class="badge-tag badge-warning">midnight cutoff</span>
-                  <span class="badge-tag badge-tomato">🔴 Tomato Red</span>
+                  <span class="badge-tag badge-tomato"><span class="tag-color-dot" style="background: #ff5252;"></span>Tomato Red</span>
                 </div>
               </div>
             </div>
@@ -119,7 +119,7 @@
                   <span class="event-title">KSE Lecture: Linear Algebra &amp; Vector Spaces (Room 302)</span>
                 </div>
                 <div style="display: flex; gap: 0.5rem; align-items: center;">
-                  <span class="badge-tag badge-sage">🟢 Sage Green</span>
+                  <span class="badge-tag badge-sage"><span class="tag-color-dot" style="background: #33b679;"></span>Sage Green</span>
                 </div>
               </div>
             </div>
@@ -133,7 +133,7 @@
                   <span class="event-title">KSE Practice: Algorithms &amp; Data Structures (Group A)</span>
                 </div>
                 <div style="display: flex; gap: 0.5rem; align-items: center;">
-                  <span class="badge-tag badge-peacock">🔵 Peacock Blue</span>
+                  <span class="badge-tag badge-peacock"><span class="tag-color-dot" style="background: #039be5;"></span>Peacock Blue</span>
                 </div>
               </div>
             </div>
@@ -156,7 +156,12 @@
         <div class="features-grid">
           <!-- Feature 1: Tomato Red Deadlines -->
           <article class="feature-card card-tomato">
-            <div class="feature-icon-wrap">🔴</div>
+            <div class="feature-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+            </div>
             <h3 class="feature-title">Tomato Red Deadlines</h3>
             <p class="feature-desc">
               All Moodle and Google Classroom submissions sync as vibrant Tomato Red (Google colorId 11). Deadliner places a crisp 15-minute event pointing right at the exact cutoff moment so you never confuse midnight (00:00) with end-of-day (23:59).
@@ -169,7 +174,12 @@
 
           <!-- Feature 2: Sage Green Lectures -->
           <article class="feature-card card-sage">
-            <div class="feature-icon-wrap">🟢</div>
+            <div class="feature-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+              </svg>
+            </div>
             <h3 class="feature-title">KSE Schedule Lectures</h3>
             <p class="feature-desc">
               Direct ingestion from schedule.kse.ua automatically categorizes theory lectures into calming Sage Green (Google colorId 2). Classrooms, professors, and zoom links are neatly placed into the calendar event description.
@@ -182,7 +192,12 @@
 
           <!-- Feature 3: Peacock Blue Practices -->
           <article class="feature-card card-peacock">
-            <div class="feature-icon-wrap">🔵</div>
+            <div class="feature-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="16 18 22 12 16 6"></polyline>
+                <polyline points="8 6 2 12 8 18"></polyline>
+              </svg>
+            </div>
             <h3 class="feature-title">KSE Schedule Practices</h3>
             <p class="feature-desc">
               Practice sessions, labs, and interactive seminars sync in Peacock Blue (Google colorId 7). Deadliner parses your subgroup designations (e.g. Group A / B) so you only see the sessions you actually need to attend.
@@ -195,7 +210,11 @@
 
           <!-- Feature 4: Native 1-Click KSE Login -->
           <article class="feature-card card-cyan">
-            <div class="feature-icon-wrap">⚡</div>
+            <div class="feature-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
+            </div>
             <h3 class="feature-title">Native 1-Click KSE Login</h3>
             <p class="feature-desc">
               No developer tools hacking or manual JSON copying. Simply launch <code style="color: #79c0ff;">deadliner login kse</code>, log in via the native secure window, and Deadliner automatically captures your session and credentials instantly.
@@ -208,7 +227,13 @@
 
           <!-- Feature 5: 24h Background Auto-Sync -->
           <article class="feature-card card-purple">
-            <div class="feature-icon-wrap">⏰</div>
+            <div class="feature-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <polyline points="1 20 1 14 7 14"></polyline>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+              </svg>
+            </div>
             <h3 class="feature-title">24h Background Auto-Sync</h3>
             <p class="feature-desc">
               Set it and forget it. Deadliner configures native OS schedulers (Windows Task Scheduler via <code style="color: #79c0ff;">schtasks</code> or standard UNIX <code style="color: #79c0ff;">cron</code>) to sync your calendar silently every morning without battery drain.
@@ -221,7 +246,12 @@
 
           <!-- Feature 6: Automatic Cancellation Reconciliation -->
           <article class="feature-card card-amber">
-            <div class="feature-icon-wrap">🧹</div>
+            <div class="feature-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+            </div>
             <h3 class="feature-title">Cancellation Reconciliation</h3>
             <p class="feature-desc">
               When a professor reschedules, cancels a lecture, or retracts an assignment on Moodle, Deadliner uses SHA-256 stable tracking IDs (<code style="color: #79c0ff;">extendedProperties</code>) to automatically prune deleted events cleanly.
@@ -438,21 +468,39 @@
 
         <div class="security-grid">
           <div class="security-card">
-            <h3>🔒 Local Token Storage</h3>
+            <div class="sec-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </div>
+            <h3>Local Token Storage</h3>
             <p>
               OAuth tokens, Moodle session tokens, and KSE credentials are stored strictly in your local home directory (<code style="color: #79c0ff;">~/.deadliner.json</code>). They never leave your device.
             </p>
           </div>
 
           <div class="security-card">
-            <h3>🌐 Direct University APIs</h3>
+            <div class="sec-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+              </svg>
+            </div>
+            <h3>Direct University APIs</h3>
             <p>
               Network requests travel directly between your personal machine and Moodle, Google, and schedule.kse.ua APIs. There is no intermediate Deadliner backend proxy.
             </p>
           </div>
 
           <div class="security-card">
-            <h3>🛡️ Minimal Google Scopes</h3>
+            <div class="sec-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+            </div>
+            <h3>Minimal Google Scopes</h3>
             <p>
               Deadliner only requests the Google Calendar and Classroom scopes strictly required for synchronization. It adheres 100% to Google Limited Use requirements.
             </p>
@@ -472,7 +520,7 @@
             <span class="footer-brand-title">Deadliner</span>
           </div>
           <p class="footer-tagline">
-            Autonomous academic deadline &amp; schedule sync engine. Built with empathy for students living with ADHD and cognitive overload.
+            Open-source academic deadline &amp; schedule sync engine. Built for university students to eliminate deadline anxiety and schedule fragmentation.
           </p>
         </div>
 

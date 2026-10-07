@@ -55,7 +55,7 @@
       <div class="container hero-content">
         <div class="hero-pill">
           <span class="dot"></span>
-          <span>Локально на ПК &bull; Без передачі третім особам &bull; Для студентів</span>
+          <span>Локально на ПК &bull; Без серверів і трекінгу &bull; Для студентів KSE</span>
         </div>
 
         <h1 class="hero-title">
@@ -105,7 +105,7 @@
                 </div>
                 <div style="display: flex; gap: 0.5rem; align-items: center;">
                   <span class="badge-tag badge-warning">опівнічний дедлайн</span>
-                  <span class="badge-tag badge-tomato">🔴 Tomato Red</span>
+                  <span class="badge-tag badge-tomato"><span class="tag-color-dot" style="background: #ff5252;"></span>Tomato Red</span>
                 </div>
               </div>
             </div>
@@ -119,7 +119,7 @@
                   <span class="event-title">KSE Лекція: Linear Algebra &amp; Vector Spaces (Ауд. 302)</span>
                 </div>
                 <div style="display: flex; gap: 0.5rem; align-items: center;">
-                  <span class="badge-tag badge-sage">🟢 Sage Green</span>
+                  <span class="badge-tag badge-sage"><span class="tag-color-dot" style="background: #33b679;"></span>Sage Green</span>
                 </div>
               </div>
             </div>
@@ -133,7 +133,7 @@
                   <span class="event-title">KSE Практика: Algorithms &amp; Data Structures (Група A)</span>
                 </div>
                 <div style="display: flex; gap: 0.5rem; align-items: center;">
-                  <span class="badge-tag badge-peacock">🔵 Peacock Blue</span>
+                  <span class="badge-tag badge-peacock"><span class="tag-color-dot" style="background: #039be5;"></span>Peacock Blue</span>
                 </div>
               </div>
             </div>
@@ -156,7 +156,12 @@
         <div class="features-grid">
           <!-- Feature 1: Tomato Red Deadlines -->
           <article class="feature-card card-tomato">
-            <div class="feature-icon-wrap">🔴</div>
+            <div class="feature-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+            </div>
             <h3 class="feature-title">Червоні дедлайни (Tomato Red)</h3>
             <p class="feature-desc">
               Усі завдання з Moodle та Google Classroom потрапляють у календар у яскраво-червоному кольорі (Google colorId 11). Deadliner створює чітку 15-хвилинну подію перед дедлайном, тож ви більше ніколи не сплутаєте північ (00:00) із кінцем дня (23:59).
@@ -169,7 +174,12 @@
 
           <!-- Feature 2: Sage Green Lectures -->
           <article class="feature-card card-sage">
-            <div class="feature-icon-wrap">🟢</div>
+            <div class="feature-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+              </svg>
+            </div>
             <h3 class="feature-title">Лекції розкладу KSE</h3>
             <p class="feature-desc">
               Пряма інтеграція зі schedule.kse.ua класифікує теоретичні заняття у спокійний шавлієвий колір (Sage Green, Google colorId 2). Аудиторії, імена викладачів та Zoom-посилання акуратно вносяться в опис події календаря.
@@ -182,7 +192,12 @@
 
           <!-- Feature 3: Peacock Blue Practices -->
           <article class="feature-card card-peacock">
-            <div class="feature-icon-wrap">🔵</div>
+            <div class="feature-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="16 18 22 12 16 6"></polyline>
+                <polyline points="8 6 2 12 8 18"></polyline>
+              </svg>
+            </div>
             <h3 class="feature-title">Практики розкладу KSE</h3>
             <p class="feature-desc">
               Практичні заняття, семінари та лабораторні позначаються блакитним (Peacock Blue, Google colorId 7). Deadliner розпізнає розподіл за підгрупами (наприклад, Група А / B), відображаючи лише ті пари, які призначені саме вам.
@@ -195,7 +210,11 @@
 
           <!-- Feature 4: Native 1-Click KSE Login -->
           <article class="feature-card card-cyan">
-            <div class="feature-icon-wrap">⚡</div>
+            <div class="feature-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
+            </div>
             <h3 class="feature-title">Нативний вхід KSE у 1 клік</h3>
             <p class="feature-desc">
               Жодних пошуків у консолі розробника браузера чи ручного копіювання JSON. Запустіть <code style="color: #79c0ff;">deadliner login kse</code>, авторизуйтесь у нативному безпечному вікні — і Deadliner автоматично підхопить та збереже ваші сесійні дані.
@@ -208,7 +227,13 @@
 
           <!-- Feature 5: 24h Background Auto-Sync -->
           <article class="feature-card card-purple">
-            <div class="feature-icon-wrap">⏰</div>
+            <div class="feature-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <polyline points="1 20 1 14 7 14"></polyline>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+              </svg>
+            </div>
             <h3 class="feature-title">24h фонова автосинхронізація</h3>
             <p class="feature-desc">
               Налаштуйте один раз і забудьте. Deadliner інтегрується у системні планувальники завдань вашої ОС (Windows Task Scheduler через <code style="color: #79c0ff;">schtasks</code> або стандартний UNIX <code style="color: #79c0ff;">cron</code>) для щоденної фонової синхронізації без витрат батареї.
@@ -221,7 +246,12 @@
 
           <!-- Feature 6: Automatic Cancellation Reconciliation -->
           <article class="feature-card card-amber">
-            <div class="feature-icon-wrap">🧹</div>
+            <div class="feature-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+            </div>
             <h3 class="feature-title">Прибирання скасованих подій</h3>
             <p class="feature-desc">
               Якщо викладач переніс, скасував пару або відкликав завдання у Moodle, Deadliner використовує стабільні SHA-256 ідентифікатори (<code style="color: #79c0ff;">extendedProperties</code>), автоматично та акуратно видаляючи застарілі події.
@@ -438,21 +468,39 @@
 
         <div class="security-grid">
           <div class="security-card">
-            <h3>🔒 Локальне збереження токенів</h3>
+            <div class="sec-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </div>
+            <h3>Локальне збереження токенів</h3>
             <p>
               OAuth-токени, токени сесії Moodle та облікові дані KSE зберігаються виключно у вашому домашньому каталозі (<code style="color: #79c0ff;">~/.deadliner.json</code>). Вони ніколи не залишають ваш пристрій.
             </p>
           </div>
 
           <div class="security-card">
-            <h3>🌐 Прямі запити до офіційних API</h3>
+            <div class="sec-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+              </svg>
+            </div>
+            <h3>Прямі запити до офіційних API</h3>
             <p>
               Мережевий трафік шифрується і йде напряму між вашим комп'ютером та API Moodle, Google і schedule.kse.ua. Жодних проміжних серверів-посередників чи проксі.
             </p>
           </div>
 
           <div class="security-card">
-            <h3>🛡️ Мінімальні дозволи Google Scopes</h3>
+            <div class="sec-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+            </div>
+            <h3>Мінімальні дозволи Google Scopes</h3>
             <p>
               Deadliner запитує лише ті дозволи Google Calendar і Classroom, які критично необхідні для синхронізації. Повна відповідність вимогам Google Limited Use.
             </p>
@@ -472,7 +520,7 @@
             <span class="footer-brand-title">Deadliner</span>
           </div>
           <p class="footer-tagline">
-            Автономний рушій синхронізації навчальних дедлайнів та розкладу. Створений з турботою про студентів з СДУГ та захистом від інформаційного перевантаження.
+            Open-source синхронізація дедлайнів та розкладу. Створено для студентів, щоб більше не турбуватися про опівнічні дедлайни та розрізнені платформи.
           </p>
         </div>
 
