@@ -145,10 +145,12 @@ Deadliner uses a **Local-First / BYOK (Bring Your Own Key)** architecture for ma
 ```bash
 deadliner login kse
 ```
-- Opens `schedule.kse.ua` in your browser.
-- Open DevTools (`F12`) -> **Application** -> **Local Storage** -> Copy the `auth` token.
-- Paste it into the terminal (or Deadliner reads it automatically from your clipboard with 1-click sync).
+- **Seamless Native Login:** Deadliner opens an embedded secure browser window displaying `schedule.kse.ua`.
+- Click **"Sign in with Google"** and authenticate with your `@kse.org.ua` account.
+- Deadliner automatically captures your session, closes the window, and saves your credentials locally!
+- *Zero DevTools, console scripts, or manual copy-pasting required.*
 - Tokens are automatically refreshed in the background!
+- *(Optional fallbacks)*: `deadliner login kse --clipboard` (1-click clipboard sync) or `deadliner login kse --manual` (manual token entry).
 
 ---
 
@@ -211,7 +213,7 @@ src/deadliner/
 ```
 
 ### Running Tests
-Deadliner is backed by a comprehensive test suite (145 tests) with zero external network dependencies (mocked via `responses` and `monkeypatch`):
+Deadliner is backed by a comprehensive test suite (170 tests) with zero external network dependencies (mocked via `responses` and `monkeypatch`):
 
 ```bash
 pytest
