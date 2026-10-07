@@ -157,9 +157,23 @@ def fetch_kse_schedule(
     start_d = from_date if isinstance(from_date, date) else date.fromisoformat(from_date)
     end_d = till_date if isinstance(till_date, date) else date.fromisoformat(till_date)
 
-    headers = {}
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
+    if not token:
+        raise AuthError("KSE authentication required: token is missing. Please run `deadliner login kse`.")
+
+    from deadliner.kse_auth import is_kse_token_expired, load_kse_credentials, refresh_kse_token
+
+    if is_kse_token_expired(token):
+        logger.info("KSE token is expired, attempting auto-refresh before query...")
+        _, refresh_token, session_id = load_kse_credentials()
+        new_token = refresh_kse_token(refresh_token, session_id) if refresh_token else None
+        if new_token:
+            token = new_token
+        else:
+            raise AuthError(
+                "KSE authentication expired and auto-refresh failed. Please run `deadliner login kse` to re-authenticate."
+            )
+
+    headers = {"Authorization": f"Bearer {token}"}
 
     all_events: list[ScheduleEvent] = []
     seen_ids: set[str] = set()
@@ -187,8 +201,6 @@ def fetch_kse_schedule(
             # Attempt automatic token refresh once if refresh credentials exist
             if not refreshed_attempt:
                 refreshed_attempt = True
-                from deadliner.kse_auth import load_kse_credentials, refresh_kse_token
-
                 _, refresh_token, session_id = load_kse_credentials()
                 if refresh_token:
                     logger.info("KSE token rejected (401/403), attempting auto-refresh...")
@@ -213,6 +225,32 @@ def fetch_kse_schedule(
             raise ConnectionError("Invalid JSON from KSE API")
 
         raw_events_container = data.get("events", [])
+
+        # KSE API trap detection: if unauthenticated/expired, KSE returns 200 OK with [None, None, ...]
+        if (
+            isinstance(raw_events_container, list)
+            and len(raw_events_container) > 0
+            and all(item is None for item in raw_events_container)
+        ):
+            try:
+                probe = requests.get(f"{KSE_API_BASE}/schedule/events", headers=headers, timeout=5)
+                if probe.status_code == 401:
+                    if not refreshed_attempt:
+                        refreshed_attempt = True
+                        _, refresh_token, session_id = load_kse_credentials()
+                        if refresh_token:
+                            logger.info("KSE token rejected (401 probe), attempting auto-refresh...")
+                            new_token = refresh_kse_token(refresh_token, session_id)
+                            if new_token:
+                                token = new_token
+                                headers["Authorization"] = f"Bearer {token}"
+                                continue
+                    raise AuthError(
+                        "KSE authentication rejected (401 Unauthorized). Please run `deadliner login kse` to re-authenticate."
+                    )
+            except requests.RequestException:
+                pass
+
         if isinstance(raw_events_container, list):
             for item in raw_events_container:
                 if isinstance(item, list):

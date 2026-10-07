@@ -286,13 +286,32 @@ def is_kse_token_expired(token: str) -> bool:
         return False
 
 
-def get_valid_kse_token() -> str:
-    """Return a valid KSE token, attempting refresh if expired or missing."""
+def get_valid_kse_token(raise_on_failure: bool = False) -> str:
+    """Return a valid KSE token, attempting refresh if expired or missing.
+
+    If raise_on_failure is True:
+        Raises AuthError if token is missing, expired without refresh, or refresh fails.
+    If raise_on_failure is False:
+        Returns empty string if token is invalid/expired and cannot be refreshed.
+    """
     token, refresh_token, session_id = load_kse_credentials()
-    if (not token or is_kse_token_expired(token)) and refresh_token:
-        refreshed = refresh_kse_token(refresh_token, session_id)
-        if refreshed:
-            return refreshed
+    if not token and not refresh_token:
+        if raise_on_failure:
+            raise AuthError("KSE credentials not found. Please run `deadliner login kse` to connect your account.")
+        return ""
+
+    if not token or is_kse_token_expired(token):
+        if refresh_token:
+            refreshed = refresh_kse_token(refresh_token, session_id)
+            if refreshed:
+                return refreshed
+        # Expired and refresh failed or unavailable
+        if raise_on_failure:
+            raise AuthError(
+                "KSE authentication expired and auto-refresh failed. Please run `deadliner login kse` to re-authenticate."
+            )
+        return ""
+
     return token
 
 

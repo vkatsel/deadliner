@@ -208,6 +208,10 @@ def _cmd_schedule_fetch(args: argparse.Namespace) -> int:
 
     creds = _load_credentials()
     kse_token = creds[3] if len(creds) > 3 else ""
+    if not kse_token:
+        print("\033[91merror: KSE credentials required. Run `deadliner login kse` first.\033[0m", file=sys.stderr)
+        return 1
+
     from_str, till_str = _resolve_date_range(args)
 
     try:
@@ -245,6 +249,10 @@ def _cmd_schedule_sync(args: argparse.Namespace) -> int:
             file=sys.stderr,
         )
         return 2
+
+    if not kse_token:
+        print("\033[91merror: KSE credentials required. Run `deadliner login kse` first.\033[0m", file=sys.stderr)
+        return 1
 
     from_str, till_str = _resolve_date_range(args)
 

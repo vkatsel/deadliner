@@ -13,6 +13,7 @@ from deadliner.kse_auth import (
     refresh_kse_token,
     save_kse_credentials,
 )
+from deadliner.models import AuthError
 
 
 def test_save_and_load_kse_credentials(tmp_path, monkeypatch):
@@ -117,6 +118,20 @@ def test_get_valid_kse_token_falls_back_to_refresh(monkeypatch):
 
     token = get_valid_kse_token()
     assert token == "refreshed-jwt"
+
+
+def test_get_valid_kse_token_expired_refresh_failed_returns_empty_or_raises(monkeypatch):
+    monkeypatch.setattr(kse_auth, "load_kse_credentials", lambda: ("expired-jwt", "bad-refresh", "sess-1"))
+    monkeypatch.setattr(kse_auth, "is_kse_token_expired", lambda tok: True)
+    monkeypatch.setattr(kse_auth, "refresh_kse_token", lambda r, s: None)
+
+    # By default (raise_on_failure=False), returns empty string instead of expired token
+    assert get_valid_kse_token(raise_on_failure=False) == ""
+
+    # When raise_on_failure=True, raises AuthError
+    with pytest.raises(AuthError) as exc_info:
+        get_valid_kse_token(raise_on_failure=True)
+    assert "re-authenticate" in str(exc_info.value).lower()
 
 
 def test_cmd_login_kse_invalid_token_format(monkeypatch, capsys):

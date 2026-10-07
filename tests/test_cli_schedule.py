@@ -57,6 +57,17 @@ def test_cli_schedule_fetch_auth_error(monkeypatch, capsys):
     assert "authentication failed" in err.lower()
 
 
+def test_cli_schedule_fetch_requires_kse_token(monkeypatch, capsys):
+    monkeypatch.setattr(cli, "_load_credentials", lambda: ("", "", "", ""))
+
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["schedule", "fetch"])
+
+    assert exc.value.code == 1
+    err = capsys.readouterr().err
+    assert "kse credentials required" in err.lower()
+
+
 def test_cli_schedule_sync_requires_google_token(monkeypatch):
     monkeypatch.setattr(cli, "_load_credentials", lambda: ("", "", "", "mock-kse-token"))
 
@@ -64,6 +75,17 @@ def test_cli_schedule_sync_requires_google_token(monkeypatch):
         cli.main(["schedule", "sync"])
 
     assert exc.value.code != 0
+
+
+def test_cli_schedule_sync_requires_kse_token(monkeypatch, capsys):
+    monkeypatch.setattr(cli, "_load_credentials", lambda: ("", "", "google-token", ""))
+
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["schedule", "sync"])
+
+    assert exc.value.code == 1
+    err = capsys.readouterr().err
+    assert "kse credentials required" in err.lower()
 
 
 def test_cli_schedule_sync_pushes_events(monkeypatch, capsys):
