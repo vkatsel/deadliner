@@ -135,6 +135,7 @@ def login_kse_webview(timeout: int = 180) -> tuple[str, str, str, str] | None:
     """
     try:
         import webview
+        webview.settings["OPEN_EXTERNAL_LINKS_IN_BROWSER"] = False
     except ImportError:
         logger.debug("pywebview is not installed; falling back to alternative login methods.")
         return None
@@ -170,6 +171,30 @@ def login_kse_webview(timeout: int = 180) -> tuple[str, str, str, str] | None:
                         is_done.set()
                         window.destroy()
                         return
+
+                code_val = window.evaluate_js(
+                    """(function() {
+                        var m = window.location.search.match(/[?&]code=([^&]+)/) || window.location.hash.match(/[#&]code=([^&]+)/);
+                        if (m) return decodeURIComponent(m[1]);
+                        return null;
+                    })()"""
+                )
+                if code_val and isinstance(code_val, str) and code_val.startswith("4/"):
+                    try:
+                        res = requests.post(
+                            "https://api.kse.today/auth/google",
+                            json={"code": code_val},
+                            timeout=10,
+                        )
+                        if res.status_code == 200:
+                            creds = _extract_credentials_from_text(res.text)
+                            if creds:
+                                captured["creds"] = creds
+                                is_done.set()
+                                window.destroy()
+                                return
+                    except Exception:
+                        pass
             except Exception:
                 pass
             time.sleep(0.4)

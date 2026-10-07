@@ -227,17 +227,7 @@ def test_cmd_login_kse_1click_clipboard_sync(tmp_path, monkeypatch, capsys):
 
 
 def test_login_kse_webview_not_installed(monkeypatch):
-    import sys
-
-    # Simulate webview import failure
-    orig_import = __import__
-
-    def mock_import(name, *args, **kwargs):
-        if name == "webview":
-            raise ImportError("No module named webview")
-        return orig_import(name, *args, **kwargs)
-
-    monkeypatch.setattr("builtins.__import__", mock_import)
+    monkeypatch.setitem(sys.modules, "webview", None)
     creds = kse_auth.login_kse_webview()
     assert creds is None
 
@@ -259,16 +249,17 @@ def test_login_kse_webview_lifecycle_mocked(monkeypatch):
 
     class FakeWebview:
         Window = types.SimpleNamespace
+        settings = {}
+
         @staticmethod
         def create_window(*args, **kwargs):
             return fake_window
 
         @staticmethod
         def start(func, window, *args, **kwargs):
-            # Synchronously run the worker function on the fake window
             func(window)
 
-    monkeypatch.setattr("builtins.__import__", lambda name, *args, **kwargs: FakeWebview if name == "webview" else __import__(name, *args, **kwargs))
+    monkeypatch.setitem(sys.modules, "webview", FakeWebview)
 
     creds = kse_auth.login_kse_webview(timeout=5)
     assert creds is not None
