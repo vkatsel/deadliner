@@ -292,3 +292,54 @@ def test_extract_credentials_from_raw_jwt():
 def test_extract_credentials_invalid():
     assert kse_auth._extract_credentials_from_text("not-a-token") is None
     assert kse_auth._extract_credentials_from_text("") is None
+
+
+def test_patch_edgechromium_for_oauth():
+    # Should execute safely across platforms
+    kse_auth._patch_edgechromium_for_oauth()
+
+
+@responses.activate
+def test_login_kse_webview_code_exchange_flow(monkeypatch):
+    import types
+
+    responses.add(
+        responses.POST,
+        "https://api.kse.today/auth/google",
+        json={
+            "user": {
+                "token": "code.exchange.token",
+                "refreshToken": "code-ref",
+                "sessionId": "code-sess",
+                "profile": {"name": "Test Student"},
+            }
+        },
+        status=200,
+    )
+
+    fake_window = types.SimpleNamespace(
+        evaluate_js=lambda expr: "4/auth-code-test-123" if "code" in expr else None,
+        destroy=lambda: None,
+    )
+
+    class FakeWebview:
+        Window = types.SimpleNamespace
+        settings = {}
+
+        @staticmethod
+        def create_window(*args, **kwargs):
+            return fake_window
+
+        @staticmethod
+        def start(func, window, *args, **kwargs):
+            func(window)
+
+    monkeypatch.setitem(sys.modules, "webview", FakeWebview)
+
+    creds = kse_auth.login_kse_webview(timeout=5)
+    assert creds is not None
+    assert creds[0] == "code.exchange.token"
+    assert creds[1] == "code-ref"
+    assert creds[2] == "code-sess"
+    assert creds[3] == "Test Student"
+

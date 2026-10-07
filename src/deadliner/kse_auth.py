@@ -122,6 +122,96 @@ def _extract_credentials_from_text(raw_val: str) -> tuple[str, str, str, str] | 
 
 
 WEBVIEW_CACHE_DIR = Path.home() / ".deadliner" / "webview_cache"
+DESKTOP_CHROME_UA = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/133.0.0.0 Safari/537.36"
+)
+
+
+def _patch_edgechromium_for_oauth() -> None:
+    """Configure Edge WebView2 to support native Google OAuth popup flows.
+
+    1. Sets Handled=False on NewWindowRequested so WebView2 opens the OAuth
+       popup with window.opener preserved. This allows Google's authorization
+       completion script (window.opener.postMessage) to communicate directly
+       back to schedule.kse.ua and auto-close the popup window.
+    2. Injects a standard desktop Chrome User-Agent into AdditionalBrowserArguments
+       so Google does not flag the environment as an embedded webview.
+    """
+    try:
+        from webview.platforms import edgechromium
+
+        def patched_on_new_window_request(self, sender, args):
+            # Allow WebView2 to create native popup with parent window.opener intact
+            args.set_Handled(False)
+
+        edgechromium.EdgeChrome.on_new_window_request = patched_on_new_window_request
+
+        orig_init = edgechromium.EdgeChrome.__init__
+
+        def patched_edge_init(self, form, window, cache_dir):
+            self.pywebview_window = window
+            self.webview = edgechromium.WebView2()
+            props = edgechromium.CoreWebView2CreationProperties()
+
+            runtime_path = edgechromium.webview_settings.get("WEBVIEW2_RUNTIME_PATH")
+            if runtime_path:
+                if not edgechromium.os.path.isabs(runtime_path):
+                    runtime_path = edgechromium.os.path.join(edgechromium.get_app_root(), runtime_path)
+                if edgechromium.os.path.exists(runtime_path):
+                    props.BrowserExecutableFolder = runtime_path
+
+            props.UserDataFolder = cache_dir
+            self.user_data_folder = props.UserDataFolder
+            props.set_IsInPrivateModeEnabled(edgechromium._state["private_mode"])
+
+            # Pure desktop Chrome User-Agent without WebView or Edg markers
+            props.AdditionalBrowserArguments = (
+                f'--disable-features=ElasticOverscroll --user-agent="{DESKTOP_CHROME_UA}"'
+            )
+
+            if edgechromium.webview_settings.get("ALLOW_FILE_URLS"):
+                props.AdditionalBrowserArguments += " --allow-file-access-from-files"
+
+            if edgechromium.webview_settings.get("REMOTE_DEBUGGING_PORT") is not None:
+                props.AdditionalBrowserArguments += (
+                    f' --remote-debugging-port={edgechromium.webview_settings["REMOTE_DEBUGGING_PORT"]}'
+                )
+
+            self.webview.CreationProperties = props
+
+            self.form = form
+            form.Controls.Add(self.webview)
+
+            self.js_results = {}
+            self.js_result_semaphore = edgechromium.Semaphore(0)
+            self.webview.Dock = edgechromium.WinForms.DockStyle.Fill
+            self.webview.BringToFront()
+            self.webview.CoreWebView2InitializationCompleted += self.on_webview_ready
+            self.webview.NavigationStarting += self.on_navigation_start
+            self.webview.NavigationCompleted += self.on_navigation_completed
+            self.webview.WebMessageReceived += self.on_script_notify
+            self.syncContextTaskScheduler = edgechromium.TaskScheduler.FromCurrentSynchronizationContext()
+            self.webview.DefaultBackgroundColor = edgechromium.Color.FromArgb(
+                255,
+                int(window.background_color.lstrip("#")[0:2], 16),
+                int(window.background_color.lstrip("#")[2:4], 16),
+                int(window.background_color.lstrip("#")[4:6], 16),
+            )
+
+            if window.transparent:
+                self.webview.DefaultBackgroundColor = edgechromium.Color.Transparent
+
+            self.url = None
+            self.ishtml = False
+            self.html = edgechromium.DEFAULT_HTML
+
+            self.webview.EnsureCoreWebView2Async(None)
+
+        edgechromium.EdgeChrome.__init__ = patched_edge_init
+    except Exception as e:
+        logger.debug(f"EdgeChromium patching not applicable: {e}")
 
 
 def login_kse_webview(timeout: int = 180) -> tuple[str, str, str, str] | None:
@@ -136,6 +226,7 @@ def login_kse_webview(timeout: int = 180) -> tuple[str, str, str, str] | None:
     try:
         import webview
         webview.settings["OPEN_EXTERNAL_LINKS_IN_BROWSER"] = False
+        _patch_edgechromium_for_oauth()
     except ImportError:
         logger.debug("pywebview is not installed; falling back to alternative login methods.")
         return None
@@ -161,6 +252,23 @@ def login_kse_webview(timeout: int = 180) -> tuple[str, str, str, str] | None:
         time.sleep(1.0)
         while not is_done.is_set() and time.time() - start_t < timeout:
             try:
+                # 1. Install postMessage listener on schedule.kse.ua if not present
+                window.evaluate_js(
+                    """(function() {
+                        if (!window.__deadliner_listener_installed) {
+                            window.__deadliner_listener_installed = true;
+                            window.addEventListener("message", function(e) {
+                                try {
+                                    var d = e.data;
+                                    var c = (d && d.response && d.response.code) || (d && d.code);
+                                    if (c) window.__deadliner_oauth_code = c;
+                                } catch(err) {}
+                            });
+                        }
+                    })()"""
+                )
+
+                # 2. Check for completed authentication in localStorage
                 raw_auth = window.evaluate_js(
                     "localStorage.getItem('__NEXUS_REACT_ADMIN_AUTH__') || localStorage.getItem('token')"
                 )
@@ -172,8 +280,10 @@ def login_kse_webview(timeout: int = 180) -> tuple[str, str, str, str] | None:
                         window.destroy()
                         return
 
+                # 3. Check if OAuth code was captured by listener or URL query/hash
                 code_val = window.evaluate_js(
                     """(function() {
+                        if (window.__deadliner_oauth_code) return window.__deadliner_oauth_code;
                         var m = window.location.search.match(/[?&]code=([^&]+)/) || window.location.hash.match(/[#&]code=([^&]+)/);
                         if (m) return decodeURIComponent(m[1]);
                         return null;
@@ -219,6 +329,7 @@ def login_kse_webview(timeout: int = 180) -> tuple[str, str, str, str] | None:
             window,
             private_mode=False,
             storage_path=str(WEBVIEW_CACHE_DIR),
+            user_agent=DESKTOP_CHROME_UA,
         )
     except Exception as e:
         logger.debug(f"Failed to launch pywebview window: {e}")
