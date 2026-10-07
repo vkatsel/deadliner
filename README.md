@@ -148,8 +148,7 @@ deadliner login kse
 - **Seamless Native Login:** Deadliner opens an embedded secure browser window displaying `schedule.kse.ua`.
 - Click **"Sign in with Google"** and authenticate with your `@kse.org.ua` account.
 - Deadliner automatically captures your session, closes the window, and saves your credentials locally!
-- *Zero DevTools, console scripts, or manual copy-pasting required.*
-- Tokens are automatically refreshed in the background!
+- *Zero setup hassle: tokens are automatically refreshed in the background!*
 - *(Optional fallbacks)*: `deadliner login kse --clipboard` (1-click clipboard sync) or `deadliner login kse --manual` (manual token entry).
 
 ---

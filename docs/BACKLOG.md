@@ -32,6 +32,8 @@ _Total Automated Tests: 170 passing_
 - [x] **Agent & Skills Modular Architecture:** Refactored into specialized modular agent roles and skills in `.agents/skills/` (`deadliner-cli`, `deadliner-web`, `deadliner-legal`, and quality rules).
 - [x] **Landing Page Vector Icons & Copy Polish:** Replaced all emojis with sharp inline SVGs, eliminated clinical ADHD terminology from public web pages, and redesigned hero pill.
 - [x] **Documentation Hub Restructuring:** Removed deprecated `TO_FIX.md`, indexed all subfolders (`docs/specs/README.md`, `docs/legal/README.md`), and refreshed `docs/README.md`.
+- [x] **Interactive Hourglass & Kinetic Sand Engine:** Implemented scroll-linked vector hourglass HUD with dynamic sand physics, 00:00 midnight cutoff countdown, 3D time inversion back-to-top, and ambient kinetic sand particle stream in `docs/assets/sand_timer.js`.
+- [x] **Professional UX Copy Polish:** Purged internal engineering jargon ("DevTools hacking", "JSON copying", console scripts) from public landing pages and `README.md`.
 
 ---
 
