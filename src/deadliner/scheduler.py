@@ -10,9 +10,19 @@ TASK_NAME = "DeadlinerDailySync"
 
 
 def get_sync_command() -> str:
-    """Return the exact command string to execute sync-all."""
-    # Use the active python binary with -m deadliner sync-all
+    """Return the exact command string to execute sync-all.
+
+    On Windows, uses pythonw.exe (windowless Python) if available to prevent
+    opening a visible console window when triggered by Task Scheduler.
+    """
     py_exe = sys.executable
+    if platform.system().lower() == "windows":
+        from pathlib import Path
+
+        pyw = Path(py_exe).resolve().with_name("pythonw.exe")
+        if pyw.is_file():
+            py_exe = str(pyw)
+
     return f'"{py_exe}" -m deadliner sync-all'
 
 

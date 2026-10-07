@@ -13,6 +13,7 @@ class Assignment:
     title: str
     due_utc: datetime
     url: str = ""
+    is_submitted: bool = False
 
 
 @dataclass(frozen=True)

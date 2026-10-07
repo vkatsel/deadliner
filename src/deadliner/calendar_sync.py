@@ -13,6 +13,9 @@ CALENDAR_API_BASE = "https://www.googleapis.com/calendar/v3"
 #: Google Calendar colorId "11" is red — deadlines should be impossible to miss.
 EVENT_COLOR_ID = "11"
 
+#: Google Calendar colorId "10" is Basil (Green) - for completed/submitted assignments.
+SUBMITTED_EVENT_COLOR_ID = "10"
+
 #: Google Calendar colorId "2" is Sage (Green) - for KSE lectures / default classes.
 SCHEDULE_EVENT_COLOR_ID = "2"
 SCHEDULE_LECTURE_COLOR_ID = "2"
@@ -38,9 +41,15 @@ def _stable_id(assignment: Assignment) -> str:
     if assignment.url:
         raw_id = f"{assignment.platform}:{assignment.url}"
     else:
-        raw_id = (
-            f"{assignment.platform}:{assignment.course_shortname}:{assignment.title}:{assignment.due_utc.isoformat()}"
-        )
+        raw_id = f"{assignment.platform}:{assignment.course_shortname}:{assignment.title}"
+    return hashlib.sha256(raw_id.encode("utf-8")).hexdigest()
+
+
+def _legacy_stable_id(assignment: Assignment) -> str:
+    """Return legacy identifier including due_utc for backward compatibility."""
+    raw_id = (
+        f"{assignment.platform}:{assignment.course_shortname}:{assignment.title}:{assignment.due_utc.isoformat()}"
+    )
     return hashlib.sha256(raw_id.encode("utf-8")).hexdigest()
 
 
@@ -63,16 +72,32 @@ def _event_payload(assignment: Assignment) -> dict:
     """Translate an Assignment into a Google Calendar event body."""
     end = assignment.due_utc
     start = end - timedelta(minutes=EVENT_DURATION_MINUTES)
-    summary = f"[DEADLINE] {assignment.title}"
+    prefix_tag = "[SUBMITTED]" if assignment.is_submitted else "[DEADLINE]"
+    summary = f"{prefix_tag} {assignment.title}"
     if assignment.course_shortname:
-        summary = f"[DEADLINE] [{assignment.course_shortname}] {assignment.title}"
+        summary = f"{prefix_tag} [{assignment.course_shortname}] {assignment.title}"
+
+    desc_parts = []
+    if assignment.is_submitted:
+        desc_parts.append("Status: Submitted ✓")
+    if assignment.url:
+        desc_parts.append(assignment.url)
+    description = "\n".join(desc_parts)
+
+    color_id = SUBMITTED_EVENT_COLOR_ID if assignment.is_submitted else EVENT_COLOR_ID
+
     return {
         "summary": summary,
-        "description": assignment.url,
+        "description": description,
         "start": {"dateTime": start.isoformat()},
         "end": {"dateTime": end.isoformat()},
-        "colorId": EVENT_COLOR_ID,
-        "extendedProperties": {"private": {"deadliner_id": _stable_id(assignment)}},
+        "colorId": color_id,
+        "extendedProperties": {
+            "private": {
+                "deadliner_id": _stable_id(assignment),
+                "deadliner_type": "deadline",
+            }
+        },
     }
 
 
@@ -123,7 +148,12 @@ def _schedule_event_payload(event: ScheduleEvent) -> dict:
         "start": {"dateTime": event.start_utc.isoformat()},
         "end": {"dateTime": event.end_utc.isoformat()},
         "colorId": color_id,
-        "extendedProperties": {"private": {"deadliner_id": _schedule_stable_id(event)}},
+        "extendedProperties": {
+            "private": {
+                "deadliner_id": _schedule_stable_id(event),
+                "deadliner_type": "schedule",
+            }
+        },
     }
 
 
@@ -168,7 +198,11 @@ def _parse_dt(s: str | None) -> datetime | None:
     return datetime.fromisoformat(s)
 
 
-def sync_to_calendar(assignments: list[Assignment], access_token: str) -> tuple[int, int, int]:
+def sync_to_calendar(
+    assignments: list[Assignment],
+    access_token: str,
+    return_details: bool = False,
+) -> tuple[int, int, int] | tuple[int, int, int, list[tuple[Assignment, str, datetime | None]]]:
     """Push assignments to Google Calendar as red deadline events.
 
     Idempotent: each event carries its assignment's stable id in private
@@ -176,8 +210,9 @@ def sync_to_calendar(assignments: list[Assignment], access_token: str) -> tuple[
     place (deadline moved on Moodle → event moves too), never duplicated.
     Identical events are skipped entirely to save API quotas.
 
-    Returns (created, updated, skipped) counts. Raises AuthError on a rejected token
-    and ConnectionError on network failure — loudly, never silently.
+    Returns (created, updated, skipped) counts, or (created, updated, skipped, statuses)
+    if return_details=True. Raises AuthError on a rejected token and ConnectionError on
+    network failure — loudly, never silently.
     """
     if not access_token:
         logger.error("Calendar sync attempted without an access token")
@@ -187,17 +222,35 @@ def sync_to_calendar(assignments: list[Assignment], access_token: str) -> tuple[
     created = 0
     updated = 0
     skipped = 0
+    statuses: list[tuple[Assignment, str, datetime | None]] = []
 
     for assignment in assignments:
         deadliner_id = _stable_id(assignment)
         payload = _event_payload(assignment)
 
         existing_event = _find_existing_event(headers, deadliner_id)
+        if not existing_event and not assignment.url:
+            legacy_id = _legacy_stable_id(assignment)
+            if legacy_id != deadliner_id:
+                existing_event = _find_existing_event(headers, legacy_id)
+
         if existing_event:
+            existing_private = existing_event.get("extendedProperties", {}).get("private", {})
+            old_start = _parse_dt(existing_event.get("start", {}).get("dateTime"))
+            new_start = _parse_dt(payload["start"]["dateTime"])
+            old_end = _parse_dt(existing_event.get("end", {}).get("dateTime"))
+            new_end = _parse_dt(payload["end"]["dateTime"])
+
+            is_rescheduled = old_end is not None and new_end is not None and old_end != new_end
+
             needs_update = (
                 existing_event.get("summary") != payload["summary"]
-                or _parse_dt(existing_event.get("start", {}).get("dateTime")) != _parse_dt(payload["start"]["dateTime"])
-                or _parse_dt(existing_event.get("end", {}).get("dateTime")) != _parse_dt(payload["end"]["dateTime"])
+                or existing_event.get("colorId") != payload.get("colorId")
+                or existing_event.get("description") != payload.get("description")
+                or old_start != new_start
+                or old_end != new_end
+                or existing_private.get("deadliner_id") != deadliner_id
+                or existing_private.get("deadliner_type") != "deadline"
             )
             if needs_update:
                 event_id = existing_event["id"]
@@ -208,8 +261,11 @@ def sync_to_calendar(assignments: list[Assignment], access_token: str) -> tuple[
                     json=payload,
                 )
                 updated += 1
+                status = "rescheduled" if is_rescheduled else "updated"
+                statuses.append((assignment, status, old_end))
             else:
                 skipped += 1
+                statuses.append((assignment, "skipped", old_end))
         else:
             _request(
                 "POST",
@@ -218,8 +274,11 @@ def sync_to_calendar(assignments: list[Assignment], access_token: str) -> tuple[
                 json=payload,
             )
             created += 1
+            statuses.append((assignment, "created", None))
 
     logger.debug(f"Calendar sync done: {created} created, {updated} updated, {skipped} skipped")
+    if return_details:
+        return created, updated, skipped, statuses
     return created, updated, skipped
 
 
@@ -252,9 +311,18 @@ def _fetch_gcal_schedule_events(headers: dict, time_min_utc: datetime, time_max_
 
         data = _request("GET", f"{CALENDAR_API_BASE}/calendars/primary/events", headers, params=params)
         for item in data.get("items", []):
-            deadliner_id = item.get("extendedProperties", {}).get("private", {}).get("deadliner_id")
-            if deadliner_id:
-                events.append(item)
+            private_props = item.get("extendedProperties", {}).get("private", {})
+            deadliner_id = private_props.get("deadliner_id")
+            deadliner_type = private_props.get("deadliner_type")
+            summary = item.get("summary", "")
+
+            if not deadliner_id:
+                continue
+            # Strictly exclude deadline events from schedule event reconciliation
+            if deadliner_type == "deadline" or summary.startswith("[DEADLINE]"):
+                continue
+
+            events.append(item)
 
         page_token = data.get("nextPageToken")
         if not page_token:
@@ -298,13 +366,15 @@ def sync_schedule_to_calendar(
                 existing_event = _find_existing_event(headers, legacy_id)
 
         if existing_event:
+            existing_private = existing_event.get("extendedProperties", {}).get("private", {})
             needs_update = (
                 existing_event.get("summary") != payload["summary"]
                 or existing_event.get("location") != payload.get("location")
                 or existing_event.get("description") != payload.get("description")
                 or _parse_dt(existing_event.get("start", {}).get("dateTime")) != _parse_dt(payload["start"]["dateTime"])
                 or _parse_dt(existing_event.get("end", {}).get("dateTime")) != _parse_dt(payload["end"]["dateTime"])
-                or existing_event.get("extendedProperties", {}).get("private", {}).get("deadliner_id") != deadliner_id
+                or existing_private.get("deadliner_id") != deadliner_id
+                or existing_private.get("deadliner_type") != "schedule"
             )
             if needs_update:
                 event_id = existing_event["id"]
@@ -334,7 +404,15 @@ def sync_schedule_to_calendar(
         active_ids = {_schedule_stable_id(e) for e in events} | {_schedule_legacy_stable_id(e) for e in events}
         gcal_events = _fetch_gcal_schedule_events(headers, time_min, time_max)
         for gcal_item in gcal_events:
-            gcal_deadliner_id = gcal_item.get("extendedProperties", {}).get("private", {}).get("deadliner_id")
+            private_props = gcal_item.get("extendedProperties", {}).get("private", {})
+            gcal_deadliner_id = private_props.get("deadliner_id")
+            deadliner_type = private_props.get("deadliner_type")
+            summary = gcal_item.get("summary", "")
+
+            # Strict guard: NEVER delete deadline events
+            if deadliner_type == "deadline" or summary.startswith("[DEADLINE]"):
+                continue
+
             if gcal_deadliner_id and gcal_deadliner_id not in active_ids:
                 event_id = gcal_item["id"]
                 _request(
@@ -343,8 +421,8 @@ def sync_schedule_to_calendar(
                     headers,
                 )
                 deleted += 1
-                summary = gcal_item.get("summary", "Cancelled Class")
-                statuses.append((summary, "deleted"))
+                summary_text = summary or "Cancelled Class"
+                statuses.append((summary_text, "deleted"))
 
     logger.debug(
         f"KSE schedule sync done: {created} created, {updated} updated, {skipped} skipped, {deleted} deleted"

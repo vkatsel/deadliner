@@ -10,6 +10,17 @@ def test_get_sync_command_includes_python():
     assert "-m deadliner" in cmd
 
 
+def test_get_sync_command_windows_uses_pythonw(monkeypatch):
+    from pathlib import Path
+
+    monkeypatch.setattr(platform, "system", lambda: "Windows")
+    monkeypatch.setattr(Path, "is_file", lambda self: True)
+
+    cmd = scheduler.get_sync_command()
+    assert "pythonw.exe" in cmd
+    assert "-m deadliner sync-all" in cmd
+
+
 def test_enable_schedule_windows(monkeypatch):
     monkeypatch.setattr(platform, "system", lambda: "Windows")
 

@@ -121,7 +121,36 @@ def test_fetch_kse_schedule_network_failure_raises_connection_error():
     responses.add(responses.GET, SCHEDULE_URL, body=requests.ConnectionError("Connection dropped"))
 
     with pytest.raises(ConnectionError):
-        fetch_kse_schedule()
+        fetch_kse_schedule(token="mock-token")
+
+
+def test_fetch_kse_schedule_missing_token_raises_auth_error():
+    with pytest.raises(AuthError) as exc_info:
+        fetch_kse_schedule(token="")
+    assert "token is missing" in str(exc_info.value).lower()
+
+
+def test_fetch_kse_schedule_expired_token_refresh_fails_raises_auth_error(monkeypatch):
+    import deadliner.kse_auth as kse_auth
+
+    monkeypatch.setattr(kse_auth, "is_kse_token_expired", lambda tok: True)
+    monkeypatch.setattr(kse_auth, "load_kse_credentials", lambda: ("expired", "", ""))
+
+    with pytest.raises(AuthError) as exc_info:
+        fetch_kse_schedule(token="expired-jwt")
+    assert "auto-refresh failed" in str(exc_info.value).lower()
+
+
+@responses.activate
+def test_fetch_kse_schedule_null_events_trap_detects_401_probe():
+    # KSE API returns HTTP 200 with [None, None]
+    responses.add(responses.GET, SCHEDULE_URL, json={"events": [None, None]}, status=200)
+    # Probe to /schedule/events returns 401 Unauthorized
+    responses.add(responses.GET, f"{KSE_API_BASE}/schedule/events", status=401)
+
+    with pytest.raises(AuthError) as exc_info:
+        fetch_kse_schedule(token="revoked-token", from_date="2026-09-01", till_date="2026-09-02")
+    assert "rejected" in str(exc_info.value).lower() or "unauthorized" in str(exc_info.value).lower()
 
 
 @responses.activate
@@ -130,3 +159,39 @@ def test_fetch_kse_schedule_empty_calendar_returns_empty_list():
 
     events = fetch_kse_schedule(token="token", from_date="2026-09-01", till_date="2026-09-07")
     assert events == []
+
+
+@responses.activate
+def test_fetch_kse_schedule_auto_refreshes_on_401(monkeypatch):
+    """Verify Bug 1 fix: when KSE API returns 401, auto-refresh is attempted and request retries."""
+    import deadliner.kse_auth as kse_auth
+
+    # Mock 1st call 401, 2nd call 200
+    responses.add(responses.GET, SCHEDULE_URL, json={"error": "jwt expired"}, status=401)
+    responses.add(
+        responses.GET,
+        SCHEDULE_URL,
+        json={
+            "events": [
+                {
+                    "id": "evt-after-refresh",
+                    "discipline": "MATH101",
+                    "date": "2026-09-02",
+                    "period": 1,
+                }
+            ]
+        },
+        status=200,
+    )
+
+    monkeypatch.setattr(kse_auth, "load_kse_credentials", lambda: ("", "refresh-token-valid", "sess-1"))
+    monkeypatch.setattr(kse_auth, "refresh_kse_token", lambda r, s: "refreshed-jwt-token")
+
+    events = fetch_kse_schedule(token="stale-jwt-token", from_date="2026-09-02", till_date="2026-09-02")
+
+    assert len(events) == 1
+    assert events[0].event_id == "evt-after-refresh"
+    assert len(responses.calls) == 2
+    # Verify second request used the refreshed token
+    assert responses.calls[1].request.headers["Authorization"] == "Bearer refreshed-jwt-token"
+

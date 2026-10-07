@@ -79,3 +79,133 @@ def test_sync_empty_list_makes_no_http_calls():
     created, updated, skipped = sync_to_calendar([], "valid-token")
 
     assert (created, updated, skipped) == (0, 0, 0)
+
+
+@responses.activate
+def test_sync_creates_green_submitted_event():
+    responses.add(responses.GET, EVENTS_URL, json={"items": []}, status=200)
+    responses.add(responses.POST, EVENTS_URL, json={"id": "evt-sub"}, status=200)
+
+    assignment = _assignment()
+    assignment.is_submitted = True
+
+    created, updated, skipped = sync_to_calendar([assignment], "valid-token")
+
+    assert created == 1 and updated == 0 and skipped == 0
+    import json
+
+    sent_payload = json.loads(responses.calls[1].request.body)
+    assert "[SUBMITTED]" in sent_payload["summary"], "submitted event summary must carry [SUBMITTED]"
+    assert sent_payload["colorId"] == "10", "submitted event must be green (colorId 10)"
+    assert "Status: Submitted ✓" in sent_payload["description"]
+
+
+@responses.activate
+def test_sync_patches_existing_deadline_to_submitted():
+    from deadliner.calendar_sync import _event_payload
+
+    # Existing event in calendar is unsubmitted [DEADLINE] with colorId 11
+    unsubmitted = _assignment()
+    payload = _event_payload(unsubmitted)
+    payload["id"] = "evt-existing"
+
+    responses.add(responses.GET, EVENTS_URL, json={"items": [payload]}, status=200)
+    responses.add(responses.PATCH, f"{EVENTS_URL}/evt-existing", json={"id": "evt-existing"}, status=200)
+
+    # Now student submitted the assignment
+    submitted = _assignment()
+    submitted.is_submitted = True
+
+    created, updated, skipped = sync_to_calendar([submitted], "valid-token")
+
+    assert created == 0 and updated == 1 and skipped == 0
+    patch_body = responses.calls[1].request.body.decode()
+    assert "[SUBMITTED]" in patch_body
+    assert '"colorId": "10"' in patch_body
+
+
+@responses.activate
+def test_sync_detects_and_patches_rescheduled_deadline():
+    from deadliner.calendar_sync import _event_payload
+
+    # Existing event in calendar originally due July 10
+    original = _assignment()
+    payload = _event_payload(original)
+    payload["id"] = "evt-rescheduled"
+
+    responses.add(responses.GET, EVENTS_URL, json={"items": [payload]}, status=200)
+    responses.add(responses.PATCH, f"{EVENTS_URL}/evt-rescheduled", json={"id": "evt-rescheduled"}, status=200)
+
+    # Professor postponed deadline to July 15
+    rescheduled = Assignment(
+        platform="moodle",
+        course_shortname="CS101",
+        title="Lab Report",
+        due_utc=datetime(2026, 7, 15, 21, 0, 0, tzinfo=timezone.utc),
+        url="https://moodle.example.com/mod/assign/view.php?id=42",
+    )
+
+    created, updated, skipped, statuses = sync_to_calendar([rescheduled], "valid-token", return_details=True)
+
+    assert created == 0 and updated == 1 and skipped == 0
+    assert len(statuses) == 1
+    item, status, old_due = statuses[0]
+    assert item == rescheduled
+    assert status == "rescheduled"
+    assert old_due == datetime(2026, 7, 10, 21, 0, 0, tzinfo=timezone.utc)
+
+    patch_body = responses.calls[1].request.body.decode()
+    assert "2026-07-15T21:00:00+00:00" in patch_body
+
+
+def test_stable_id_without_url_does_not_change_when_due_changes():
+    from deadliner.calendar_sync import _legacy_stable_id, _stable_id
+
+    assign1 = Assignment(
+        platform="moodle",
+        course_shortname="CS101",
+        title="Oral Exam",
+        due_utc=datetime(2026, 7, 10, 10, 0, 0, tzinfo=timezone.utc),
+        url="",
+    )
+    assign2 = Assignment(
+        platform="moodle",
+        course_shortname="CS101",
+        title="Oral Exam",
+        due_utc=datetime(2026, 7, 12, 14, 0, 0, tzinfo=timezone.utc),
+        url="",
+    )
+
+    # Primary stable id should match despite different due dates
+    assert _stable_id(assign1) == _stable_id(assign2)
+    # Legacy stable id captured due date
+    assert _legacy_stable_id(assign1) != _legacy_stable_id(assign2)
+
+
+@responses.activate
+def test_sync_matches_existing_event_via_legacy_id_when_url_missing():
+    from deadliner.calendar_sync import _event_payload, _legacy_stable_id
+
+    assign = Assignment(
+        platform="moodle",
+        course_shortname="CS101",
+        title="Oral Exam",
+        due_utc=datetime(2026, 7, 10, 10, 0, 0, tzinfo=timezone.utc),
+        url="",
+    )
+    legacy_id = _legacy_stable_id(assign)
+    payload = _event_payload(assign)
+    payload["id"] = "evt-legacy"
+    payload["extendedProperties"]["private"]["deadliner_id"] = legacy_id
+
+    # 1st call for primary ID returns empty
+    responses.add(responses.GET, EVENTS_URL, json={"items": []}, status=200)
+    # 2nd call for legacy ID returns existing event
+    responses.add(responses.GET, EVENTS_URL, json={"items": [payload]}, status=200)
+    # PATCH call to update the event
+    responses.add(responses.PATCH, f"{EVENTS_URL}/evt-legacy", json={"id": "evt-legacy"}, status=200)
+
+    created, updated, skipped = sync_to_calendar([assign], "valid-token")
+    assert created == 0 and updated == 1 and skipped == 0
+
+
