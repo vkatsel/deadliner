@@ -1,12 +1,20 @@
 /**
- * Deadliner — Dynamic Hourglass & Kinetic Sand Particle Engine
+ * Deadliner — Dynamic Hourglass & Kinetic Sand Particle Engine (v2.0)
  * 
  * Interactive time-physics animation synchronized with page scroll depth:
- * 1. Ambient kinetic sand particle stream responding to scrolling inertia & cursor physics.
- * 2. Precision vector hourglass HUD tracking scroll progress & midnight cutoff.
- * 3. 1-click time inversion (3D flip + smooth back-to-top scroll).
+ * 1. Rich kinetic sand particle system:
+ *    - Ambient drifting sand grains passing BEHIND solid architectural cards.
+ *    - Interactive sparkling cursor trail (mouse wand physics).
+ *    - Kinetic cascade waterfall on scroll down.
+ *    - Click impulse shockwave.
+ * 2. Precision vector hourglass HUD (Refined Minimalist Capsule):
+ *    - Seamless 42x80px frosted glass capsule.
+ *    - Mathematically symmetric top & bottom sand bulb simulations (100% full at scroll ends).
+ *    - Animated trickle & dune impact splash sparks.
+ *    - Amber gold -> Tomato Red cutoff alert transition.
+ *    - 3D flip inversion + smooth back-to-top on click.
  * 
- * Zero dependencies. High-DPI Canvas. 60fps requestAnimationFrame.
+ * Zero external libraries. 60-120fps Retina Canvas. Fully throttled.
  */
 
 (function () {
@@ -19,12 +27,11 @@
   const isUk = document.documentElement.lang === 'uk' || window.location.pathname.includes('/uk/');
   const i18n = {
     tooltip: isUk ? 'Опівнічний дедлайн • Клікніть, щоб перевернути час' : 'Midnight Cutoff • Click to invert time',
-    cutoff: isUk ? '00:00 ДЕДЛАЙН' : '00:00 CUTOFF',
-    timeRemaining: isUk ? 'ДО ДЕДЛАЙНУ' : 'T-MINUS'
+    cutoff: isUk ? '00:00 ДЕДЛАЙН' : '00:00 CUTOFF'
   };
 
   /* ==========================================================================
-     1. Ambient Kinetic Sand Particle System
+     1. Ambient & Interactive Sand Particle System
      ========================================================================== */
   class SandParticlesSystem {
     constructor() {
@@ -35,11 +42,15 @@
       document.body.prepend(this.canvas);
 
       this.particles = [];
-      this.particleCount = window.innerWidth < 768 ? 35 : 60;
+      this.trailParticles = [];
+      this.maxTrail = 35;
+      this.particleCount = window.innerWidth < 768 ? 50 : 110;
+
       this.lastScrollY = window.scrollY || 0;
       this.scrollVelocity = 0;
       this.targetScrollVelocity = 0;
-      this.mouse = { x: -1000, y: -1000, active: false };
+
+      this.mouse = { x: -1000, y: -1000, lastX: -1000, lastY: -1000, active: false };
 
       this.resize();
       this.initParticles();
@@ -58,9 +69,10 @@
     initParticles() {
       this.particles = [];
       const colors = [
-        { r: 227, g: 179, b: 65, a: 0.45 }, // Amber sand
-        { r: 255, g: 82,  b: 82, a: 0.35 }, // Cutoff tomato red
-        { r: 255, g: 255, b: 255, a: 0.25 }, // Stardust white
+        { r: 227, g: 179, b: 65,  a: 0.45 }, // Amber gold sand
+        { r: 245, g: 200, b: 90,  a: 0.55 }, // Bright gold glint
+        { r: 255, g: 82,  b: 82,  a: 0.35 }, // Cutoff tomato red
+        { r: 255, g: 255, b: 255, a: 0.28 }, // Stardust white
         { r: 88,  g: 166, b: 255, a: 0.30 }  // Cyan glint
       ];
 
@@ -69,13 +81,13 @@
         this.particles.push({
           x: Math.random() * this.width,
           y: Math.random() * this.height,
-          radius: Math.random() * 1.1 + 0.6,
-          baseVy: Math.random() * 0.5 + 0.3,
-          vx: (Math.random() - 0.5) * 0.35,
+          radius: Math.random() * 1.2 + 0.6,
+          baseVy: Math.random() * 0.45 + 0.25,
+          vx: (Math.random() - 0.5) * 0.3,
           vy: 0,
           color: c,
           baseAlpha: c.a,
-          swaySpeed: Math.random() * 0.02 + 0.01,
+          swaySpeed: Math.random() * 0.02 + 0.008,
           swayOffset: Math.random() * Math.PI * 2
         });
       }
@@ -84,106 +96,200 @@
     bindEvents() {
       window.addEventListener('resize', () => this.resize(), { passive: true });
 
+      // Kinetic scroll dynamics
       window.addEventListener('scroll', () => {
         const currentY = window.scrollY || 0;
         const delta = currentY - this.lastScrollY;
         this.lastScrollY = currentY;
+
         // Boost velocity proportional to scroll speed
-        this.targetScrollVelocity = Math.max(-4, Math.min(delta * 0.14, 10));
+        this.targetScrollVelocity = Math.max(-5, Math.min(delta * 0.16, 12));
+
+        // When scrolling down rapidly, cascade a gentle shower of sand grains from the top
+        if (delta > 8 && this.particles.length < this.particleCount + 25) {
+          const spawnCount = Math.min(Math.floor(delta / 6), 4);
+          for (let k = 0; k < spawnCount; k++) {
+            this.particles.push({
+              x: Math.random() * this.width,
+              y: -4,
+              radius: Math.random() * 1.2 + 0.7,
+              baseVy: Math.random() * 0.6 + 0.4,
+              vx: (Math.random() - 0.5) * 0.4,
+              vy: Math.random() * 2 + 1,
+              color: { r: 227, g: 179, b: 65, a: 0.55 },
+              baseAlpha: 0.55,
+              swaySpeed: 0.02,
+              swayOffset: Math.random() * Math.PI * 2,
+              transient: true
+            });
+          }
+        }
       }, { passive: true });
 
+      // Interactive mouse trail & physics
       window.addEventListener('mousemove', (e) => {
-        this.mouse.x = e.clientX;
-        this.mouse.y = e.clientY;
+        const mx = e.clientX;
+        const my = e.clientY;
+
+        if (this.mouse.active) {
+          const distMoved = Math.hypot(mx - this.mouse.lastX, my - this.mouse.lastY);
+          // Spawn sparkling sand dust along cursor trajectory
+          if (distMoved > 10 && this.trailParticles.length < this.maxTrail) {
+            this.trailParticles.push({
+              x: mx + (Math.random() - 0.5) * 8,
+              y: my + (Math.random() - 0.5) * 8,
+              vx: (Math.random() - 0.5) * 1.2,
+              vy: Math.random() * 0.8 + 0.4, // Gentle downward drift
+              radius: Math.random() * 1.3 + 0.7,
+              life: 38,
+              maxLife: 38,
+              color: Math.random() > 0.3 ? { r: 245, g: 200, b: 90 } : { r: 255, g: 100, b: 100 }
+            });
+            this.mouse.lastX = mx;
+            this.mouse.lastY = my;
+          }
+        } else {
+          this.mouse.lastX = mx;
+          this.mouse.lastY = my;
+        }
+
+        this.mouse.x = mx;
+        this.mouse.y = my;
         this.mouse.active = true;
       }, { passive: true });
 
       window.addEventListener('mouseleave', () => {
         this.mouse.active = false;
       });
+
+      // Click shockwave impulse
+      window.addEventListener('click', (e) => {
+        // Only trigger shockwave if not clicking interactive UI buttons
+        if (e.target.closest('a, button, input, .hourglass-hud')) return;
+        this.shockwave(e.clientX, e.clientY);
+      }, { passive: true });
     }
 
-    burst(x, y, count = 20) {
+    shockwave(cx, cy) {
+      // Repel ambient particles radially
+      for (let p of this.particles) {
+        const dx = p.x - cx;
+        const dy = p.y - cy;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 180 && dist > 0) {
+          const force = (180 - dist) / 180;
+          p.vx += (dx / dist) * force * 5.5;
+          p.vy += (dy / dist) * force * 5.5;
+        }
+      }
+
+      // Spawn ripple micro-sparks
+      for (let i = 0; i < 14; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const spd = Math.random() * 3.5 + 1;
+        this.trailParticles.push({
+          x: cx,
+          y: cy,
+          vx: Math.cos(angle) * spd,
+          vy: Math.sin(angle) * spd,
+          radius: Math.random() * 1.4 + 0.8,
+          life: 30,
+          maxLife: 30,
+          color: { r: 227, g: 179, b: 65 }
+        });
+      }
+    }
+
+    burst(x, y, count = 25) {
       for (let i = 0; i < count; i++) {
         const angle = Math.random() * Math.PI * 2;
-        const speed = Math.random() * 4 + 1.5;
-        this.particles.push({
+        const speed = Math.random() * 4.5 + 1.5;
+        this.trailParticles.push({
           x: x,
           y: y,
-          radius: Math.random() * 1.4 + 0.8,
-          baseVy: 0.5,
+          radius: Math.random() * 1.5 + 0.8,
           vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed - 1.5,
-          color: { r: 227, g: 179, b: 65, a: 0.8 },
-          baseAlpha: 0.8,
-          temporary: true,
-          life: 45
+          vy: Math.sin(angle) * speed - 1.8,
+          color: { r: 245, g: 200, b: 90 },
+          life: 45,
+          maxLife: 45
         });
       }
     }
 
     update(time) {
-      // Smooth scroll velocity decay
-      this.scrollVelocity += (this.targetScrollVelocity - this.scrollVelocity) * 0.15;
-      this.targetScrollVelocity *= 0.92;
+      // Smooth decay of scroll velocity impulse
+      this.scrollVelocity += (this.targetScrollVelocity - this.scrollVelocity) * 0.14;
+      this.targetScrollVelocity *= 0.93;
 
       this.ctx.clearRect(0, 0, this.width, this.height);
 
+      /* --- 1. Render Interactive Mouse Trail Particles --- */
+      for (let i = this.trailParticles.length - 1; i >= 0; i--) {
+        const tp = this.trailParticles[i];
+        tp.life--;
+        tp.vx *= 0.95;
+        tp.vy += 0.08; // Gentle gravity
+        tp.x += tp.vx;
+        tp.y += tp.vy;
+
+        const alpha = (tp.life / tp.maxLife) * 0.85;
+        this.ctx.beginPath();
+        this.ctx.arc(tp.x, tp.y, tp.radius, 0, Math.PI * 2);
+        this.ctx.fillStyle = `rgba(${tp.color.r}, ${tp.color.g}, ${tp.color.b}, ${alpha})`;
+        this.ctx.shadowColor = `rgba(${tp.color.r}, ${tp.color.g}, ${tp.color.b}, 0.6)`;
+        this.ctx.shadowBlur = 6;
+        this.ctx.fill();
+        this.ctx.shadowBlur = 0;
+
+        if (tp.life <= 0) {
+          this.trailParticles.splice(i, 1);
+        }
+      }
+
+      /* --- 2. Render Ambient Drifting Sand Particles --- */
       for (let i = this.particles.length - 1; i >= 0; i--) {
         const p = this.particles[i];
 
-        if (p.temporary) {
-          p.life--;
-          p.vx *= 0.94;
-          p.vy += 0.15; // Gravity
-          p.x += p.vx;
-          p.y += p.vy;
-          const alpha = (p.life / 45) * p.baseAlpha;
-          this.ctx.beginPath();
-          this.ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-          this.ctx.fillStyle = `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${alpha})`;
-          this.ctx.fill();
-
-          if (p.life <= 0) {
-            this.particles.splice(i, 1);
-          }
-          continue;
-        }
-
         // Horizontal sway
         p.swayOffset += p.swaySpeed;
-        const sway = Math.sin(p.swayOffset) * 0.25;
+        const sway = Math.sin(p.swayOffset) * 0.3;
 
-        // Downward kinetic velocity
+        // Downward kinetic velocity + friction on radial perturbations
+        p.vx *= 0.97;
         p.vy = p.baseVy + this.scrollVelocity;
         p.x += p.vx + sway;
         p.y += p.vy;
 
-        // Gentle cursor magnetic repulsion
+        // Cursor magnetic dispersion
         if (this.mouse.active) {
           const dx = p.x - this.mouse.x;
           const dy = p.y - this.mouse.y;
           const dist = Math.hypot(dx, dy);
-          const maxDist = 80;
+          const maxDist = 90;
           if (dist < maxDist && dist > 0) {
             const force = (maxDist - dist) / maxDist;
-            p.x += (dx / dist) * force * 2.2;
-            p.y += (dy / dist) * force * 2.2;
+            p.x += (dx / dist) * force * 2.8;
+            p.y += (dy / dist) * force * 2.8;
           }
         }
 
-        // Screen wrap
-        if (p.y > this.height + 5) {
-          p.y = -5;
+        // Screen boundary wrap
+        if (p.y > this.height + 6) {
+          if (p.transient) {
+            this.particles.splice(i, 1);
+            continue;
+          }
+          p.y = -6;
           p.x = Math.random() * this.width;
-        } else if (p.y < -5) {
-          p.y = this.height + 5;
+        } else if (p.y < -6) {
+          p.y = this.height + 6;
           p.x = Math.random() * this.width;
         }
-        if (p.x > this.width + 5) p.x = -5;
-        else if (p.x < -5) p.x = this.width + 5;
+        if (p.x > this.width + 6) p.x = -6;
+        else if (p.x < -6) p.x = this.width + 6;
 
-        // Render grain
+        // Render ambient grain
         this.ctx.beginPath();
         this.ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
         this.ctx.fillStyle = `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${p.baseAlpha})`;
@@ -193,7 +299,7 @@
   }
 
   /* ==========================================================================
-     2. Vector Hourglass HUD & Scroll Telemetry
+     2. Refined Minimalist Hourglass HUD (Sleek Glass Capsule)
      ========================================================================== */
   class HourglassHUD {
     constructor(sandParticles) {
@@ -208,12 +314,9 @@
 
       this.hud.innerHTML = `
         <div class="hourglass-canvas-wrap">
-          <canvas id="hourglassCanvas" width="72" height="104"></canvas>
+          <canvas id="hourglassCanvas" width="64" height="100"></canvas>
         </div>
-        <div class="hourglass-telemetry">
-          <span class="hud-pct" id="hudPct">0%</span>
-          <span class="hud-sub">${i18n.timeRemaining}</span>
-        </div>
+        <span class="hud-pct" id="hudPct">0%</span>
         <div class="hud-tooltip-card">${i18n.tooltip}</div>
       `;
 
@@ -224,9 +327,9 @@
       this.pctEl = document.getElementById('hudPct');
       this.dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-      // Canvas dimensions (36x52 CSS points, scaled for Retina)
-      this.cssW = 36;
-      this.cssH = 52;
+      // Canvas dimensions (32x50 CSS points, scaled for Retina)
+      this.cssW = 32;
+      this.cssH = 50;
       this.canvas.width = this.cssW * this.dpr;
       this.canvas.height = this.cssH * this.dpr;
       this.canvas.style.width = `${this.cssW}px`;
@@ -236,10 +339,10 @@
       this.scrollProgress = 0;
       this.targetProgress = 0;
       this.fallingGrains = [
-        { y: 0.1, speed: 0.045 },
-        { y: 0.35, speed: 0.055 },
-        { y: 0.65, speed: 0.05 },
-        { y: 0.9, speed: 0.06 }
+        { y: 0.1, speed: 0.055 },
+        { y: 0.35, speed: 0.065 },
+        { y: 0.65, speed: 0.06 },
+        { y: 0.9, speed: 0.07 }
       ];
 
       this.splashParticles = [];
@@ -259,15 +362,32 @@
       window.addEventListener('resize', updateScroll, { passive: true });
       updateScroll();
 
+      // 3D tilt on mouse hover
+      this.hud.addEventListener('mousemove', (e) => {
+        const rect = this.hud.getBoundingClientRect();
+        const nx = (e.clientX - rect.left) / rect.width - 0.5;
+        const ny = (e.clientY - rect.top) / rect.height - 0.5;
+        if (!this.isFlipping) {
+          this.hud.style.transform = `translateY(-2px) perspective(300px) rotateY(${nx * 14}deg) rotateX(${-ny * 14}deg)`;
+        }
+      });
+
+      this.hud.addEventListener('mouseleave', () => {
+        if (!this.isFlipping) {
+          this.hud.style.transform = '';
+        }
+      });
+
       // Click to invert time & scroll to top
       const triggerFlip = () => {
         if (this.isFlipping) return;
         this.isFlipping = true;
+        this.hud.style.transform = '';
         this.hud.classList.add('flipping');
 
         // Particle burst
         const rect = this.hud.getBoundingClientRect();
-        this.sandParticles.burst(rect.left + rect.width / 2, rect.top + rect.height / 2, 25);
+        this.sandParticles.burst(rect.left + rect.width / 2, rect.top + rect.height / 2, 30);
 
         // Smooth back to top
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -288,7 +408,7 @@
     }
 
     render() {
-      // Smooth interpolation for fluid liquid-sand feel
+      // Smooth interpolation for liquid sand feeling
       this.scrollProgress += (this.targetProgress - this.scrollProgress) * 0.12;
       const p = this.scrollProgress;
 
@@ -306,18 +426,18 @@
       const ctx = this.ctx;
       ctx.clearRect(0, 0, w, h);
 
-      // Coordinates
-      const cx = w / 2;
+      // Glass Hourglass Coordinates
+      const cx = w / 2; // 16
       const topPlateY = 4;
-      const botPlateY = h - 4;
-      const bulbW = 13.5;
-      const waistY = h / 2;
-      const waistHalfW = 2.4;
-      const coneTopY = topPlateY + 3;
-      const coneBotY = botPlateY - 3;
+      const botPlateY = h - 4; // 46
+      const waistY = h / 2; // 25
+      const bulbW = 11.5;   // Top/bottom rim half-width
+      const waistHalfW = 2.2; // Neck half-width
+      const coneTopY = topPlateY + 1.5; // 5.5
+      const coneBotY = botPlateY - 1.5; // 44.5
+      const coneHeight = waistY - coneTopY; // 19.5
 
-      // Color interpolation: Gold -> Tomato Red as deadline approaches
-      const isUrgent = p > 0.72;
+      // Color interpolation: Warm Amber Gold -> Tomato Red as deadline approaches
       const urgentFactor = Math.max(0, Math.min((p - 0.72) / 0.28, 1));
       const sandR = Math.round(227 + (255 - 227) * urgentFactor);
       const sandG = Math.round(179 + (82 - 179) * urgentFactor);
@@ -325,14 +445,13 @@
       const sandColor = `rgb(${sandR}, ${sandG}, ${sandB})`;
       const sandColorAlpha = (a) => `rgba(${sandR}, ${sandG}, ${sandB}, ${a})`;
 
-      /* ---------------- Top Sand Bulb ---------------- */
+      /* ---------------- 1. Top Sand Bulb ---------------- */
+      // Remaining fraction in top cone (1 at top, 0 at bottom)
       const topRemaining = Math.max(0, 1 - p);
-      if (topRemaining > 0.01) {
-        // Sand surface in top cone
-        const topH = (waistY - coneTopY);
-        const surfY = coneTopY + (1 - topRemaining) * topH;
-        const surfRatio = (waistY - surfY) / topH;
-        const surfHalfW = waistHalfW + (bulbW - waistHalfW) * surfRatio;
+      if (topRemaining > 0.008) {
+        const surfY = coneTopY + (1 - topRemaining) * coneHeight;
+        const progressFromWaist = (waistY - surfY) / coneHeight;
+        const surfHalfW = waistHalfW + (bulbW - waistHalfW) * progressFromWaist;
 
         ctx.save();
         ctx.beginPath();
@@ -350,46 +469,50 @@
         ctx.restore();
       }
 
-      /* ---------------- Bottom Sand Bulb ---------------- */
+      /* ---------------- 2. Bottom Sand Bulb (100% Symmetrical Math) ---------------- */
+      // Accumulated fraction in bottom cone (0 at top, 1 at bottom)
       const botFilled = Math.min(1, p);
       if (botFilled > 0.005) {
-        const botH = (coneBotY - waistY);
-        const pileHeight = botFilled * botH;
-        const surfY = coneBotY - pileHeight;
-        const surfRatio = pileHeight / botH;
-        const surfHalfW = bulbW - (bulbW - waistHalfW) * surfRatio;
-        const peak = botFilled < 0.95 ? 2.2 : 0.5;
+        // Sand surface level in bottom cone: rises from coneBotY up to waistY
+        const surfY = coneBotY - botFilled * coneHeight;
+        const progressFromWaist = (surfY - waistY) / coneHeight; // 0 at waist, 1 at base
+        const surfHalfW = waistHalfW + (bulbW - waistHalfW) * progressFromWaist;
+        
+        // Gentle dune peak curve in the middle (flattens as it tops out)
+        const dunePeak = (botFilled > 0.02 && botFilled < 0.98) ? Math.sin(botFilled * Math.PI) * 2.2 : 0;
 
         ctx.save();
         ctx.beginPath();
-        ctx.moveTo(cx - surfHalfW, coneBotY - (1 - surfRatio) * 0); // bottom left
-        ctx.lineTo(cx - surfHalfW, surfY);
-        // Sand dune conical curve
-        ctx.quadraticCurveTo(cx, surfY - peak, cx + surfHalfW, surfY);
+        // Start at bottom-left rim
+        ctx.moveTo(cx - bulbW, coneBotY);
+        // Across bottom rim to bottom-right
         ctx.lineTo(cx + bulbW, coneBotY);
+        // Up the right slanted cone wall to sand surface
+        ctx.lineTo(cx + surfHalfW, surfY);
+        // Across the sand dune surface to left wall
+        ctx.quadraticCurveTo(cx, surfY - dunePeak, cx - surfHalfW, surfY);
+        // Down the left slanted cone wall back to bottom-left rim
         ctx.lineTo(cx - bulbW, coneBotY);
         ctx.closePath();
 
-        const botGrad = ctx.createLinearGradient(0, surfY - peak, 0, coneBotY);
+        const botGrad = ctx.createLinearGradient(0, surfY - dunePeak, 0, coneBotY);
         botGrad.addColorStop(0, sandColorAlpha(0.95));
-        botGrad.addColorStop(1, sandColorAlpha(0.7));
+        botGrad.addColorStop(1, sandColorAlpha(0.70));
         ctx.fillStyle = botGrad;
         ctx.fill();
         ctx.restore();
       }
 
-      /* ---------------- Falling Trickle Stream ---------------- */
+      /* ---------------- 3. Animated Falling Stream ---------------- */
       if (topRemaining > 0.01) {
-        const botH = (coneBotY - waistY);
-        const pileHeight = botFilled * botH;
-        const targetY = coneBotY - pileHeight;
+        const targetY = coneBotY - botFilled * coneHeight;
 
-        // Continuous thin stream line
+        // Continuous luminous stream line
         ctx.beginPath();
         ctx.moveTo(cx, waistY);
         ctx.lineTo(cx, targetY);
-        ctx.strokeStyle = sandColorAlpha(0.65);
-        ctx.lineWidth = 1.1;
+        ctx.strokeStyle = sandColorAlpha(0.7);
+        ctx.lineWidth = 1.0;
         ctx.stroke();
 
         // Animated falling micro-grains
@@ -399,7 +522,7 @@
           if (grain.y > 1) grain.y = 0;
           const gy = waistY + grain.y * (targetY - waistY);
           ctx.beginPath();
-          ctx.arc(cx, gy, 0.75, 0, Math.PI * 2);
+          ctx.arc(cx, gy, 0.7, 0, Math.PI * 2);
           ctx.fill();
         }
 
@@ -408,8 +531,8 @@
           this.splashParticles.push({
             x: cx,
             y: targetY,
-            vx: (Math.random() - 0.5) * 1.2,
-            vy: -Math.random() * 1.1 - 0.4,
+            vx: (Math.random() - 0.5) * 1.1,
+            vy: -Math.random() * 1.0 - 0.3,
             life: 8,
             color: sandColor
           });
@@ -424,33 +547,33 @@
         sp.vy += 0.2;
         sp.life--;
         ctx.beginPath();
-        ctx.arc(sp.x, sp.y, 0.6, 0, Math.PI * 2);
+        ctx.arc(sp.x, sp.y, 0.55, 0, Math.PI * 2);
         ctx.fillStyle = sp.color;
         ctx.fill();
         if (sp.life <= 0) this.splashParticles.splice(i, 1);
       }
 
-      /* ---------------- Glass Architecture (Hairline Vectors) ---------------- */
+      /* ---------------- 4. Hairline Vector Glass Silhouette ---------------- */
       ctx.save();
 
       // Top and bottom cap plates
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.38)';
+      ctx.lineWidth = 1.2;
       ctx.lineCap = 'round';
 
       ctx.beginPath();
-      ctx.moveTo(cx - bulbW - 2, topPlateY);
-      ctx.lineTo(cx + bulbW + 2, topPlateY);
+      ctx.moveTo(cx - bulbW - 1.5, topPlateY);
+      ctx.lineTo(cx + bulbW + 1.5, topPlateY);
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.moveTo(cx - bulbW - 2, botPlateY);
-      ctx.lineTo(cx + bulbW + 2, botPlateY);
+      ctx.moveTo(cx - bulbW - 1.5, botPlateY);
+      ctx.lineTo(cx + bulbW + 1.5, botPlateY);
       ctx.stroke();
 
-      // Conical glass contours
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-      ctx.lineWidth = 1.2;
+      // Conical glass walls
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+      ctx.lineWidth = 1.0;
       ctx.beginPath();
 
       // Left glass wall
@@ -465,11 +588,11 @@
       ctx.stroke();
 
       // Delicate specular reflection highlight on upper-left curve
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.36)';
+      ctx.lineWidth = 0.9;
       ctx.beginPath();
-      ctx.moveTo(cx - bulbW + 1.5, coneTopY + 2);
-      ctx.lineTo(cx - waistHalfW - 1, waistY - 3);
+      ctx.moveTo(cx - bulbW + 1.2, coneTopY + 1.5);
+      ctx.lineTo(cx - waistHalfW - 0.8, waistY - 2.5);
       ctx.stroke();
 
       ctx.restore();
