@@ -181,3 +181,31 @@ def test_stable_id_without_url_does_not_change_when_due_changes():
     # Legacy stable id captured due date
     assert _legacy_stable_id(assign1) != _legacy_stable_id(assign2)
 
+
+@responses.activate
+def test_sync_matches_existing_event_via_legacy_id_when_url_missing():
+    from deadliner.calendar_sync import _event_payload, _legacy_stable_id
+
+    assign = Assignment(
+        platform="moodle",
+        course_shortname="CS101",
+        title="Oral Exam",
+        due_utc=datetime(2026, 7, 10, 10, 0, 0, tzinfo=timezone.utc),
+        url="",
+    )
+    legacy_id = _legacy_stable_id(assign)
+    payload = _event_payload(assign)
+    payload["id"] = "evt-legacy"
+    payload["extendedProperties"]["private"]["deadliner_id"] = legacy_id
+
+    # 1st call for primary ID returns empty
+    responses.add(responses.GET, EVENTS_URL, json={"items": []}, status=200)
+    # 2nd call for legacy ID returns existing event
+    responses.add(responses.GET, EVENTS_URL, json={"items": [payload]}, status=200)
+    # PATCH call to update the event
+    responses.add(responses.PATCH, f"{EVENTS_URL}/evt-legacy", json={"id": "evt-legacy"}, status=200)
+
+    created, updated, skipped = sync_to_calendar([assign], "valid-token")
+    assert created == 0 and updated == 1 and skipped == 0
+
+

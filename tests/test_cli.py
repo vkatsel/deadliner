@@ -101,3 +101,36 @@ def test_cli_login_google_missing_secrets(monkeypatch, tmp_path):
         cli.main(["login", "google", "--client-secrets", "/no/such/file.json"])
 
     assert exc_info.value.code == 1
+
+
+def test_cli_sync_displays_rescheduled_and_logs(monkeypatch, capsys, tmp_path):
+    from datetime import datetime, timezone
+    from deadliner.models import Assignment
+    from deadliner import calendar_sync, scheduler
+
+    monkeypatch.setattr(cli, "_load_credentials", lambda: ("https://moodle.example.com", "tok", "g-tok"))
+
+    old_due = datetime(2026, 7, 10, 21, 0, tzinfo=timezone.utc)
+    new_due = datetime(2026, 7, 15, 21, 0, tzinfo=timezone.utc)
+    a = Assignment("moodle", "CS101", "Lab 1", new_due, "https://m/1")
+
+    monkeypatch.setattr(cli, "_collect_assignments", lambda *args: ([a], []))
+
+    def mock_sync(assignments, token, return_details=False):
+        assert return_details is True
+        return 0, 1, 0, [(a, "rescheduled", old_due)]
+
+    monkeypatch.setattr(calendar_sync, "sync_to_calendar", mock_sync)
+
+    logged = []
+    monkeypatch.setattr(scheduler, "append_sync_log", lambda msg: logged.append(msg))
+
+    with pytest.raises(SystemExit) as exc_info:
+        cli.main(["sync"])
+
+    assert exc_info.value.code == 0
+    out = capsys.readouterr().out
+    assert "Rescheduled in Calendar" in out
+    assert "➜" in out
+    assert any("Rescheduled deadline" in msg and "Lab 1" in msg for msg in logged)
+
