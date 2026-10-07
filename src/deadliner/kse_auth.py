@@ -121,6 +121,87 @@ def _extract_credentials_from_text(raw_val: str) -> tuple[str, str, str, str] | 
     return None
 
 
+WEBVIEW_CACHE_DIR = Path.home() / ".deadliner" / "webview_cache"
+
+
+def login_kse_webview(timeout: int = 180) -> tuple[str, str, str, str] | None:
+    """Open an interactive native WebView window for schedule.kse.ua and automatically capture credentials.
+
+    Uses Edge WebView2 on Windows or WebKit on macOS/Linux. Persists session in
+    ~/.deadliner/webview_cache so users stay signed into Google SSO across sessions.
+
+    Returns:
+        (token, refresh_token, session_id, user_name) or None if cancelled or unavailable.
+    """
+    try:
+        import webview
+    except ImportError:
+        logger.debug("pywebview is not installed; falling back to alternative login methods.")
+        return None
+
+    try:
+        WEBVIEW_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        pass
+
+    captured: dict[str, tuple[str, str, str, str]] = {}
+    is_done = threading.Event()
+
+    print("\n" + "=" * 68)
+    print("  🔑 KSE Schedule — Native Web Login")
+    print("=" * 68)
+    print("Opening secure browser window for schedule.kse.ua...")
+    print("👉 Sign in with your @kse.org.ua Google account in the window.")
+    print("⚡ Deadliner will automatically detect your login and close the window.")
+    print("=" * 68 + "\n")
+
+    def _poll_credentials(window: webview.Window) -> None:
+        start_t = time.time()
+        time.sleep(1.0)
+        while not is_done.is_set() and time.time() - start_t < timeout:
+            try:
+                raw_auth = window.evaluate_js(
+                    "localStorage.getItem('__NEXUS_REACT_ADMIN_AUTH__') || localStorage.getItem('token')"
+                )
+                if raw_auth:
+                    creds = _extract_credentials_from_text(raw_auth)
+                    if creds:
+                        captured["creds"] = creds
+                        is_done.set()
+                        window.destroy()
+                        return
+            except Exception:
+                pass
+            time.sleep(0.4)
+
+        if not is_done.is_set():
+            is_done.set()
+            try:
+                window.destroy()
+            except Exception:
+                pass
+
+    try:
+        window = webview.create_window(
+            title="Deadliner — KSE Login",
+            url="https://schedule.kse.ua",
+            width=900,
+            height=650,
+            min_size=(600, 450),
+        )
+        webview.start(
+            _poll_credentials,
+            window,
+            private_mode=False,
+            storage_path=str(WEBVIEW_CACHE_DIR),
+        )
+    except Exception as e:
+        logger.debug(f"Failed to launch pywebview window: {e}")
+        return None
+
+    return captured.get("creds")
+
+
 def login_kse_clipboard_sync(timeout: int = 60) -> tuple[str, str, str, str] | None:
     """Open schedule.kse.ua and automatically capture credentials from clipboard.
 
@@ -335,7 +416,20 @@ def _cmd_login_kse(args: argparse.Namespace) -> int:
     user_name = ""
 
     manual = getattr(args, "manual", False)
-    if not manual:
+    use_clipboard = getattr(args, "clipboard", False)
+
+    if not manual and not use_clipboard:
+        captured = login_kse_webview()
+        if captured:
+            token, refresh_token, session_id, user_name = captured
+            print("\033[92m✓ Successfully received KSE credentials via Native Web Login!\033[0m")
+        elif sys.stdin.isatty():
+            print("\033[93mNotice: Native window closed or unavailable. Trying 1-click clipboard sync...\033[0m")
+            captured = login_kse_clipboard_sync()
+            if captured:
+                token, refresh_token, session_id, user_name = captured
+                print("\033[92m✓ Successfully received KSE credentials from clipboard!\033[0m")
+    elif use_clipboard and not manual:
         captured = login_kse_clipboard_sync()
         if captured:
             token, refresh_token, session_id, user_name = captured

@@ -957,7 +957,12 @@ def main(argv: list[str] | None = None) -> None:
         kse_login.add_argument(
             "--manual",
             action="store_true",
-            help="use manual token copy-paste instead of 1-click browser sync",
+            help="use manual token copy-paste instead of interactive login",
+        )
+        kse_login.add_argument(
+            "--clipboard",
+            action="store_true",
+            help="use 1-click clipboard sync instead of native webview window",
         )
         kse_login.set_defaults(func=_cmd_login_kse)
 

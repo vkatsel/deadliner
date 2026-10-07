@@ -1,5 +1,6 @@
 import argparse
 import json
+import sys
 import pytest
 import responses
 
@@ -173,7 +174,7 @@ def test_cmd_login_kse_success(tmp_path, monkeypatch, capsys):
 
 
 @responses.activate
-def test_cmd_login_kse_1click_clipboard_sync(tmp_path, monkeypatch, capsys):
+def test_cmd_login_kse_native_webview_success(tmp_path, monkeypatch, capsys):
     test_cfg = tmp_path / ".deadliner.json"
     monkeypatch.setattr(kse_auth, "CONFIG_PATH", test_cfg)
     monkeypatch.setenv("DEADLINER_KSE_TOKEN", "")
@@ -181,12 +182,40 @@ def test_cmd_login_kse_1click_clipboard_sync(tmp_path, monkeypatch, capsys):
 
     monkeypatch.setattr(
         kse_auth,
+        "login_kse_webview",
+        lambda: ("webview.captured.token", "webview-refresh-token", "webview-sess-1", "Test Student"),
+    )
+    responses.add(responses.GET, KSE_SCHEDULE_VERIFY_URL, json={"groups": []}, status=200)
+
+    exit_code = _cmd_login_kse(argparse.Namespace(manual=False, clipboard=False))
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    assert "successfully received kse credentials via native web login" in out.lower()
+
+    token, refresh, sess = load_kse_credentials()
+    assert token == "webview.captured.token"
+    assert refresh == "webview-refresh-token"
+    assert sess == "webview-sess-1"
+
+
+@responses.activate
+def test_cmd_login_kse_1click_clipboard_sync(tmp_path, monkeypatch, capsys):
+    test_cfg = tmp_path / ".deadliner.json"
+    monkeypatch.setattr(kse_auth, "CONFIG_PATH", test_cfg)
+    monkeypatch.setenv("DEADLINER_KSE_TOKEN", "")
+    monkeypatch.setenv("DEADLINER_KSE_REFRESH_TOKEN", "")
+
+    # Native webview unavailable -> falls back to clipboard
+    monkeypatch.setattr(kse_auth, "login_kse_webview", lambda: None)
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
+    monkeypatch.setattr(
+        kse_auth,
         "login_kse_clipboard_sync",
         lambda: ("browser.captured.token", "browser-refresh-token", "browser-sess-1", "Test Student"),
     )
     responses.add(responses.GET, KSE_SCHEDULE_VERIFY_URL, json={"groups": []}, status=200)
 
-    exit_code = _cmd_login_kse(argparse.Namespace(manual=False))
+    exit_code = _cmd_login_kse(argparse.Namespace(manual=False, clipboard=False))
     assert exit_code == 0
     out = capsys.readouterr().out
     assert "successfully received kse credentials from clipboard" in out.lower()
@@ -195,6 +224,58 @@ def test_cmd_login_kse_1click_clipboard_sync(tmp_path, monkeypatch, capsys):
     assert token == "browser.captured.token"
     assert refresh == "browser-refresh-token"
     assert sess == "browser-sess-1"
+
+
+def test_login_kse_webview_not_installed(monkeypatch):
+    import sys
+
+    # Simulate webview import failure
+    orig_import = __import__
+
+    def mock_import(name, *args, **kwargs):
+        if name == "webview":
+            raise ImportError("No module named webview")
+        return orig_import(name, *args, **kwargs)
+
+    monkeypatch.setattr("builtins.__import__", mock_import)
+    creds = kse_auth.login_kse_webview()
+    assert creds is None
+
+
+def test_login_kse_webview_lifecycle_mocked(monkeypatch):
+    import types
+
+    fake_window = types.SimpleNamespace(
+        evaluate_js=lambda expr: json.dumps({
+            "user": {
+                "token": "wv.tok.jwt",
+                "refreshToken": "wv-ref",
+                "sessionId": "wv-sess",
+                "profile": {"name": "Vadym Katsel"},
+            }
+        }),
+        destroy=lambda: None,
+    )
+
+    class FakeWebview:
+        Window = types.SimpleNamespace
+        @staticmethod
+        def create_window(*args, **kwargs):
+            return fake_window
+
+        @staticmethod
+        def start(func, window, *args, **kwargs):
+            # Synchronously run the worker function on the fake window
+            func(window)
+
+    monkeypatch.setattr("builtins.__import__", lambda name, *args, **kwargs: FakeWebview if name == "webview" else __import__(name, *args, **kwargs))
+
+    creds = kse_auth.login_kse_webview(timeout=5)
+    assert creds is not None
+    assert creds[0] == "wv.tok.jwt"
+    assert creds[1] == "wv-ref"
+    assert creds[2] == "wv-sess"
+    assert creds[3] == "Vadym Katsel"
 
 
 def test_extract_credentials_from_json():
