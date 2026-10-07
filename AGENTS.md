@@ -23,18 +23,23 @@ Deadliner is built on principles derived from real-world student needs and rigor
 
 ---
 
-## 2. Specialized Agent Roles
+## 2. Specialized Agent Roles & Modular Skills
 
-To achieve production readiness and prepare for public Google OAuth verification, the Deadliner team operates with three specialized agent roles:
+To achieve production readiness and maintain high engineering standards, the Deadliner team operates with three specialized agent roles backed by modular skills in `.agents/skills/`:
+
+- 🛠️ **Core CLI Developer:** [`.agents/skills/deadliner-cli/SKILL.md`](.agents/skills/deadliner-cli/SKILL.md)
+- 🌐 **Web & Landing Developer:** [`.agents/skills/deadliner-web/SKILL.md`](.agents/skills/deadliner-web/SKILL.md)
+- ⚖️ **Legal & Compliance Specialist:** [`.agents/skills/deadliner-legal/SKILL.md`](.agents/skills/deadliner-legal/SKILL.md)
+- 📐 **Quality & Invariant Rules:** [`.agents/rules/quality-standards.md`](.agents/rules/quality-standards.md)
 
 ```mermaid
 flowchart TD
     User["User / Maintainer"]
     
-    subgraph Agents["Deadliner Autonomous Agent Ecosystem"]
-        CoreAgent["core_cli_developer_agent<br/>(Python, Architecture, TDD)"]
-        WebAgent["web_developer_agent<br/>(Landing Page, GitHub Pages, UI)"]
-        LegalAgent["legal_compliance_agent<br/>(Privacy Policy, Terms, Google Verification)"]
+    subgraph Agents["Deadliner Autonomous Agent Ecosystem (.agents/skills/)"]
+        CoreAgent["core_cli_developer_agent<br/>(.agents/skills/deadliner-cli/)"]
+        WebAgent["web_developer_agent<br/>(.agents/skills/deadliner-web/)"]
+        LegalAgent["legal_compliance_agent<br/>(.agents/skills/deadliner-legal/)"]
     end
     
     User --> CoreAgent
