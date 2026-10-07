@@ -57,6 +57,18 @@ def test_format_assignment_empty_course_shortname_shows_fallback():
     )
 
 
+def test_format_assignment_submitted_shows_green_badge():
+    assignment = Assignment(
+        "moodle", "CS101", "Lab Report", datetime(2024, 11, 1, 12, 0, 0, tzinfo=timezone.utc), is_submitted=True
+    )
+    now = datetime(2024, 10, 30, 10, 0, 0, tzinfo=timezone.utc)
+    local_tz = ZoneInfo("Europe/Kyiv")
+
+    result = format_assignment(assignment, now, local_tz)
+    assert "[✓ Submitted]" in result
+    assert "\033[92m" in result
+
+
 # --- TESTS for US-02 (sorted deadline list) ---
 
 

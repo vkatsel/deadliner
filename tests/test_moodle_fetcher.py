@@ -112,3 +112,105 @@ def test_fetch_moodle_invalid_token_does_not_return_empty_list():
         assert False, "Expected AuthError but got a result — auth failure must not return an empty list silently"
     except AuthError:
         pass  # correct — auth failure raised loudly
+
+
+@responses.activate
+def test_fetch_moodle_submitted_assignment_detected():
+    base_url = "https://moodle.example.com"
+    token = "valid-token"
+
+    responses.add(
+        responses.GET,
+        "https://moodle.example.com/webservice/rest/server.php",
+        json={
+            "events": [
+                {
+                    "name": "Submitted HW",
+                    "course": {"shortname": "CS101"},
+                    "timestart": 1718449200,
+                    "url": "http://moodle/1",
+                    "action": {
+                        "name": "Edit submission",
+                        "url": "http://moodle/1?action=editsubmission",
+                    },
+                },
+                {
+                    "name": "View Only Submitted HW",
+                    "course": {"shortname": "CS102"},
+                    "timestart": 1718449200,
+                    "url": "http://moodle/2",
+                    "action": {
+                        "name": "View submission",
+                        "url": "http://moodle/2?action=view",
+                    },
+                },
+                {
+                    "name": "Ukrainian Submitted HW",
+                    "course": {"shortname": "CS103"},
+                    "timestart": 1718449200,
+                    "url": "http://moodle/3",
+                    "action": {
+                        "name": "Редагувати відповідь",
+                        "url": "http://moodle/3?action=editsubmission",
+                    },
+                },
+            ]
+        },
+        status=200,
+    )
+
+    result = fetch_moodle(base_url, token)
+    assert len(result) == 3
+    assert result[0].is_submitted is True
+    assert result[1].is_submitted is True
+    assert result[2].is_submitted is True
+
+
+@responses.activate
+def test_fetch_moodle_unsubmitted_and_overdue_not_marked_submitted():
+    base_url = "https://moodle.example.com"
+    token = "valid-token"
+
+    responses.add(
+        responses.GET,
+        "https://moodle.example.com/webservice/rest/server.php",
+        json={
+            "events": [
+                {
+                    "name": "Unsubmitted HW",
+                    "course": {"shortname": "CS101"},
+                    "timestart": 1718449200,
+                    "url": "http://moodle/1",
+                    "action": {
+                        "name": "Add submission",
+                        "url": "http://moodle/1?action=editsubmission",
+                    },
+                },
+                {
+                    "name": "Overdue Missing Action HW",
+                    "course": {"shortname": "CS102"},
+                    "timestart": 1718449200,
+                    "url": "http://moodle/2",
+                    "overdue": True,
+                    "action": None,
+                },
+                {
+                    "name": "Teacher Grade Action HW",
+                    "course": {"shortname": "CS103"},
+                    "timestart": 1718449200,
+                    "url": "http://moodle/3",
+                    "action": {
+                        "name": "Grade",
+                        "url": "http://moodle/3?action=grader",
+                    },
+                },
+            ]
+        },
+        status=200,
+    )
+
+    result = fetch_moodle(base_url, token)
+    assert len(result) == 3
+    assert result[0].is_submitted is False
+    assert result[1].is_submitted is False
+    assert result[2].is_submitted is False

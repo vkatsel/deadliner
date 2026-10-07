@@ -79,3 +79,46 @@ def test_sync_empty_list_makes_no_http_calls():
     created, updated, skipped = sync_to_calendar([], "valid-token")
 
     assert (created, updated, skipped) == (0, 0, 0)
+
+
+@responses.activate
+def test_sync_creates_green_submitted_event():
+    responses.add(responses.GET, EVENTS_URL, json={"items": []}, status=200)
+    responses.add(responses.POST, EVENTS_URL, json={"id": "evt-sub"}, status=200)
+
+    assignment = _assignment()
+    assignment.is_submitted = True
+
+    created, updated, skipped = sync_to_calendar([assignment], "valid-token")
+
+    assert created == 1 and updated == 0 and skipped == 0
+    import json
+
+    sent_payload = json.loads(responses.calls[1].request.body)
+    assert "[SUBMITTED]" in sent_payload["summary"], "submitted event summary must carry [SUBMITTED]"
+    assert sent_payload["colorId"] == "10", "submitted event must be green (colorId 10)"
+    assert "Status: Submitted ✓" in sent_payload["description"]
+
+
+@responses.activate
+def test_sync_patches_existing_deadline_to_submitted():
+    from deadliner.calendar_sync import _event_payload
+
+    # Existing event in calendar is unsubmitted [DEADLINE] with colorId 11
+    unsubmitted = _assignment()
+    payload = _event_payload(unsubmitted)
+    payload["id"] = "evt-existing"
+
+    responses.add(responses.GET, EVENTS_URL, json={"items": [payload]}, status=200)
+    responses.add(responses.PATCH, f"{EVENTS_URL}/evt-existing", json={"id": "evt-existing"}, status=200)
+
+    # Now student submitted the assignment
+    submitted = _assignment()
+    submitted.is_submitted = True
+
+    created, updated, skipped = sync_to_calendar([submitted], "valid-token")
+
+    assert created == 0 and updated == 1 and skipped == 0
+    patch_body = responses.calls[1].request.body.decode()
+    assert "[SUBMITTED]" in patch_body
+    assert '"colorId": "10"' in patch_body

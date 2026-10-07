@@ -13,6 +13,9 @@ CALENDAR_API_BASE = "https://www.googleapis.com/calendar/v3"
 #: Google Calendar colorId "11" is red — deadlines should be impossible to miss.
 EVENT_COLOR_ID = "11"
 
+#: Google Calendar colorId "10" is Basil (Green) - for completed/submitted assignments.
+SUBMITTED_EVENT_COLOR_ID = "10"
+
 #: Google Calendar colorId "2" is Sage (Green) - for KSE lectures / default classes.
 SCHEDULE_EVENT_COLOR_ID = "2"
 SCHEDULE_LECTURE_COLOR_ID = "2"
@@ -63,15 +66,26 @@ def _event_payload(assignment: Assignment) -> dict:
     """Translate an Assignment into a Google Calendar event body."""
     end = assignment.due_utc
     start = end - timedelta(minutes=EVENT_DURATION_MINUTES)
-    summary = f"[DEADLINE] {assignment.title}"
+    prefix_tag = "[SUBMITTED]" if assignment.is_submitted else "[DEADLINE]"
+    summary = f"{prefix_tag} {assignment.title}"
     if assignment.course_shortname:
-        summary = f"[DEADLINE] [{assignment.course_shortname}] {assignment.title}"
+        summary = f"{prefix_tag} [{assignment.course_shortname}] {assignment.title}"
+
+    desc_parts = []
+    if assignment.is_submitted:
+        desc_parts.append("Status: Submitted ✓")
+    if assignment.url:
+        desc_parts.append(assignment.url)
+    description = "\n".join(desc_parts)
+
+    color_id = SUBMITTED_EVENT_COLOR_ID if assignment.is_submitted else EVENT_COLOR_ID
+
     return {
         "summary": summary,
-        "description": assignment.url,
+        "description": description,
         "start": {"dateTime": start.isoformat()},
         "end": {"dateTime": end.isoformat()},
-        "colorId": EVENT_COLOR_ID,
+        "colorId": color_id,
         "extendedProperties": {
             "private": {
                 "deadliner_id": _stable_id(assignment),
@@ -206,6 +220,8 @@ def sync_to_calendar(assignments: list[Assignment], access_token: str) -> tuple[
         if existing_event:
             needs_update = (
                 existing_event.get("summary") != payload["summary"]
+                or existing_event.get("colorId") != payload.get("colorId")
+                or existing_event.get("description") != payload.get("description")
                 or _parse_dt(existing_event.get("start", {}).get("dateTime")) != _parse_dt(payload["start"]["dateTime"])
                 or _parse_dt(existing_event.get("end", {}).get("dateTime")) != _parse_dt(payload["end"]["dateTime"])
             )
