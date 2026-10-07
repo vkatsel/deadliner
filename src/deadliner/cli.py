@@ -171,13 +171,51 @@ def _cmd_sync(args: argparse.Namespace) -> int:
 
     try:
         print("Syncing to Google Calendar...")
-        created, updated, skipped = calendar_sync.sync_to_calendar(sort_assignments(assignments), g_token)
+        try:
+            sync_result = calendar_sync.sync_to_calendar(
+                sort_assignments(assignments),
+                g_token,
+                return_details=True,
+            )
+        except TypeError:
+            sync_result = calendar_sync.sync_to_calendar(
+                sort_assignments(assignments),
+                g_token,
+            )
+        created, updated, skipped = sync_result[0], sync_result[1], sync_result[2]
+        statuses = sync_result[3] if len(sync_result) > 3 else []
     except AuthError as e:
         print(f"\033[91merror: calendar authentication failed: {e}\033[0m", file=sys.stderr)
         return 1
     except ConnectionError as e:
         print(f"\033[91merror: {e}\033[0m", file=sys.stderr)
         return 1
+
+    from deadliner.scheduler import append_sync_log
+
+    local_tz = datetime.now().astimezone().tzinfo
+    print("-" * 65)
+    for assignment, status, old_due in statuses:
+        prefix = f"[{assignment.course_shortname}]" if assignment.course_shortname else f"[{assignment.platform}]"
+        if status == "created":
+            tag = "\033[92m[+ Added to Calendar]\033[0m"
+            due_local = assignment.due_utc.astimezone(local_tz).strftime("%a %d %b %H:%M")
+            print(f"{tag} {prefix} {assignment.title} ({due_local})")
+        elif status == "rescheduled":
+            tag = "\033[93m[~ Rescheduled in Calendar]\033[0m"
+            new_local = assignment.due_utc.astimezone(local_tz).strftime("%a %d %b %H:%M")
+            old_local = old_due.astimezone(local_tz).strftime("%a %d %b %H:%M") if old_due else "unknown"
+            print(f"{tag} {prefix} {assignment.title} ({old_local} ➜ {new_local})")
+            append_sync_log(f"[SYNC] Rescheduled deadline: {assignment.title} ({old_local} -> {new_local})")
+        elif status == "updated":
+            tag = "\033[96m[~ Updated in Calendar]\033[0m"
+            due_local = assignment.due_utc.astimezone(local_tz).strftime("%a %d %b %H:%M")
+            print(f"{tag} {prefix} {assignment.title} ({due_local})")
+        else:
+            tag = "\033[90m[= Already in Calendar]\033[0m"
+            due_local = assignment.due_utc.astimezone(local_tz).strftime("%a %d %b %H:%M")
+            print(f"{tag} {prefix} {assignment.title} ({due_local})")
+    print("-" * 65)
 
     print("\n" + "=" * 45)
     print("Google Calendar Sync Summary (Deadlines)")

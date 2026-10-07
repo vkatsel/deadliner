@@ -122,3 +122,62 @@ def test_sync_patches_existing_deadline_to_submitted():
     patch_body = responses.calls[1].request.body.decode()
     assert "[SUBMITTED]" in patch_body
     assert '"colorId": "10"' in patch_body
+
+
+@responses.activate
+def test_sync_detects_and_patches_rescheduled_deadline():
+    from deadliner.calendar_sync import _event_payload
+
+    # Existing event in calendar originally due July 10
+    original = _assignment()
+    payload = _event_payload(original)
+    payload["id"] = "evt-rescheduled"
+
+    responses.add(responses.GET, EVENTS_URL, json={"items": [payload]}, status=200)
+    responses.add(responses.PATCH, f"{EVENTS_URL}/evt-rescheduled", json={"id": "evt-rescheduled"}, status=200)
+
+    # Professor postponed deadline to July 15
+    rescheduled = Assignment(
+        platform="moodle",
+        course_shortname="CS101",
+        title="Lab Report",
+        due_utc=datetime(2026, 7, 15, 21, 0, 0, tzinfo=timezone.utc),
+        url="https://moodle.example.com/mod/assign/view.php?id=42",
+    )
+
+    created, updated, skipped, statuses = sync_to_calendar([rescheduled], "valid-token", return_details=True)
+
+    assert created == 0 and updated == 1 and skipped == 0
+    assert len(statuses) == 1
+    item, status, old_due = statuses[0]
+    assert item == rescheduled
+    assert status == "rescheduled"
+    assert old_due == datetime(2026, 7, 10, 21, 0, 0, tzinfo=timezone.utc)
+
+    patch_body = responses.calls[1].request.body.decode()
+    assert "2026-07-15T21:00:00+00:00" in patch_body
+
+
+def test_stable_id_without_url_does_not_change_when_due_changes():
+    from deadliner.calendar_sync import _legacy_stable_id, _stable_id
+
+    assign1 = Assignment(
+        platform="moodle",
+        course_shortname="CS101",
+        title="Oral Exam",
+        due_utc=datetime(2026, 7, 10, 10, 0, 0, tzinfo=timezone.utc),
+        url="",
+    )
+    assign2 = Assignment(
+        platform="moodle",
+        course_shortname="CS101",
+        title="Oral Exam",
+        due_utc=datetime(2026, 7, 12, 14, 0, 0, tzinfo=timezone.utc),
+        url="",
+    )
+
+    # Primary stable id should match despite different due dates
+    assert _stable_id(assign1) == _stable_id(assign2)
+    # Legacy stable id captured due date
+    assert _legacy_stable_id(assign1) != _legacy_stable_id(assign2)
+

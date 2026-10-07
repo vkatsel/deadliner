@@ -41,9 +41,15 @@ def _stable_id(assignment: Assignment) -> str:
     if assignment.url:
         raw_id = f"{assignment.platform}:{assignment.url}"
     else:
-        raw_id = (
-            f"{assignment.platform}:{assignment.course_shortname}:{assignment.title}:{assignment.due_utc.isoformat()}"
-        )
+        raw_id = f"{assignment.platform}:{assignment.course_shortname}:{assignment.title}"
+    return hashlib.sha256(raw_id.encode("utf-8")).hexdigest()
+
+
+def _legacy_stable_id(assignment: Assignment) -> str:
+    """Return legacy identifier including due_utc for backward compatibility."""
+    raw_id = (
+        f"{assignment.platform}:{assignment.course_shortname}:{assignment.title}:{assignment.due_utc.isoformat()}"
+    )
     return hashlib.sha256(raw_id.encode("utf-8")).hexdigest()
 
 
@@ -192,7 +198,11 @@ def _parse_dt(s: str | None) -> datetime | None:
     return datetime.fromisoformat(s)
 
 
-def sync_to_calendar(assignments: list[Assignment], access_token: str) -> tuple[int, int, int]:
+def sync_to_calendar(
+    assignments: list[Assignment],
+    access_token: str,
+    return_details: bool = False,
+) -> tuple[int, int, int] | tuple[int, int, int, list[tuple[Assignment, str, datetime | None]]]:
     """Push assignments to Google Calendar as red deadline events.
 
     Idempotent: each event carries its assignment's stable id in private
@@ -200,8 +210,9 @@ def sync_to_calendar(assignments: list[Assignment], access_token: str) -> tuple[
     place (deadline moved on Moodle → event moves too), never duplicated.
     Identical events are skipped entirely to save API quotas.
 
-    Returns (created, updated, skipped) counts. Raises AuthError on a rejected token
-    and ConnectionError on network failure — loudly, never silently.
+    Returns (created, updated, skipped) counts, or (created, updated, skipped, statuses)
+    if return_details=True. Raises AuthError on a rejected token and ConnectionError on
+    network failure — loudly, never silently.
     """
     if not access_token:
         logger.error("Calendar sync attempted without an access token")
@@ -211,19 +222,35 @@ def sync_to_calendar(assignments: list[Assignment], access_token: str) -> tuple[
     created = 0
     updated = 0
     skipped = 0
+    statuses: list[tuple[Assignment, str, datetime | None]] = []
 
     for assignment in assignments:
         deadliner_id = _stable_id(assignment)
         payload = _event_payload(assignment)
 
         existing_event = _find_existing_event(headers, deadliner_id)
+        if not existing_event and not assignment.url:
+            legacy_id = _legacy_stable_id(assignment)
+            if legacy_id != deadliner_id:
+                existing_event = _find_existing_event(headers, legacy_id)
+
         if existing_event:
+            existing_private = existing_event.get("extendedProperties", {}).get("private", {})
+            old_start = _parse_dt(existing_event.get("start", {}).get("dateTime"))
+            new_start = _parse_dt(payload["start"]["dateTime"])
+            old_end = _parse_dt(existing_event.get("end", {}).get("dateTime"))
+            new_end = _parse_dt(payload["end"]["dateTime"])
+
+            is_rescheduled = old_end is not None and new_end is not None and old_end != new_end
+
             needs_update = (
                 existing_event.get("summary") != payload["summary"]
                 or existing_event.get("colorId") != payload.get("colorId")
                 or existing_event.get("description") != payload.get("description")
-                or _parse_dt(existing_event.get("start", {}).get("dateTime")) != _parse_dt(payload["start"]["dateTime"])
-                or _parse_dt(existing_event.get("end", {}).get("dateTime")) != _parse_dt(payload["end"]["dateTime"])
+                or old_start != new_start
+                or old_end != new_end
+                or existing_private.get("deadliner_id") != deadliner_id
+                or existing_private.get("deadliner_type") != "deadline"
             )
             if needs_update:
                 event_id = existing_event["id"]
@@ -234,8 +261,11 @@ def sync_to_calendar(assignments: list[Assignment], access_token: str) -> tuple[
                     json=payload,
                 )
                 updated += 1
+                status = "rescheduled" if is_rescheduled else "updated"
+                statuses.append((assignment, status, old_end))
             else:
                 skipped += 1
+                statuses.append((assignment, "skipped", old_end))
         else:
             _request(
                 "POST",
@@ -244,8 +274,11 @@ def sync_to_calendar(assignments: list[Assignment], access_token: str) -> tuple[
                 json=payload,
             )
             created += 1
+            statuses.append((assignment, "created", None))
 
     logger.debug(f"Calendar sync done: {created} created, {updated} updated, {skipped} skipped")
+    if return_details:
+        return created, updated, skipped, statuses
     return created, updated, skipped
 
 
