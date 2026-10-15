@@ -9,7 +9,7 @@
   </p>
 
   <p>
-    <a href="https://github.com/vkatsel/deadliner/actions"><img src="https://img.shields.io/badge/tests-134%20passed%20(100%25)-brightgreen?style=flat-square" alt="Tests"></a>
+    <a href="https://github.com/vkatsel/deadliner/actions"><img src="https://img.shields.io/badge/tests-175%20passed%20(100%25)-brightgreen?style=flat-square" alt="Tests"></a>
     <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.10%2B-blue?style=flat-square" alt="Python Version"></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-purple?style=flat-square" alt="License"></a>
     <a href="https://vkatsel.github.io/deadliner/"><img src="https://img.shields.io/badge/docs-GitHub%20Pages-039be5?style=flat-square" alt="Docs"></a>
@@ -148,6 +148,8 @@ deadliner login kse
 - **Seamless Native Login:** Deadliner opens an embedded secure browser window displaying `schedule.kse.ua`.
 - Click **"Sign in with Google"** and authenticate with your `@kse.org.ua` account.
 - Deadliner automatically captures your session, closes the window, and saves your credentials locally!
+- *Smart Expiry & Auto-Purge:* Deadliner automatically ignores expired tokens in browser storage and forces a clean login prompt.
+- *Force Fresh Session:* Run `deadliner login kse --clean` to wipe the cached browser profile and force a clean re-authentication.
 - *Zero setup hassle: tokens are automatically refreshed in the background!*
 - *(Optional fallbacks)*: `deadliner login kse --clipboard` (1-click clipboard sync) or `deadliner login kse --manual` (manual token entry).
 
@@ -171,7 +173,7 @@ deadliner login kse
 | `deadliner logs` | View recent auto-sync execution logs (`~/.deadliner/sync.log`) |
 | `deadliner login moodle` | Interactive Moodle login prompt |
 | `deadliner login google` | Authenticate Google Calendar & Classroom via OAuth2 |
-| `deadliner login kse` | Connect KSE university schedule account |
+| `deadliner login kse [--clean]` | Connect KSE schedule account (supports `--clean` to wipe session cache) |
 | `deadliner setup-path` | Permanently add `deadliner` to system PATH (Windows / Linux / macOS) |
 
 ---
@@ -212,7 +214,7 @@ src/deadliner/
 ```
 
 ### Running Tests
-Deadliner is backed by a comprehensive test suite (170 tests) with zero external network dependencies (mocked via `responses` and `monkeypatch`):
+Deadliner is backed by a comprehensive test suite (175 tests) with zero external network dependencies (mocked via `responses` and `monkeypatch`):
 
 ```bash
 pytest
@@ -221,6 +223,13 @@ pytest
 ---
 
 ## ❓ FAQ & Troubleshooting
+
+### Q: KSE credentials expired or login window closes immediately?
+**A:** Deadliner automatically detects and purges expired tokens from browser storage during `deadliner login kse`. If you ever need to force a completely fresh login session or switch Google accounts, run:
+```bash
+deadliner login kse --clean
+```
+You can also use `deadliner login kse --clipboard` as a 1-click fallback.
 
 ### Q: `deadliner: command not found` after running `pip install`?
 **A:** If Python's `Scripts/` or `bin/` directory is not yet in your system PATH, run:

@@ -955,6 +955,11 @@ def main(argv: list[str] | None = None) -> None:
 
         kse_login = login_subparsers.add_parser("kse", help="log in to KSE schedule")
         kse_login.add_argument(
+            "--clean",
+            action="store_true",
+            help="clear cached browser session and start with a fresh login",
+        )
+        kse_login.add_argument(
             "--manual",
             action="store_true",
             help="use manual token copy-paste instead of interactive login",

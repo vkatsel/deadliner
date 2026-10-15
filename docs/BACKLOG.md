@@ -12,7 +12,7 @@ _Total Automated Tests: 170 passing_
 | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- | ---------- |
 | **Native KSE Web Login**                  | Embedded secure WebView (Edge WebView2 / WebKit) for `schedule.kse.ua` with Google OAuth popup handling and desktop Chrome User-Agent spoofing. Eliminates all DevTools/F12 manual pasting. | `kse_auth.py`                       | 🟢 Shipped |
 | **Safety-Net OAuth Code Exchange**        | Automatic listener for GIS `authorization_response` postMessage + direct exchange with `api.kse.today/auth/google`.                                                                         | `kse_auth.py`                       | 🟢 Shipped |
-| **Token Rotation & 401 Auto-Retry**       | Handles KSE `refreshToken` rotation, mixed camelCase/snake_case payloads, and automatic 401 session recovery in `fetch_kse_schedule`. _(From TO_FIX #1)_                                    | `kse_auth.py`, `kse_fetcher.py`     | 🟢 Shipped |
+| **Token Rotation & 401 Auto-Retry**       | Handles KSE `refreshToken` rotation, mixed camelCase/snake*case payloads, and automatic 401 session recovery in `fetch_kse_schedule`. *(From TO*FIX #1)*                                    | `kse_auth.py`, `kse_fetcher.py`     | 🟢 Shipped |
 | **Event Type Safeguard & Reconciliation** | Tag events with `extendedProperties.private.deadliner_type` (`deadline` vs `schedule`) to ensure class schedule sync never prunes deadline events. _(From TO_FIX #2)_                       | `calendar_sync.py`                  | 🟢 Shipped |
 | **Moodle Submission Detection**           | Detects submitted assignments via Moodle API and highlights them in terminal and calendar metadata.                                                                                         | `moodle_fetcher.py`, `formatter.py` | 🟢 Shipped |
 | **Automatic Deadline Rescheduling**       | Detects when professors change due dates in Moodle/Classroom and patches existing calendar events while logging `(old_due ➜ new_due)` in `~/.deadliner/sync.log`.                           | `calendar_sync.py`, `cli.py`        | 🟢 Shipped |
@@ -26,7 +26,7 @@ _Total Automated Tests: 170 passing_
 ## 🎯 2. Current Sprint (Shipped in v2.0)
 
 - [x] **Rollback Checkpoint:** Tagged `v2.0-checkpoint-pre-webview` and branch `checkpoint-pre-webview` at commit `5b3e248`.
-- [x] **Documentation & Guides Synchronization:** Update `README.md`, `docs/index.html`, and `docs/uk/index.html` to reflect native KSE login and 170 unit tests.
+- [x] **Documentation & Guides Synchronization:** Update `README.md`, `docs/index.html`, and `docs/uk/index.html` to reflect native KSE login and 175 unit tests.
 - [x] **Google Verification Appeal Package:** Created `docs/legal/google_oauth_verification_appeal.md` for submission to Google Trust & Safety explaining student pet-project context and `github.io` constraints.
 - [x] **Technical Specification v2 (`docs/specs/v2_spec.md`):** Consolidated PRD and Design Doc into an authoritative, modern specification reflecting all v2.0 capabilities.
 - [x] **Agent & Skills Modular Architecture:** Refactored into specialized modular agent roles and skills in `.agents/skills/` (`deadliner-cli`, `deadliner-web`, `deadliner-legal`, and quality rules).
@@ -41,6 +41,7 @@ _Total Automated Tests: 170 passing_
 
 ### 📦 Distribution & Packaging
 
+- [ ] **Pre Compiled Binaries:** Create `deadliner.exe` and `deadliner` executables for Windows and Linux respectively.
 - [ ] **PyPI Official Release:** Configure `twine` and GitHub Actions workflow to publish official releases to PyPI (`pip install deadliner`).
 - [ ] **Automated Version Update Check:** Lightweight version check (`deadliner update` or startup notification if newer GitHub release is available).
 

@@ -343,3 +343,148 @@ def test_login_kse_webview_code_exchange_flow(monkeypatch):
     assert creds[2] == "code-sess"
     assert creds[3] == "Test Student"
 
+
+def test_login_kse_webview_ignores_expired_token_clears_localstorage(monkeypatch):
+    import types
+    import time
+    past_ms = (time.time() - 3600) * 1000
+    expired_token = f"eyJhbGciOi.{kse_auth.base64.urlsafe_b64encode(json.dumps({'exp': past_ms}).encode()).decode()}.sig"
+
+    js_calls = []
+    local_storage = {
+        "__NEXUS_REACT_ADMIN_AUTH__": json.dumps({
+            "user": {
+                "token": expired_token,
+                "refreshToken": "dead-ref",
+                "sessionId": "dead-sess",
+                "profile": {"name": "Old User"},
+            }
+        })
+    }
+
+    def fake_evaluate_js(expr: str):
+        js_calls.append(expr)
+        if "removeItem" in expr:
+            local_storage.clear()
+            return None
+        if "getItem" in expr:
+            return local_storage.get("__NEXUS_REACT_ADMIN_AUTH__")
+        return None
+
+    fake_window = types.SimpleNamespace(
+        evaluate_js=fake_evaluate_js,
+        destroy=lambda: None,
+    )
+
+    class FakeWebview:
+        Window = types.SimpleNamespace
+        settings = {}
+
+        @staticmethod
+        def create_window(*args, **kwargs):
+            return fake_window
+
+        @staticmethod
+        def start(func, window, *args, **kwargs):
+            # Run one polling step by setting small timeout
+            func(window)
+
+    monkeypatch.setitem(sys.modules, "webview", FakeWebview)
+    monkeypatch.setattr(kse_auth, "refresh_kse_token", lambda ref, sess: None)
+
+    # Should NOT return expired credentials! Timeout and returns None
+    creds = kse_auth.login_kse_webview(timeout=0.1)
+    assert creds is None
+    # Verify cleanup JS was executed to remove expired token
+    assert any("removeItem('__NEXUS_REACT_ADMIN_AUTH__')" in call for call in js_calls)
+
+
+def test_login_kse_webview_refreshes_expired_token(monkeypatch):
+    import types
+    import time
+    past_ms = (time.time() - 3600) * 1000
+    expired_token = f"eyJhbGciOi.{kse_auth.base64.urlsafe_b64encode(json.dumps({'exp': past_ms}).encode()).decode()}.sig"
+    future_ms = (time.time() + 3600) * 1000
+    refreshed_token = f"eyJhbGciOi.{kse_auth.base64.urlsafe_b64encode(json.dumps({'exp': future_ms}).encode()).decode()}.sig"
+
+    fake_window = types.SimpleNamespace(
+        evaluate_js=lambda expr: json.dumps({
+            "user": {
+                "token": expired_token,
+                "refreshToken": "valid-ref",
+                "sessionId": "valid-sess",
+                "profile": {"name": "Refreshed User"},
+            }
+        }) if "localStorage" in expr else None,
+        destroy=lambda: None,
+    )
+
+    class FakeWebview:
+        Window = types.SimpleNamespace
+        settings = {}
+
+        @staticmethod
+        def create_window(*args, **kwargs):
+            return fake_window
+
+        @staticmethod
+        def start(func, window, *args, **kwargs):
+            func(window)
+
+    monkeypatch.setitem(sys.modules, "webview", FakeWebview)
+    monkeypatch.setattr(kse_auth, "refresh_kse_token", lambda ref, sess: refreshed_token)
+
+    creds = kse_auth.login_kse_webview(timeout=5)
+    assert creds is not None
+    assert creds[0] == refreshed_token
+    assert creds[1] == "valid-ref"
+    assert creds[2] == "valid-sess"
+    assert creds[3] == "Refreshed User"
+
+
+def test_login_kse_webview_clean_cache_flag(tmp_path, monkeypatch):
+    fake_cache = tmp_path / "webview_cache"
+    fake_cache.mkdir(parents=True, exist_ok=True)
+    marker_file = fake_cache / "marker.txt"
+    marker_file.write_text("cache-data")
+
+    monkeypatch.setattr(kse_auth, "WEBVIEW_CACHE_DIR", fake_cache)
+    monkeypatch.setitem(sys.modules, "webview", None)
+
+    # Calling with clean=True should wipe fake_cache
+    kse_auth.login_kse_webview(clean=True)
+    assert not marker_file.exists()
+
+
+@responses.activate
+def test_cmd_login_kse_expired_token_rejected_without_verify(monkeypatch, capsys):
+    import time
+    past_ms = (time.time() - 3600) * 1000
+    expired_token = f"eyJhbGciOi.{kse_auth.base64.urlsafe_b64encode(json.dumps({'exp': past_ms}).encode()).decode()}.sig"
+
+    monkeypatch.setattr("builtins.input", lambda prompt: expired_token)
+    monkeypatch.setattr(kse_auth, "refresh_kse_token", lambda r, s: None)
+
+    exit_code = _cmd_login_kse(argparse.Namespace(manual=True))
+    assert exit_code == 1
+    err = capsys.readouterr().err
+    assert "token is expired and could not be refreshed" in err.lower()
+
+
+@responses.activate
+def test_cmd_login_kse_null_events_trap_detected(monkeypatch, capsys):
+    responses.add(
+        responses.GET,
+        KSE_SCHEDULE_VERIFY_URL,
+        json={"events": [None]},
+        status=200,
+    )
+    monkeypatch.setattr("builtins.input", lambda prompt: "valid.jwt.token")
+    monkeypatch.setattr(kse_auth, "refresh_kse_token", lambda r, s: None)
+
+    exit_code = _cmd_login_kse(argparse.Namespace(manual=True))
+    assert exit_code == 1
+    err = capsys.readouterr().err
+    assert "401 unauthorized" in err.lower()
+
+

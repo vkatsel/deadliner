@@ -214,7 +214,7 @@ def _patch_edgechromium_for_oauth() -> None:
         logger.debug(f"EdgeChromium patching not applicable: {e}")
 
 
-def login_kse_webview(timeout: int = 180) -> tuple[str, str, str, str] | None:
+def login_kse_webview(timeout: int = 180, clean: bool = False) -> tuple[str, str, str, str] | None:
     """Open an interactive native WebView window for schedule.kse.ua and automatically capture credentials.
 
     Uses Edge WebView2 on Windows or WebKit on macOS/Linux. Persists session in
@@ -223,6 +223,14 @@ def login_kse_webview(timeout: int = 180) -> tuple[str, str, str, str] | None:
     Returns:
         (token, refresh_token, session_id, user_name) or None if cancelled or unavailable.
     """
+    if clean and WEBVIEW_CACHE_DIR.exists():
+        import shutil
+        try:
+            shutil.rmtree(WEBVIEW_CACHE_DIR, ignore_errors=True)
+            print("Cleared KSE WebView cache.")
+        except Exception as e:
+            logger.debug(f"Failed to clear webview cache: {e}")
+
     try:
         import webview
         webview.settings["OPEN_EXTERNAL_LINKS_IN_BROWSER"] = False
@@ -239,6 +247,12 @@ def login_kse_webview(timeout: int = 180) -> tuple[str, str, str, str] | None:
     captured: dict[str, tuple[str, str, str, str]] = {}
     is_done = threading.Event()
 
+    # Preload any known expired tokens from config so we never accept them as a fresh login
+    known_bad_tokens: set[str] = set()
+    saved_tok, _, _ = load_kse_credentials()
+    if saved_tok and is_kse_token_expired(saved_tok):
+        known_bad_tokens.add(saved_tok)
+
     print("\n" + "=" * 68)
     print("  🔑 KSE Schedule — Native Web Login")
     print("=" * 68)
@@ -248,8 +262,9 @@ def login_kse_webview(timeout: int = 180) -> tuple[str, str, str, str] | None:
     print("=" * 68 + "\n")
 
     def _poll_credentials(window: webview.Window) -> None:
+        if timeout > 0:
+            time.sleep(min(1.0, timeout))
         start_t = time.time()
-        time.sleep(1.0)
         while not is_done.is_set() and time.time() - start_t < timeout:
             try:
                 # 1. Install postMessage listener on schedule.kse.ua if not present
@@ -275,10 +290,44 @@ def login_kse_webview(timeout: int = 180) -> tuple[str, str, str, str] | None:
                 if raw_auth:
                     creds = _extract_credentials_from_text(raw_auth)
                     if creds:
-                        captured["creds"] = creds
-                        is_done.set()
-                        window.destroy()
-                        return
+                        tok, ref, sess, uname = creds
+                        if tok in known_bad_tokens:
+                            # Stale known-expired token in localStorage: clear it and reload schedule.kse.ua
+                            window.evaluate_js(
+                                """(function() {
+                                    localStorage.removeItem('__NEXUS_REACT_ADMIN_AUTH__');
+                                    localStorage.removeItem('token');
+                                    if (window.location.hostname.includes('kse.ua') && !window.__deadliner_cleaned) {
+                                        window.__deadliner_cleaned = true;
+                                        window.location.reload();
+                                    }
+                                })()"""
+                            )
+                        elif is_kse_token_expired(tok):
+                            # Stale token in localStorage: attempt refresh if refresh token is available
+                            refreshed = refresh_kse_token(ref, sess) if ref else None
+                            if refreshed and not is_kse_token_expired(refreshed):
+                                captured["creds"] = (refreshed, ref, sess, uname)
+                                is_done.set()
+                                window.destroy()
+                                return
+                            # Refresh failed or unavailable: mark as bad and purge from localStorage
+                            known_bad_tokens.add(tok)
+                            window.evaluate_js(
+                                """(function() {
+                                    localStorage.removeItem('__NEXUS_REACT_ADMIN_AUTH__');
+                                    localStorage.removeItem('token');
+                                    if (window.location.hostname.includes('kse.ua') && !window.__deadliner_cleaned) {
+                                        window.__deadliner_cleaned = true;
+                                        window.location.reload();
+                                    }
+                                })()"""
+                            )
+                        else:
+                            captured["creds"] = creds
+                            is_done.set()
+                            window.destroy()
+                            return
 
                 # 3. Check if OAuth code was captured by listener or URL query/hash
                 code_val = window.evaluate_js(
@@ -553,9 +602,10 @@ def _cmd_login_kse(args: argparse.Namespace) -> int:
 
     manual = getattr(args, "manual", False)
     use_clipboard = getattr(args, "clipboard", False)
+    clean = getattr(args, "clean", False)
 
     if not manual and not use_clipboard:
-        captured = login_kse_webview()
+        captured = login_kse_webview(clean=True) if clean else login_kse_webview()
         if captured:
             token, refresh_token, session_id, user_name = captured
             print("\033[92m✓ Successfully received KSE credentials via Native Web Login!\033[0m")
@@ -616,6 +666,15 @@ def _cmd_login_kse(args: argparse.Namespace) -> int:
         if refreshed:
             token = refreshed
 
+    # If still expired after refresh attempt, do not verify or save
+    if is_kse_token_expired(token):
+        print("Error: The supplied KSE token is expired and could not be refreshed.", file=sys.stderr)
+        print(
+            "Tip: If your session on schedule.kse.ua has expired, please log out and log in again on https://schedule.kse.ua.",
+            file=sys.stderr,
+        )
+        return 1
+
     print("Verifying token with KSE API...")
     from datetime import date
     today_str = date.today().isoformat()
@@ -650,6 +709,37 @@ def _cmd_login_kse(args: argparse.Namespace) -> int:
         elif res.status_code != 200:
             print(f"Error: KSE API returned status {res.status_code}.", file=sys.stderr)
             return 1
+
+        # KSE API trap detection: if unauthenticated/expired, KSE returns 200 OK with {"events": [null, ...]}
+        try:
+            verify_data = res.json() if res.content else {}
+            events_list = verify_data.get("events", []) if isinstance(verify_data, dict) else []
+            if isinstance(events_list, list) and len(events_list) > 0 and all(item is None for item in events_list):
+                if refresh_token:
+                    print("Unauthenticated session detected, attempting refresh with KSE API...")
+                    refreshed = refresh_kse_token(refresh_token, session_id)
+                    if refreshed:
+                        token = refreshed
+                        retry_res = requests.get(
+                            KSE_SCHEDULE_VERIFY_URL,
+                            headers={"Authorization": f"Bearer {token}"},
+                            params=verify_params,
+                            timeout=10,
+                        )
+                        retry_data = retry_res.json() if retry_res.content else {}
+                        retry_events = retry_data.get("events", []) if isinstance(retry_data, dict) else []
+                        if not (isinstance(retry_events, list) and len(retry_events) > 0 and all(item is None for item in retry_events)):
+                            events_list = retry_events
+
+                if isinstance(events_list, list) and len(events_list) > 0 and all(item is None for item in events_list):
+                    print("Error: The supplied KSE token was rejected (401 Unauthorized).", file=sys.stderr)
+                    print(
+                        "Tip: If your session on schedule.kse.ua has expired, please log out and log in again on https://schedule.kse.ua.",
+                        file=sys.stderr,
+                    )
+                    return 1
+        except Exception:
+            pass
     except requests.RequestException as e:
         print(f"Error: Could not connect to KSE API ({e}).", file=sys.stderr)
         return 1
