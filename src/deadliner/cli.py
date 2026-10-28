@@ -148,6 +148,16 @@ def _cmd_fetch(args: argparse.Namespace) -> int:
     return 0
 
 
+def _report_sync_error(title: str, message: str) -> None:
+    """Log a sync error to ~/.deadliner/sync.log and trigger a desktop notification."""
+    from deadliner import notifier
+    from deadliner.scheduler import append_sync_log
+
+    clean_log = " ".join(line.strip() for line in message.splitlines() if line.strip())
+    append_sync_log(f"[ERROR] {title}: {clean_log}")
+    notifier.notify(title, message)
+
+
 def _cmd_sync(args: argparse.Namespace) -> int:
     from deadliner import calendar_sync
 
@@ -158,16 +168,22 @@ def _cmd_sync(args: argparse.Namespace) -> int:
             "error: Google credentials required for calendar sync. Run `deadliner login google` first.",
             file=sys.stderr,
         )
+        _report_sync_error(
+            "Deadlines Sync Failed",
+            "Google credentials required for calendar sync.\nRun 'deadliner login google' first.",
+        )
         return 2
 
     assignments, warnings = _collect_assignments(base_url, token, g_token)
 
     for w in warnings:
         print(f"\033[93m{w}\033[0m", file=sys.stderr)
+    if warnings:
+        _report_sync_error("Deadlines Sync Warning", "\n".join(warnings))
 
     if not assignments:
         print("No upcoming deadlines to sync.")
-        return 0
+        return 1 if warnings else 0
 
     try:
         print("Syncing to Google Calendar...")
@@ -186,9 +202,14 @@ def _cmd_sync(args: argparse.Namespace) -> int:
         statuses = sync_result[3] if len(sync_result) > 3 else []
     except AuthError as e:
         print(f"\033[91merror: calendar authentication failed: {e}\033[0m", file=sys.stderr)
+        _report_sync_error(
+            "Deadlines Sync Failed",
+            f"Google Calendar authentication failed: {e}\nRun 'deadliner login google' to re-authenticate.",
+        )
         return 1
     except ConnectionError as e:
         print(f"\033[91merror: {e}\033[0m", file=sys.stderr)
+        _report_sync_error("Deadlines Sync Failed", f"Google Calendar connection error: {e}")
         return 1
 
     from deadliner.scheduler import append_sync_log
@@ -224,7 +245,7 @@ def _cmd_sync(args: argparse.Namespace) -> int:
     print(f"Updated:   {updated}")
     print(f"Skipped:   {skipped} (duplicates)")
     print("=" * 45 + "\n")
-    return 0
+    return 1 if warnings else 0
 
 
 def _resolve_date_range(args: argparse.Namespace) -> tuple[str, str]:
@@ -286,10 +307,18 @@ def _cmd_schedule_sync(args: argparse.Namespace) -> int:
             "error: Google credentials required for calendar sync. Run `deadliner login google` first.",
             file=sys.stderr,
         )
+        _report_sync_error(
+            "KSE Schedule Sync Failed",
+            "Google credentials required for calendar sync.\nRun 'deadliner login google' first.",
+        )
         return 2
 
     if not kse_token:
         print("\033[91merror: KSE credentials required. Run `deadliner login kse` first.\033[0m", file=sys.stderr)
+        _report_sync_error(
+            "KSE Schedule Sync Failed",
+            "KSE credentials required.\nRun 'deadliner login kse' first.",
+        )
         return 1
 
     from_str, till_str = _resolve_date_range(args)
@@ -300,9 +329,14 @@ def _cmd_schedule_sync(args: argparse.Namespace) -> int:
     except AuthError as e:
         print(f"\033[91merror: KSE authentication failed: {e}\033[0m", file=sys.stderr)
         print("Run `deadliner login kse` to update your token.", file=sys.stderr)
+        _report_sync_error(
+            "KSE Schedule Sync Failed",
+            f"KSE authentication failed: {e}\nRun 'deadliner login kse' to update your token.",
+        )
         return 1
     except ConnectionError as e:
         print(f"\033[91merror: KSE connection failed: {e}\033[0m", file=sys.stderr)
+        _report_sync_error("KSE Schedule Sync Failed", f"KSE connection failed: {e}")
         return 1
 
     if not events:
@@ -341,9 +375,14 @@ def _cmd_schedule_sync(args: argparse.Namespace) -> int:
         statuses = sync_result[4] if len(sync_result) > 4 else []
     except AuthError as e:
         print(f"\033[91merror: Google Calendar authentication failed: {e}\033[0m", file=sys.stderr)
+        _report_sync_error(
+            "KSE Schedule Sync Failed",
+            f"Google Calendar authentication failed: {e}\nRun 'deadliner login google' to re-authenticate.",
+        )
         return 1
     except ConnectionError as e:
         print(f"\033[91merror: {e}\033[0m", file=sys.stderr)
+        _report_sync_error("KSE Schedule Sync Failed", f"Google Calendar connection error: {e}")
         return 1
 
     local_tz = datetime.now().astimezone().tzinfo

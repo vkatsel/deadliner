@@ -19,6 +19,9 @@ dependencies = [
 [project.scripts]
 deadliner = "deadliner.cli:main"
 
+[tool.setuptools.package-data]
+deadliner = ["assets/*.png"]
+
 [tool.pytest.ini_options]
 addopts = "-v"
 pythonpath = [".", "src"]
@@ -32,4 +35,3 @@ line-length = 120
 [tool.ruff.lint]
 select = ["E", "F", "W"]
 ignore = []
-
