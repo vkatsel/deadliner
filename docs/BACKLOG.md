@@ -61,3 +61,8 @@ _Total Automated Tests: 185+ passing_
 
 - [ ] **Full Native Desktop Interface (GUI):** Develop a lightweight, distraction-free desktop application (e.g. pywebview / native GUI window) with academic dashboard, timeline view, and quick 1-click sync actions.
 - [ ] **Embedded Local Database:** Implement a lightweight local storage engine (e.g. SQLite / DuckDB) for offline event caching, sync historical logs, conflict resolution, and sub-millisecond local deadline search.
+
+
+### 🔐 Public Authentication & Zero-Setup OAuth
+
+- [ ] **Centralized 1-Click Google OAuth:** Seamless out-of-the-box browser login for personal Google accounts without requiring students to create a personal Google Cloud Console project (`client_secret.json`).

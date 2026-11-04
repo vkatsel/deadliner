@@ -133,6 +133,11 @@ deadliner login google
 ```
 
 Deadliner uses a **Local-First / BYOK (Bring Your Own Key)** architecture for maximum privacy, autonomy, and zero shared cloud dependencies. Every student connects their own free personal Google Cloud project credentials (`client_secret.json`) directly:
+
+> [!NOTE]
+> **Personal Google Cloud Project (BYOK):**
+> Currently, Deadliner operates strictly as a personal **Self-Project / BYOK** utility: each user connects via their own personal Google Cloud project credentials (`client_secret.json`). 
+> Fully automated, centralized 1-click Google OAuth for public personal accounts without manual Google Cloud Console project setup is **planned for a future release**.
 - **Zero-Telemetry & 100% Privacy:** Credentials and tokens are stored strictly on your local machine (`~/.deadliner/`). No external database, no telemetry, and no centralized access to your calendar.
 - **Fast 3-Minute Setup:** Creating personal Desktop OAuth credentials in Google Cloud is completely free and requires no billing information or domain verification.
   - Follow our step-by-step setup tutorial:
