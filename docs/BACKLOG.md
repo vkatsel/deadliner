@@ -1,25 +1,27 @@
 # Deadliner Product Backlog & Engineering Roadmap
 
-_Last Updated: 2026-10-08_  
+_Last Updated: 2026-11-04_  
 _Current Milestone: Deadliner v2.0_  
-_Total Automated Tests: 170 passing_
+_Total Automated Tests: 185+ passing_
 
 ---
 
 ## 🏆 1. Completed in Deadliner 2.0 (Shipped Milestones)
 
-| Feature / Issue                           | Description                                                                                                                                                                                 | Component                           | Status     |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- | ---------- |
-| **Native KSE Web Login**                  | Embedded secure WebView (Edge WebView2 / WebKit) for `schedule.kse.ua` with Google OAuth popup handling and desktop Chrome User-Agent spoofing. Eliminates all DevTools/F12 manual pasting. | `kse_auth.py`                       | 🟢 Shipped |
-| **Safety-Net OAuth Code Exchange**        | Automatic listener for GIS `authorization_response` postMessage + direct exchange with `api.kse.today/auth/google`.                                                                         | `kse_auth.py`                       | 🟢 Shipped |
-| **Token Rotation & 401 Auto-Retry**       | Handles KSE `refreshToken` rotation, mixed camelCase/snake*case payloads, and automatic 401 session recovery in `fetch_kse_schedule`. *(From TO*FIX #1)*                                    | `kse_auth.py`, `kse_fetcher.py`     | 🟢 Shipped |
-| **Event Type Safeguard & Reconciliation** | Tag events with `extendedProperties.private.deadliner_type` (`deadline` vs `schedule`) to ensure class schedule sync never prunes deadline events. _(From TO_FIX #2)_                       | `calendar_sync.py`                  | 🟢 Shipped |
-| **Moodle Submission Detection**           | Detects submitted assignments via Moodle API and highlights them in terminal and calendar metadata.                                                                                         | `moodle_fetcher.py`, `formatter.py` | 🟢 Shipped |
-| **Automatic Deadline Rescheduling**       | Detects when professors change due dates in Moodle/Classroom and patches existing calendar events while logging `(old_due ➜ new_due)` in `~/.deadliner/sync.log`.                           | `calendar_sync.py`, `cli.py`        | 🟢 Shipped |
-| **Windowless Background Auto-Sync**       | Daily 24h background sync using Windows Task Scheduler (`pythonw.exe` windowless execution) and native UNIX `crontab`.                                                                      | `scheduler.py`                      | 🟢 Shipped |
-| **All-in-One CLI Control Center**         | Guided interactive CLI menu (`deadliner` / `deadliner menu`, options 1-8) with quick access to all sync operations and credential management.                                               | `cli.py`                            | 🟢 Shipped |
-| **Landing Page Responsive Overhaul**      | Mobile drawer navigation, navbar overflow resolution in Ukrainian, language switcher fix (EN/UA bidirectional toggle), and AI-slop cleanup.                                                 | `docs/index.html`, `style.css`      | 🟢 Shipped |
-| **170 Mocked Unit Tests**                 | Comprehensive test coverage with 0 network dependencies running in under 6 seconds.                                                                                                         | `tests/`                            | 🟢 Shipped |
+| Feature / Issue                           | Description                                                                                                                                                                                 | Component                                              | Status     |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ---------- |
+| **Native KSE Web Login**                  | Embedded secure WebView (Edge WebView2 / WebKit) for `schedule.kse.ua` with Google OAuth popup handling and desktop Chrome User-Agent spoofing. Eliminates all DevTools/F12 manual pasting. | `kse_auth.py`                                          | 🟢 Shipped |
+| **Safety-Net OAuth Code Exchange**        | Automatic listener for GIS `authorization_response` postMessage + direct exchange with `api.kse.today/auth/google`.                                                                         | `kse_auth.py`                                          | 🟢 Shipped |
+| **Token Rotation & 401 Auto-Retry**       | Handles KSE `refreshToken` rotation, mixed camelCase/snake*case payloads, and automatic 401 session recovery in `fetch_kse_schedule`. *(From TO*FIX #1)*                                    | `kse_auth.py`, `kse_fetcher.py`                        | 🟢 Shipped |
+| **Event Type Safeguard & Reconciliation** | Tag events with `extendedProperties.private.deadliner_type` (`deadline` vs `schedule`) to ensure class schedule sync never prunes deadline events. _(From TO_FIX #2)_                       | `calendar_sync.py`                                     | 🟢 Shipped |
+| **Moodle Submission Detection**           | Detects submitted assignments via Moodle API and highlights them in terminal and calendar metadata.                                                                                         | `moodle_fetcher.py`, `formatter.py`                    | 🟢 Shipped |
+| **Classroom & Moodle Calendar Coloring**  | End-to-end submitted assignment tracking (Moodle upcoming + strict `mod_assign` API check, Google Classroom `studentSubmissions`) turning events into Basil Green (`[✓ SUBMITTED]`).       | `moodle_fetcher.py`, `classroom_fetcher.py`, `calendar_sync.py` | 🟢 Shipped |
+| **Native OS Desktop Notifications**       | Cross-platform desktop alerts (Windows WinRT Toast with app logo, macOS osascript, Linux notify-send) for critical sync errors and authentication warnings.                                 | `notifier.py`, `cli.py`                                | 🟢 Shipped |
+| **Automatic Deadline Rescheduling**       | Detects when professors change due dates in Moodle/Classroom and patches existing calendar events while logging `(old_due ➜ new_due)` in `~/.deadliner/sync.log`.                           | `calendar_sync.py`, `cli.py`                           | 🟢 Shipped |
+| **Windowless Background Auto-Sync**       | Daily 24h background sync using Windows Task Scheduler (`pythonw.exe` windowless execution) and native UNIX `crontab`.                                                                      | `scheduler.py`                                         | 🟢 Shipped |
+| **All-in-One CLI Control Center**         | Guided interactive CLI menu (`deadliner` / `deadliner menu`, options 1-8) with quick access to all sync operations and credential management.                                               | `cli.py`                                               | 🟢 Shipped |
+| **Landing Page Responsive Overhaul**      | Mobile drawer navigation, navbar overflow resolution in Ukrainian, language switcher fix (EN/UA bidirectional toggle), and AI-slop cleanup.                                                 | `docs/index.html`, `style.css`                         | 🟢 Shipped |
+| **185+ Mocked Unit Tests**                | Comprehensive test coverage with 0 network dependencies running in under 6 seconds.                                                                                                         | `tests/`                                               | 🟢 Shipped |
 
 ---
 
@@ -34,6 +36,7 @@ _Total Automated Tests: 170 passing_
 - [x] **Documentation Hub Restructuring:** Removed deprecated `TO_FIX.md`, indexed all subfolders (`docs/specs/README.md`, `docs/legal/README.md`), and refreshed `docs/README.md`.
 - [x] **Interactive Hourglass & Kinetic Sand Engine:** Implemented scroll-linked vector hourglass HUD with dynamic sand physics, 00:00 midnight cutoff countdown, 3D time inversion back-to-top, and ambient kinetic sand particle stream in `docs/assets/sand_timer.js`.
 - [x] **Professional UX Copy Polish:** Purged internal engineering jargon ("DevTools hacking", "JSON copying", console scripts) from public landing pages and `README.md`.
+- [x] **Submission Tracking & Calendar Green Checkmark:** End-to-end integration of Moodle upcoming events, strict ground-truth submission verification, Google Classroom coursework submission states, and Basil Green calendar updates.
 
 ---
 
@@ -41,14 +44,20 @@ _Total Automated Tests: 170 passing_
 
 ### 📦 Distribution & Packaging
 
-- [ ] **Pre Compiled Binaries:** Create `deadliner.exe` and `deadliner` executables for Windows and Linux respectively.
+- [ ] **Pre Compiled Binaries:** Create `deadliner.exe` and `deadliner` standalone executables for Windows and Linux.
 - [ ] **PyPI Official Release:** Configure `twine` and GitHub Actions workflow to publish official releases to PyPI (`pip install deadliner`).
 - [ ] **Automated Version Update Check:** Lightweight version check (`deadliner update` or startup notification if newer GitHub release is available).
 
 ### 🔔 Notifications & Alerts
 
-- [ ] **Native OS Toast Notifications:** Trigger OS-native notifications 2 hours and 30 minutes before critical deadlines (Windows Toast / macOS Notification Center).
+- [ ] **Proactive Deadline Countdown Alerts:** Trigger OS-native notifications 2 hours and 30 minutes before critical pending deadlines (Windows Toast / macOS Notification Center).
 
 ### ⚙️ Multi-Profile & Customization
 
 - [ ] **Custom Color Palette Configuration:** Allow students to customize Google Calendar event colors (e.g. Tomato Red, Flamingo, Grape) via config file.
+
+
+### 🖥️ Native Desktop GUI & Local Persistence
+
+- [ ] **Full Native Desktop Interface (GUI):** Develop a lightweight, distraction-free desktop application (e.g. pywebview / native GUI window) with academic dashboard, timeline view, and quick 1-click sync actions.
+- [ ] **Embedded Local Database:** Implement a lightweight local storage engine (e.g. SQLite / DuckDB) for offline event caching, sync historical logs, conflict resolution, and sub-millisecond local deadline search.

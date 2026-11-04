@@ -5,6 +5,17 @@ import os
 from pathlib import Path
 import sys
 
+if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+if sys.stderr and hasattr(sys.stderr, "reconfigure"):
+    try:
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 from deadliner import moodle_fetcher
 from deadliner.formatter import (
     format_assignment,
@@ -222,6 +233,11 @@ def _cmd_sync(args: argparse.Namespace) -> int:
             tag = "\033[92m[+ Added to Calendar]\033[0m"
             due_local = assignment.due_utc.astimezone(local_tz).strftime("%a %d %b %H:%M")
             print(f"{tag} {prefix} {assignment.title} ({due_local})")
+        elif status == "submitted":
+            tag = "\033[92m\033[1m[✓ Marked as Submitted]\033[0m"
+            due_local = assignment.due_utc.astimezone(local_tz).strftime("%a %d %b %H:%M")
+            print(f"{tag} {prefix} {assignment.title} ({due_local})")
+            append_sync_log(f"[SYNC] Marked as submitted: {assignment.title}")
         elif status == "rescheduled":
             tag = "\033[93m[~ Rescheduled in Calendar]\033[0m"
             new_local = assignment.due_utc.astimezone(local_tz).strftime("%a %d %b %H:%M")

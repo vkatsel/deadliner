@@ -31,6 +31,22 @@ def fetch_classroom(oauth_credentials: dict) -> list[Assignment]:
             logger.warning(f"Skipping course '{course_name}' due to API error: {e}")
             continue
 
+        # Fetch student submissions for this course to identify submitted coursework
+        submitted_work_ids = set()
+        try:
+            subs_data = _get(
+                f"{CLASSROOM_API_BASE}/courses/{course_id}/courseWork/-/studentSubmissions",
+                headers,
+                params={"userId": "me"},
+            )
+            for sub in subs_data.get("studentSubmissions", []):
+                if sub.get("state") in ("TURNED_IN", "RETURNED"):
+                    work_id = sub.get("courseWorkId")
+                    if work_id:
+                        submitted_work_ids.add(work_id)
+        except Exception as e:
+            logger.debug(f"Could not fetch student submissions for course {course_id}: {e}")
+
         for work in coursework_data.get("courseWork", []):
             title = work.get("title", "Unknown Assignment")
             due_date = work.get("dueDate")
@@ -49,6 +65,9 @@ def fetch_classroom(oauth_credentials: dict) -> list[Assignment]:
             if due_utc < start_of_today_utc:
                 continue
 
+            work_id = work.get("id")
+            is_submitted = bool(work_id and work_id in submitted_work_ids)
+
             assignments.append(
                 Assignment(
                     platform="classroom",
@@ -56,6 +75,7 @@ def fetch_classroom(oauth_credentials: dict) -> list[Assignment]:
                     title=title,
                     due_utc=due_utc,
                     url=work.get("alternateLink", ""),
+                    is_submitted=is_submitted,
                 )
             )
 

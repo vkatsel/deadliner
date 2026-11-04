@@ -72,7 +72,7 @@ def _event_payload(assignment: Assignment) -> dict:
     """Translate an Assignment into a Google Calendar event body."""
     end = assignment.due_utc
     start = end - timedelta(minutes=EVENT_DURATION_MINUTES)
-    prefix_tag = "[SUBMITTED]" if assignment.is_submitted else "[DEADLINE]"
+    prefix_tag = "[✓ SUBMITTED]" if assignment.is_submitted else "[DEADLINE]"
     summary = f"{prefix_tag} {assignment.title}"
     if assignment.course_shortname:
         summary = f"{prefix_tag} [{assignment.course_shortname}] {assignment.title}"
@@ -261,7 +261,12 @@ def sync_to_calendar(
                     json=payload,
                 )
                 updated += 1
-                status = "rescheduled" if is_rescheduled else "updated"
+                if assignment.is_submitted and existing_event.get("colorId") != SUBMITTED_EVENT_COLOR_ID:
+                    status = "submitted"
+                elif is_rescheduled:
+                    status = "rescheduled"
+                else:
+                    status = "updated"
                 statuses.append((assignment, status, old_end))
             else:
                 skipped += 1

@@ -95,7 +95,7 @@ def test_sync_creates_green_submitted_event():
     import json
 
     sent_payload = json.loads(responses.calls[1].request.body)
-    assert "[SUBMITTED]" in sent_payload["summary"], "submitted event summary must carry [SUBMITTED]"
+    assert "[✓ SUBMITTED]" in sent_payload["summary"], "submitted event summary must carry [✓ SUBMITTED]"
     assert sent_payload["colorId"] == "10", "submitted event must be green (colorId 10)"
     assert "Status: Submitted ✓" in sent_payload["description"]
 
@@ -120,7 +120,7 @@ def test_sync_patches_existing_deadline_to_submitted():
 
     assert created == 0 and updated == 1 and skipped == 0
     patch_body = responses.calls[1].request.body.decode()
-    assert "[SUBMITTED]" in patch_body
+    assert "SUBMITTED" in patch_body
     assert '"colorId": "10"' in patch_body
 
 
