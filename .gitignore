@@ -37,6 +37,8 @@ client_secret*.json
 
 # Screenshots & Local Assets
 *.png
+!docs/assets/*
+!src/deadliner/assets/*
 
 # Cursor plan (AI-generated, not for version control)
 cursor_plan.md

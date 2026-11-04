@@ -30,14 +30,99 @@ SCOPES = [
     "https://www.googleapis.com/auth/calendar.events",
 ]
 
-# Default paths
+# Default paths and optional embedded fallback credentials
 _DEFAULT_CLIENT_SECRETS = "client_secret.json"  # downloaded from Google Cloud Console
 _DEFAULT_TOKEN_PATH = ".deadliner_google_token.json"
+
+DEFAULT_CLIENT_ID = os.environ.get("DEADLINER_CLIENT_ID", "")
+DEFAULT_CLIENT_SECRET = os.environ.get("DEADLINER_CLIENT_SECRET", "")
 
 
 def get_token_path() -> Path:
     """Return the path where Google OAuth tokens are stored."""
     return Path.home() / _DEFAULT_TOKEN_PATH
+
+
+def parse_client_secrets(raw_input_or_dict: str | dict) -> dict:
+    """Parse and normalize client secrets from raw string JSON or dict.
+
+    Accepts:
+    - Standard Google client secrets JSON structure: {"installed": {...}} or {"web": {...}}
+    - Flat dict or JSON: {"client_id": "...", "client_secret": "..."}
+
+    Returns standard InstalledAppFlow-compatible dictionary:
+    {"installed": {...}}
+
+    Raises:
+        ValueError: if format is invalid or missing client_id/client_secret.
+    """
+    if isinstance(raw_input_or_dict, str):
+        text = raw_input_or_dict.strip()
+        if text.startswith("```"):
+            lines = text.splitlines()
+            text = "\n".join(line for line in lines if not line.strip().startswith("```")).strip()
+        try:
+            data = json.loads(text)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON format: {e}")
+    elif isinstance(raw_input_or_dict, dict):
+        data = raw_input_or_dict
+    else:
+        raise ValueError("Input must be a JSON string or dictionary.")
+
+    client_info = data.get("installed") or data.get("web")
+    if not client_info and "client_id" in data and "client_secret" in data:
+        client_info = data
+
+    if not client_info or not isinstance(client_info, dict):
+        raise ValueError("Invalid client secrets JSON: missing 'installed' or 'web' configuration block.")
+
+    client_id = client_info.get("client_id")
+    client_secret = client_info.get("client_secret")
+
+    if not client_id or not client_secret:
+        raise ValueError("Invalid client secrets: 'client_id' and 'client_secret' are required.")
+
+    return {
+        "installed": {
+            "client_id": str(client_id).strip(),
+            "client_secret": str(client_secret).strip(),
+            "auth_uri": client_info.get("auth_uri", "https://accounts.google.com/o/oauth2/auth"),
+            "token_uri": client_info.get("token_uri", "https://oauth2.googleapis.com/token"),
+            "auth_provider_x509_cert_url": client_info.get(
+                "auth_provider_x509_cert_url", "https://www.googleapis.com/oauth2/v1/certs"
+            ),
+            "redirect_uris": client_info.get("redirect_uris", ["http://localhost"]),
+        }
+    }
+
+
+def construct_client_secrets_from_keys(client_id: str, client_secret: str) -> dict:
+    """Create a client secrets dictionary from client_id and client_secret strings."""
+    if not client_id or not str(client_id).strip() or not client_secret or not str(client_secret).strip():
+        raise ValueError("Both client_id and client_secret must be non-empty strings.")
+    return {
+        "installed": {
+            "client_id": str(client_id).strip(),
+            "client_secret": str(client_secret).strip(),
+            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+            "token_uri": "https://oauth2.googleapis.com/token",
+            "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+            "redirect_uris": ["http://localhost"],
+        }
+    }
+
+
+def save_client_secrets_json(raw_input_or_dict: str | dict, target_path: Path | None = None) -> Path:
+    """Validate and write client secrets JSON to ~/.deadliner/client_secret.json (or target_path)."""
+    norm_data = parse_client_secrets(raw_input_or_dict)
+    if target_path is None:
+        target_path = Path.home() / ".deadliner" / "client_secret.json"
+
+    target_path = Path(target_path)
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    target_path.write_text(json.dumps(norm_data, indent=2), encoding="utf-8")
+    return target_path
 
 
 def find_client_secrets_path(explicit_path: str | Path | None = None) -> Path | None:
@@ -73,18 +158,22 @@ def run_oauth_flow(client_secrets_path: str | None = None) -> Credentials:
         Authorized Credentials object.
 
     Raises:
-        FileNotFoundError: if client_secrets_path does not exist.
+        FileNotFoundError: if client_secrets_path does not exist and no fallback is available.
     """
     secrets = find_client_secrets_path(client_secrets_path)
-    if not secrets:
+    if secrets:
+        flow = InstalledAppFlow.from_client_secrets_file(str(secrets), SCOPES)
+    elif not client_secrets_path and DEFAULT_CLIENT_ID and DEFAULT_CLIENT_SECRET:
+        cfg = construct_client_secrets_from_keys(DEFAULT_CLIENT_ID, DEFAULT_CLIENT_SECRET)
+        flow = InstalledAppFlow.from_client_config(cfg, SCOPES)
+    else:
         target = client_secrets_path or _DEFAULT_CLIENT_SECRETS
         raise FileNotFoundError(
             f"Google client secrets file not found at {target}. "
             f"Download it from Google Cloud Console → APIs & Services → Credentials "
-            f"and place it in ~/.deadliner/client_secret.json or in the project root."
+            f"and place it in ~/.deadliner/client_secret.json or configure it via `deadliner login google`."
         )
 
-    flow = InstalledAppFlow.from_client_secrets_file(str(secrets), SCOPES)
     try:
         creds = flow.run_local_server(port=0)  # opens browser, runs local redirect
     except KeyboardInterrupt:

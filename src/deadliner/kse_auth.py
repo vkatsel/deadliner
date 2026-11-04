@@ -121,6 +121,272 @@ def _extract_credentials_from_text(raw_val: str) -> tuple[str, str, str, str] | 
     return None
 
 
+WEBVIEW_CACHE_DIR = Path.home() / ".deadliner" / "webview_cache"
+DESKTOP_CHROME_UA = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/133.0.0.0 Safari/537.36"
+)
+
+
+def _patch_edgechromium_for_oauth() -> None:
+    """Configure Edge WebView2 to support native Google OAuth popup flows.
+
+    1. Sets Handled=False on NewWindowRequested so WebView2 opens the OAuth
+       popup with window.opener preserved. This allows Google's authorization
+       completion script (window.opener.postMessage) to communicate directly
+       back to schedule.kse.ua and auto-close the popup window.
+    2. Injects a standard desktop Chrome User-Agent into AdditionalBrowserArguments
+       so Google does not flag the environment as an embedded webview.
+    """
+    try:
+        from webview.platforms import edgechromium
+
+        def patched_on_new_window_request(self, sender, args):
+            # Allow WebView2 to create native popup with parent window.opener intact
+            args.set_Handled(False)
+
+        edgechromium.EdgeChrome.on_new_window_request = patched_on_new_window_request
+
+        orig_init = edgechromium.EdgeChrome.__init__
+
+        def patched_edge_init(self, form, window, cache_dir):
+            self.pywebview_window = window
+            self.webview = edgechromium.WebView2()
+            props = edgechromium.CoreWebView2CreationProperties()
+
+            runtime_path = edgechromium.webview_settings.get("WEBVIEW2_RUNTIME_PATH")
+            if runtime_path:
+                if not edgechromium.os.path.isabs(runtime_path):
+                    runtime_path = edgechromium.os.path.join(edgechromium.get_app_root(), runtime_path)
+                if edgechromium.os.path.exists(runtime_path):
+                    props.BrowserExecutableFolder = runtime_path
+
+            props.UserDataFolder = cache_dir
+            self.user_data_folder = props.UserDataFolder
+            props.set_IsInPrivateModeEnabled(edgechromium._state["private_mode"])
+
+            # Pure desktop Chrome User-Agent without WebView or Edg markers
+            props.AdditionalBrowserArguments = (
+                f'--disable-features=ElasticOverscroll --user-agent="{DESKTOP_CHROME_UA}"'
+            )
+
+            if edgechromium.webview_settings.get("ALLOW_FILE_URLS"):
+                props.AdditionalBrowserArguments += " --allow-file-access-from-files"
+
+            if edgechromium.webview_settings.get("REMOTE_DEBUGGING_PORT") is not None:
+                props.AdditionalBrowserArguments += (
+                    f' --remote-debugging-port={edgechromium.webview_settings["REMOTE_DEBUGGING_PORT"]}'
+                )
+
+            self.webview.CreationProperties = props
+
+            self.form = form
+            form.Controls.Add(self.webview)
+
+            self.js_results = {}
+            self.js_result_semaphore = edgechromium.Semaphore(0)
+            self.webview.Dock = edgechromium.WinForms.DockStyle.Fill
+            self.webview.BringToFront()
+            self.webview.CoreWebView2InitializationCompleted += self.on_webview_ready
+            self.webview.NavigationStarting += self.on_navigation_start
+            self.webview.NavigationCompleted += self.on_navigation_completed
+            self.webview.WebMessageReceived += self.on_script_notify
+            self.syncContextTaskScheduler = edgechromium.TaskScheduler.FromCurrentSynchronizationContext()
+            self.webview.DefaultBackgroundColor = edgechromium.Color.FromArgb(
+                255,
+                int(window.background_color.lstrip("#")[0:2], 16),
+                int(window.background_color.lstrip("#")[2:4], 16),
+                int(window.background_color.lstrip("#")[4:6], 16),
+            )
+
+            if window.transparent:
+                self.webview.DefaultBackgroundColor = edgechromium.Color.Transparent
+
+            self.url = None
+            self.ishtml = False
+            self.html = edgechromium.DEFAULT_HTML
+
+            self.webview.EnsureCoreWebView2Async(None)
+
+        edgechromium.EdgeChrome.__init__ = patched_edge_init
+    except Exception as e:
+        logger.debug(f"EdgeChromium patching not applicable: {e}")
+
+
+def login_kse_webview(timeout: int = 180, clean: bool = False) -> tuple[str, str, str, str] | None:
+    """Open an interactive native WebView window for schedule.kse.ua and automatically capture credentials.
+
+    Uses Edge WebView2 on Windows or WebKit on macOS/Linux. Persists session in
+    ~/.deadliner/webview_cache so users stay signed into Google SSO across sessions.
+
+    Returns:
+        (token, refresh_token, session_id, user_name) or None if cancelled or unavailable.
+    """
+    if clean and WEBVIEW_CACHE_DIR.exists():
+        import shutil
+        try:
+            shutil.rmtree(WEBVIEW_CACHE_DIR, ignore_errors=True)
+            print("Cleared KSE WebView cache.")
+        except Exception as e:
+            logger.debug(f"Failed to clear webview cache: {e}")
+
+    try:
+        import webview
+        webview.settings["OPEN_EXTERNAL_LINKS_IN_BROWSER"] = False
+        _patch_edgechromium_for_oauth()
+    except ImportError:
+        logger.debug("pywebview is not installed; falling back to alternative login methods.")
+        return None
+
+    try:
+        WEBVIEW_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        pass
+
+    captured: dict[str, tuple[str, str, str, str]] = {}
+    is_done = threading.Event()
+
+    # Preload any known expired tokens from config so we never accept them as a fresh login
+    known_bad_tokens: set[str] = set()
+    saved_tok, _, _ = load_kse_credentials()
+    if saved_tok and is_kse_token_expired(saved_tok):
+        known_bad_tokens.add(saved_tok)
+
+    print("\n" + "=" * 68)
+    print("  🔑 KSE Schedule — Native Web Login")
+    print("=" * 68)
+    print("Opening secure browser window for schedule.kse.ua...")
+    print("👉 Sign in with your @kse.org.ua Google account in the window.")
+    print("⚡ Deadliner will automatically detect your login and close the window.")
+    print("=" * 68 + "\n")
+
+    def _poll_credentials(window: webview.Window) -> None:
+        if timeout > 0:
+            time.sleep(min(1.0, timeout))
+        start_t = time.time()
+        while not is_done.is_set() and time.time() - start_t < timeout:
+            try:
+                # 1. Install postMessage listener on schedule.kse.ua if not present
+                window.evaluate_js(
+                    """(function() {
+                        if (!window.__deadliner_listener_installed) {
+                            window.__deadliner_listener_installed = true;
+                            window.addEventListener("message", function(e) {
+                                try {
+                                    var d = e.data;
+                                    var c = (d && d.response && d.response.code) || (d && d.code);
+                                    if (c) window.__deadliner_oauth_code = c;
+                                } catch(err) {}
+                            });
+                        }
+                    })()"""
+                )
+
+                # 2. Check for completed authentication in localStorage
+                raw_auth = window.evaluate_js(
+                    "localStorage.getItem('__NEXUS_REACT_ADMIN_AUTH__') || localStorage.getItem('token')"
+                )
+                if raw_auth:
+                    creds = _extract_credentials_from_text(raw_auth)
+                    if creds:
+                        tok, ref, sess, uname = creds
+                        if tok in known_bad_tokens:
+                            # Stale known-expired token in localStorage: clear it and reload schedule.kse.ua
+                            window.evaluate_js(
+                                """(function() {
+                                    localStorage.removeItem('__NEXUS_REACT_ADMIN_AUTH__');
+                                    localStorage.removeItem('token');
+                                    if (window.location.hostname.includes('kse.ua') && !window.__deadliner_cleaned) {
+                                        window.__deadliner_cleaned = true;
+                                        window.location.reload();
+                                    }
+                                })()"""
+                            )
+                        elif is_kse_token_expired(tok):
+                            # Stale token in localStorage: attempt refresh if refresh token is available
+                            refreshed = refresh_kse_token(ref, sess) if ref else None
+                            if refreshed and not is_kse_token_expired(refreshed):
+                                captured["creds"] = (refreshed, ref, sess, uname)
+                                is_done.set()
+                                window.destroy()
+                                return
+                            # Refresh failed or unavailable: mark as bad and purge from localStorage
+                            known_bad_tokens.add(tok)
+                            window.evaluate_js(
+                                """(function() {
+                                    localStorage.removeItem('__NEXUS_REACT_ADMIN_AUTH__');
+                                    localStorage.removeItem('token');
+                                    if (window.location.hostname.includes('kse.ua') && !window.__deadliner_cleaned) {
+                                        window.__deadliner_cleaned = true;
+                                        window.location.reload();
+                                    }
+                                })()"""
+                            )
+                        else:
+                            captured["creds"] = creds
+                            is_done.set()
+                            window.destroy()
+                            return
+
+                # 3. Check if OAuth code was captured by listener or URL query/hash
+                code_val = window.evaluate_js(
+                    """(function() {
+                        if (window.__deadliner_oauth_code) return window.__deadliner_oauth_code;
+                        var m = window.location.search.match(/[?&]code=([^&]+)/) || window.location.hash.match(/[#&]code=([^&]+)/);
+                        if (m) return decodeURIComponent(m[1]);
+                        return null;
+                    })()"""
+                )
+                if code_val and isinstance(code_val, str) and code_val.startswith("4/"):
+                    try:
+                        res = requests.post(
+                            "https://api.kse.today/auth/google",
+                            json={"code": code_val},
+                            timeout=10,
+                        )
+                        if res.status_code == 200:
+                            creds = _extract_credentials_from_text(res.text)
+                            if creds:
+                                captured["creds"] = creds
+                                is_done.set()
+                                window.destroy()
+                                return
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+            time.sleep(0.4)
+
+        if not is_done.is_set():
+            is_done.set()
+            try:
+                window.destroy()
+            except Exception:
+                pass
+
+    try:
+        window = webview.create_window(
+            title="Deadliner — KSE Login",
+            url="https://schedule.kse.ua",
+            width=900,
+            height=650,
+            min_size=(600, 450),
+        )
+        webview.start(
+            _poll_credentials,
+            window,
+            private_mode=False,
+            storage_path=str(WEBVIEW_CACHE_DIR),
+            user_agent=DESKTOP_CHROME_UA,
+        )
+    except Exception as e:
+        logger.debug(f"Failed to launch pywebview window: {e}")
+        return None
+
+    return captured.get("creds")
+
+
 def login_kse_clipboard_sync(timeout: int = 60) -> tuple[str, str, str, str] | None:
     """Open schedule.kse.ua and automatically capture credentials from clipboard.
 
@@ -213,21 +479,54 @@ def refresh_kse_token(refresh_token: str, session_id: str = "") -> str | None:
         return None
 
     try:
+        req_body: dict = {
+            "refresh_token": refresh_token,
+            "refreshToken": refresh_token,
+        }
+        if session_id:
+            req_body["session_id"] = session_id
+            req_body["sessionId"] = session_id
+
         response = requests.post(
             KSE_AUTH_REFRESH_URL,
             headers={"Content-Type": "application/json"},
-            json={"refresh_token": refresh_token, "session_id": session_id or None},
+            json=req_body,
             timeout=10,
         )
         if response.status_code != 200:
             logger.debug(f"KSE token refresh failed with status {response.status_code}")
             return None
 
-        data = response.json()
-        new_token = data.get("token")
-        new_refresh = data.get("refresh_token") or refresh_token
+        data = response.json() if response.content else {}
+        user_obj = data.get("user", data) if isinstance(data, dict) else {}
+        if not isinstance(user_obj, dict):
+            user_obj = {}
+
+        new_token = (
+            data.get("token")
+            or data.get("jwt")
+            or data.get("accessToken")
+            or user_obj.get("token")
+            or user_obj.get("jwt")
+            or user_obj.get("accessToken")
+        )
+        new_refresh = (
+            data.get("refreshToken")
+            or data.get("refresh_token")
+            or user_obj.get("refreshToken")
+            or user_obj.get("refresh_token")
+            or refresh_token
+        )
+        new_session = str(
+            data.get("sessionId")
+            or data.get("session_id")
+            or user_obj.get("sessionId")
+            or user_obj.get("session_id")
+            or session_id
+            or ""
+        )
         if new_token:
-            save_kse_credentials(new_token, new_refresh, session_id)
+            save_kse_credentials(new_token, new_refresh, new_session)
             return new_token
     except Exception as e:
         logger.debug(f"Error during KSE token refresh: {e}")
@@ -244,16 +543,41 @@ def is_kse_token_expired(token: str) -> bool:
     exp = payload.get("exp")
     if not exp:
         return False
-    return time.time() >= (exp - 60)
+    try:
+        exp_num = float(exp)
+        if exp_num > 1e11:  # In case server returns millisecond timestamp
+            exp_num = exp_num / 1000.0
+        return time.time() >= (exp_num - 60)
+    except (ValueError, TypeError):
+        return False
 
 
-def get_valid_kse_token() -> str:
-    """Return a valid KSE token, attempting refresh if expired or missing."""
+def get_valid_kse_token(raise_on_failure: bool = False) -> str:
+    """Return a valid KSE token, attempting refresh if expired or missing.
+
+    If raise_on_failure is True:
+        Raises AuthError if token is missing, expired without refresh, or refresh fails.
+    If raise_on_failure is False:
+        Returns empty string if token is invalid/expired and cannot be refreshed.
+    """
     token, refresh_token, session_id = load_kse_credentials()
-    if (not token or is_kse_token_expired(token)) and refresh_token:
-        refreshed = refresh_kse_token(refresh_token, session_id)
-        if refreshed:
-            return refreshed
+    if not token and not refresh_token:
+        if raise_on_failure:
+            raise AuthError("KSE credentials not found. Please run `deadliner login kse` to connect your account.")
+        return ""
+
+    if not token or is_kse_token_expired(token):
+        if refresh_token:
+            refreshed = refresh_kse_token(refresh_token, session_id)
+            if refreshed:
+                return refreshed
+        # Expired and refresh failed or unavailable
+        if raise_on_failure:
+            raise AuthError(
+                "KSE authentication expired and auto-refresh failed. Please run `deadliner login kse` to re-authenticate."
+            )
+        return ""
+
     return token
 
 
@@ -277,7 +601,21 @@ def _cmd_login_kse(args: argparse.Namespace) -> int:
     user_name = ""
 
     manual = getattr(args, "manual", False)
-    if not manual:
+    use_clipboard = getattr(args, "clipboard", False)
+    clean = getattr(args, "clean", False)
+
+    if not manual and not use_clipboard:
+        captured = login_kse_webview(clean=True) if clean else login_kse_webview()
+        if captured:
+            token, refresh_token, session_id, user_name = captured
+            print("\033[92m✓ Successfully received KSE credentials via Native Web Login!\033[0m")
+        elif sys.stdin.isatty():
+            print("\033[93mNotice: Native window closed or unavailable. Trying 1-click clipboard sync...\033[0m")
+            captured = login_kse_clipboard_sync()
+            if captured:
+                token, refresh_token, session_id, user_name = captured
+                print("\033[92m✓ Successfully received KSE credentials from clipboard!\033[0m")
+    elif use_clipboard and not manual:
         captured = login_kse_clipboard_sync()
         if captured:
             token, refresh_token, session_id, user_name = captured
@@ -328,6 +666,15 @@ def _cmd_login_kse(args: argparse.Namespace) -> int:
         if refreshed:
             token = refreshed
 
+    # If still expired after refresh attempt, do not verify or save
+    if is_kse_token_expired(token):
+        print("Error: The supplied KSE token is expired and could not be refreshed.", file=sys.stderr)
+        print(
+            "Tip: If your session on schedule.kse.ua has expired, please log out and log in again on https://schedule.kse.ua.",
+            file=sys.stderr,
+        )
+        return 1
+
     print("Verifying token with KSE API...")
     from datetime import date
     today_str = date.today().isoformat()
@@ -362,6 +709,37 @@ def _cmd_login_kse(args: argparse.Namespace) -> int:
         elif res.status_code != 200:
             print(f"Error: KSE API returned status {res.status_code}.", file=sys.stderr)
             return 1
+
+        # KSE API trap detection: if unauthenticated/expired, KSE returns 200 OK with {"events": [null, ...]}
+        try:
+            verify_data = res.json() if res.content else {}
+            events_list = verify_data.get("events", []) if isinstance(verify_data, dict) else []
+            if isinstance(events_list, list) and len(events_list) > 0 and all(item is None for item in events_list):
+                if refresh_token:
+                    print("Unauthenticated session detected, attempting refresh with KSE API...")
+                    refreshed = refresh_kse_token(refresh_token, session_id)
+                    if refreshed:
+                        token = refreshed
+                        retry_res = requests.get(
+                            KSE_SCHEDULE_VERIFY_URL,
+                            headers={"Authorization": f"Bearer {token}"},
+                            params=verify_params,
+                            timeout=10,
+                        )
+                        retry_data = retry_res.json() if retry_res.content else {}
+                        retry_events = retry_data.get("events", []) if isinstance(retry_data, dict) else []
+                        if not (isinstance(retry_events, list) and len(retry_events) > 0 and all(item is None for item in retry_events)):
+                            events_list = retry_events
+
+                if isinstance(events_list, list) and len(events_list) > 0 and all(item is None for item in events_list):
+                    print("Error: The supplied KSE token was rejected (401 Unauthorized).", file=sys.stderr)
+                    print(
+                        "Tip: If your session on schedule.kse.ua has expired, please log out and log in again on https://schedule.kse.ua.",
+                        file=sys.stderr,
+                    )
+                    return 1
+        except Exception:
+            pass
     except requests.RequestException as e:
         print(f"Error: Could not connect to KSE API ({e}).", file=sys.stderr)
         return 1

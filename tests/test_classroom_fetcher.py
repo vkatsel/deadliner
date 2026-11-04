@@ -106,3 +106,67 @@ def test_fetch_classroom_missing_access_token_raises_auth_error():
     # Act / Assert
     with pytest.raises(AuthError):
         fetch_classroom(oauth_creds)
+
+
+
+@responses.activate
+def test_fetch_classroom_detects_submitted_assignments():
+    oauth_creds = {"access_token": "valid-google-token"}
+
+    responses.add(responses.GET, COURSES_URL, json={"courses": [{"id": "c1", "name": "CS101"}]}, status=200)
+    responses.add(
+        responses.GET,
+        coursework_url("c1"),
+        json={
+            "courseWork": [
+                {
+                    "id": "cw1",
+                    "title": "Turned In Homework",
+                    "dueDate": {"year": 2099, "month": 7, "day": 10},
+                    "dueTime": {"hours": 23, "minutes": 59},
+                    "alternateLink": "https://classroom.google.com/c/1/cw/1",
+                },
+                {
+                    "id": "cw2",
+                    "title": "Pending Homework",
+                    "dueDate": {"year": 2099, "month": 7, "day": 12},
+                    "dueTime": {"hours": 23, "minutes": 59},
+                    "alternateLink": "https://classroom.google.com/c/1/cw/2",
+                },
+                {
+                    "id": "cw3",
+                    "title": "Returned Homework",
+                    "dueDate": {"year": 2099, "month": 7, "day": 15},
+                    "dueTime": {"hours": 23, "minutes": 59},
+                    "alternateLink": "https://classroom.google.com/c/1/cw/3",
+                },
+            ]
+        },
+        status=200,
+    )
+
+    # Submissions mock: cw1 is TURNED_IN, cw2 is CREATED (unsubmitted), cw3 is RETURNED
+    responses.add(
+        responses.GET,
+        "https://classroom.googleapis.com/v1/courses/c1/courseWork/-/studentSubmissions",
+        json={
+            "studentSubmissions": [
+                {"courseWorkId": "cw1", "state": "TURNED_IN"},
+                {"courseWorkId": "cw2", "state": "CREATED"},
+                {"courseWorkId": "cw3", "state": "RETURNED"},
+            ]
+        },
+        status=200,
+    )
+
+    result = fetch_classroom(oauth_creds)
+    assert len(result) == 3
+
+    cw1 = next(a for a in result if a.title == "Turned In Homework")
+    assert cw1.is_submitted is True
+
+    cw2 = next(a for a in result if a.title == "Pending Homework")
+    assert cw2.is_submitted is False
+
+    cw3 = next(a for a in result if a.title == "Returned Homework")
+    assert cw3.is_submitted is True

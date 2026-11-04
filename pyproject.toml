@@ -13,10 +13,14 @@ dependencies = [
     "google-auth",
     "google-auth-oauthlib",
     "google-api-python-client",
+    "pywebview>=5.0.0",
 ]
 
 [project.scripts]
 deadliner = "deadliner.cli:main"
+
+[tool.setuptools.package-data]
+deadliner = ["assets/*.png"]
 
 [tool.pytest.ini_options]
 addopts = "-v"
@@ -31,4 +35,3 @@ line-length = 120
 [tool.ruff.lint]
 select = ["E", "F", "W"]
 ignore = []
-

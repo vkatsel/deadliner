@@ -24,7 +24,10 @@ def format_assignment(assignment: Assignment, now: datetime, local_tz) -> str:
         countdown = "\033[91moverdue\033[0m"
 
     time_str = f"\033[95m{local_due.strftime('%H:%M')}\033[0m"
-    title_str = f"\033[1m{assignment.title}\033[0m"
+    if assignment.is_submitted:
+        title_str = f"\033[92m\033[1m[✓ Submitted]\033[0m \033[1m{assignment.title}\033[0m"
+    else:
+        title_str = f"\033[1m{assignment.title}\033[0m"
 
     line = f"{prefix}{title_str} — {countdown} — {time_str}"
 
