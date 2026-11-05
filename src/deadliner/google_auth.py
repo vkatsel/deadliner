@@ -196,7 +196,7 @@ def load_google_credentials() -> Credentials | None:
 
     try:
         creds = Credentials.from_authorized_user_file(str(token_path), SCOPES)
-    except (json.JSONDecodeError, ValueError, KeyError):
+    except (OSError, json.JSONDecodeError, ValueError, KeyError):
         return None
 
     if creds.valid:

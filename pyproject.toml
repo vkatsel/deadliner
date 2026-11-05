@@ -20,7 +20,7 @@ dependencies = [
 deadliner = "deadliner.cli:main"
 
 [tool.setuptools.package-data]
-deadliner = ["assets/*.png"]
+deadliner = ["assets/*.png", "ui/*.html", "ui/*.css", "ui/*.js"]
 
 [tool.pytest.ini_options]
 addopts = "-v"

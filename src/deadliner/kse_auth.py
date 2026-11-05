@@ -552,6 +552,32 @@ def is_kse_token_expired(token: str) -> bool:
         return False
 
 
+def verify_kse_token(token: str) -> bool:
+    """Verify a KSE JWT against KSE_SCHEDULE_VERIFY_URL, including null-event trap detection."""
+    if not token or is_kse_token_expired(token):
+        return False
+
+    from datetime import date
+
+    today_str = date.today().isoformat()
+    try:
+        res = requests.get(
+            KSE_SCHEDULE_VERIFY_URL,
+            headers={"Authorization": f"Bearer {token}"},
+            params={"from": today_str, "till": today_str},
+            timeout=10,
+        )
+        if res.status_code != 200:
+            return False
+        verify_data = res.json() if res.content else {}
+        events_list = verify_data.get("events", []) if isinstance(verify_data, dict) else []
+        if isinstance(events_list, list) and len(events_list) > 0 and all(item is None for item in events_list):
+            return False
+        return True
+    except Exception:
+        return False
+
+
 def get_valid_kse_token(raise_on_failure: bool = False) -> str:
     """Return a valid KSE token, attempting refresh if expired or missing.
 

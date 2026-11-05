@@ -801,6 +801,7 @@ def _cmd_menu(args: argparse.Namespace | None = None) -> int:
         print("\n\033[1;34m[ Account & Settings ]\033[0m")
         print("  \033[1m7.\033[0m Login / Configure Services \033[90m(Moodle / Google / KSE)\033[0m")
         print("  \033[1m8.\033[0m Exit")
+        print("  \033[1m0.\033[0m Launch Desktop GUI Workspace \033[36m[Native Window]\033[0m")
         print("\033[1;36m" + "=" * 58 + "\033[0m")
 
         try:
@@ -810,6 +811,10 @@ def _cmd_menu(args: argparse.Namespace | None = None) -> int:
             return 0
 
         match choice:
+            case "0" | "gui":
+                from deadliner.gui import _cmd_gui
+
+                _cmd_gui(argparse.Namespace(debug=False))
             case "1":
                 _cmd_fetch(argparse.Namespace())
             case "2":
@@ -907,8 +912,13 @@ def main(argv: list[str] | None = None) -> None:
         argv = sys.argv[1:]
 
     try:
-        # If no arguments given, open the interactive menu
+        # If no arguments given, open GUI when running as compiled binary / DEADLINER_DEFAULT_GUI=1,
+        # otherwise open the interactive CLI menu.
         if not argv:
+            from deadliner.gui import _cmd_gui, should_default_to_gui
+
+            if should_default_to_gui():
+                sys.exit(_cmd_gui(argparse.Namespace(debug=False)))
             sys.exit(_cmd_menu())
 
         parser = argparse.ArgumentParser(
@@ -916,6 +926,13 @@ def main(argv: list[str] | None = None) -> None:
             description="Aggregate academic deadlines and KSE classes, sorted and synced to Google Calendar.",
         )
         subparsers = parser.add_subparsers(dest="command", required=True)
+
+        # deadliner gui
+        from deadliner.gui import _cmd_gui
+
+        gui_parser = subparsers.add_parser("gui", help="launch native desktop GUI workspace")
+        gui_parser.add_argument("--debug", action="store_true", help="enable WebView inspector tools")
+        gui_parser.set_defaults(func=_cmd_gui)
 
         # deadliner fetch
         fetch_parser = subparsers.add_parser("fetch", help="fetch deadlines from Moodle & Classroom")

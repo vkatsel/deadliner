@@ -10,8 +10,61 @@ import sys
 
 import requests
 
+from deadliner.models import AuthError
+
 CONFIG_PATH = Path.home() / ".deadliner.json"
 DEFAULT_MOODLE_URL = "https://teaching.kse.org.ua"
+
+
+def authenticate_moodle_credentials(base_url: str, username: str, password: str) -> str:
+    """Authenticate against Moodle token endpoint and return the web service token.
+
+    Raises:
+        ConnectionError: When network/server connection fails.
+        AuthError: When Moodle rejects credentials or returns an error payload.
+    """
+    norm_url = normalize_moodle_url(base_url)
+    url = f"{norm_url}/login/token.php"
+    params = {"username": username.strip(), "password": password, "service": "moodle_mobile_app"}
+
+    try:
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()
+    except requests.exceptions.ConnectionError as e:
+        raise ConnectionError(
+            "Could not connect to the Moodle server. Please check the Base URL and your internet connection."
+        ) from e
+    except requests.exceptions.Timeout as e:
+        raise ConnectionError("Connection to Moodle timed out. Please try again later.") from e
+    except requests.exceptions.HTTPError as e:
+        code = e.response.status_code if e.response is not None else "unknown"
+        raise ConnectionError(
+            f"Received a bad response from the server ({code}). Are you sure this is a Moodle URL?"
+        ) from e
+    except requests.RequestException as e:
+        raise ConnectionError("An unexpected network error occurred.") from e
+
+    try:
+        data = response.json()
+    except ValueError as e:
+        raise ConnectionError("Moodle returned invalid JSON.") from e
+
+    if isinstance(data, dict) and "token" in data and data["token"]:
+        return str(data["token"])
+
+    err = data.get("error", "Unknown error") if isinstance(data, dict) else "Unknown error"
+    err_lower = str(err).lower()
+    errorcode = str(data.get("errorcode", "")).lower() if isinstance(data, dict) else ""
+    if (
+        "invalid login" in err_lower
+        or "wrong username or password" in err_lower
+        or errorcode == "invalidlogin"
+    ):
+        raise AuthError(
+            "Incorrect username or password. "
+            "Tip: Use your local Moodle password (not Google SSO), or set one in Moodle profile settings."
+        )
+    raise AuthError(f"Login failed: {err}")
 
 
 def normalize_moodle_url(raw_url: str) -> str:
