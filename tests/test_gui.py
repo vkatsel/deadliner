@@ -331,6 +331,8 @@ def test_gui_error_classification_and_field_validation(monkeypatch):
     assert r4["error_code"] == "AUTH_ERROR"
     assert r4["action_view"] == "connections"
     assert "Moodle" in r4["hint"]
+    assert r4["connections"]["moodle"]["connected"] is False
+    assert r4["connections"]["moodle"]["auth_error"] is not None
 
 
 def test_gui_api_connect_moodle_webview_and_save_token(tmp_path, monkeypatch):

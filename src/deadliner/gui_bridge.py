@@ -207,6 +207,7 @@ class DeadlinerGuiApi:
 
     def __init__(self, store: DataStore | None = None) -> None:
         self._store: DataStore = store if store is not None else InMemoryStore()
+        self._moodle_auth_error: str | None = None
 
     @property
     def store(self) -> DataStore:
@@ -240,7 +241,9 @@ class DeadlinerGuiApi:
             "storage_engine": self._store.engine_name,
             "connections": {
                 "moodle": {
-                    "connected": bool(base_url and moodle_token),
+                    "connected": bool(base_url and moodle_token) and not bool(self._moodle_auth_error),
+                    "has_saved_token": bool(base_url and moodle_token),
+                    "auth_error": self._moodle_auth_error,
                     "base_url": base_url or auth.DEFAULT_MOODLE_URL,
                 },
                 "google": {
@@ -253,6 +256,7 @@ class DeadlinerGuiApi:
                     "connected": bool(kse_token),
                     "has_refresh_token": bool(raw_kse_ref),
                     "has_saved_token": bool(raw_kse_tok),
+                    "auth_error": "Session expired" if (raw_kse_tok and not kse_token) else None,
                 },
             },
             "scheduler": {
@@ -289,12 +293,23 @@ class DeadlinerGuiApi:
 
         assignments, warnings = cli._collect_assignments(base_url, token, g_token)
 
+        moodle_auth_warn = next(
+            (w for w in warnings if "moodle authentication failed" in w.lower()), None
+        )
+        if moodle_auth_warn:
+            self._moodle_auth_error = moodle_auth_warn
+        elif base_url and token:
+            self._moodle_auth_error = None
+
+        conn_snapshot = self.get_initial_state().get("connections")
+
         # If every configured source failed with a warning and returned 0 assignments, surface as actionable error
         if not assignments and warnings:
             joined = " | ".join(warnings)
             err_info = classify_error(joined)
             err_info["warnings"] = warnings
             err_info["deadlines"] = []
+            err_info["connections"] = conn_snapshot
             err_info["analytics"] = self._store.get_analytics_snapshot()
             return err_info
 
@@ -309,6 +324,7 @@ class DeadlinerGuiApi:
             "ok": True,
             "warnings": warnings,
             "deadlines": serialized,
+            "connections": conn_snapshot,
             "fetched_at": now.astimezone(local_tz).strftime("%H:%M:%S"),
             "analytics": self._store.get_analytics_snapshot(),
         }
@@ -672,6 +688,7 @@ class DeadlinerGuiApi:
                 "hint": "Check file permissions for your home directory.",
             }
 
+        self._moodle_auth_error = None
         scheduler.append_sync_log(f"[AUTH] Connected Moodle account ({norm_url})")
         return {"ok": True, "base_url": norm_url, "state": self.get_initial_state()}
 
@@ -702,6 +719,7 @@ class DeadlinerGuiApi:
 
         saved_url, saved_token, _, _ = cli._load_credentials()
         if proc.returncode == 0 and saved_token:
+            self._moodle_auth_error = None
             scheduler.append_sync_log(f"[AUTH] Connected Moodle via Native Google SSO ({saved_url or norm_url})")
             return {"ok": True, "base_url": saved_url or norm_url, "state": self.get_initial_state()}
 
@@ -744,6 +762,7 @@ class DeadlinerGuiApi:
                 "hint": "Check file permissions for your home directory.",
             }
 
+        self._moodle_auth_error = None
         scheduler.append_sync_log(f"[AUTH] Connected Moodle via Security Key ({norm_url})")
         return {"ok": True, "base_url": norm_url, "user_name": info, "state": self.get_initial_state()}
 

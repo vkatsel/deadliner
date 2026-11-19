@@ -422,6 +422,16 @@ def test_extract_moodle_token_from_managetoken_html():
     </table>
     """
     assert extract_moodle_token_from_managetoken_html(html) == "0123456789abcdef0123456789abcdef"
+
+    ua_html = """
+    <table>
+      <tr>
+        <td class="c0">aaaabbbbccccddddeeeeffff00001111</td>
+        <td class="c1">Мобільний вебсервіс Moodle</td>
+      </tr>
+    </table>
+    """
+    assert extract_moodle_token_from_managetoken_html(ua_html) == "aaaabbbbccccddddeeeeffff00001111"
     assert extract_moodle_token_from_managetoken_html("<html>No tokens here</html>") is None
     assert extract_moodle_token_from_managetoken_html("") is None
 

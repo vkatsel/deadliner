@@ -166,17 +166,38 @@ def parse_moodle_launch_token(uri: str) -> str | None:
 
 
 def extract_moodle_token_from_managetoken_html(html: str) -> str | None:
-    """Extract the `Moodle mobile web service` security key from `/user/managetoken.php` HTML."""
+    """Extract the `Moodle mobile web service` security key from `/user/managetoken.php` HTML.
+
+    Supports both English ('Moodle mobile web service') and Ukrainian
+    ('Мобільний вебсервіс Moodle' / 'Мобільний додаток') Moodle UI labels.
+    """
     if not html or not isinstance(html, str):
         return None
 
     rows = re.findall(r"<tr\b[^>]*>.*?</tr>", html, flags=re.IGNORECASE | re.DOTALL)
+    # Pass 1: Explicit Moodle mobile web service row (EN or UA)
     for row in rows:
         row_lower = row.lower()
-        if "moodle mobile" in row_lower or "moodle_mobile_app" in row_lower:
+        is_mobile_service = (
+            "moodle mobile" in row_lower
+            or "moodle_mobile_app" in row_lower
+            or ("moodle" in row_lower and ("мобільн" in row_lower or "mobile" in row_lower))
+        )
+        if is_mobile_service:
             token_match = MOODLE_TOKEN_RE.search(row)
             if token_match:
                 return token_match.group(1)
+
+    # Pass 2: Fallback to any non-RSS/non-calendar web service key row in managetoken.php
+    for row in rows:
+        row_lower = row.lower()
+        if any(skip in row_lower for skip in ("rss", "calendar", "календар")):
+            continue
+        if any(marker in row_lower for marker in ("web service", "вебсервіс", "веб-сервіс", "service", "сервіс")):
+            token_match = MOODLE_TOKEN_RE.search(row)
+            if token_match:
+                return token_match.group(1)
+
     return None
 
 
@@ -297,67 +318,74 @@ def login_moodle_webview(
     except OSError:
         pass
 
-    passport = secrets.token_hex(16)
-    launch_url = (
-        f"{norm_url}/admin/tool/mobile/launch.php"
-        f"?service=moodle_mobile_app&passport={passport}&urlscheme=moodlemobile"
-    )
+    managetoken_url = f"{norm_url}/user/managetoken.php"
 
     print("\n" + "=" * 68)
     print("  🔑 Moodle LMS — Native Google SSO Login")
     print("=" * 68)
     print(f"Opening secure browser window for {norm_url}...")
     print("👉 Sign in with your @kse.org.ua Google account in the window.")
-    print("⚡ Deadliner will automatically capture your Moodle token and close.")
+    print("⚡ Deadliner will automatically capture your Moodle Security Key and close.")
     print("=" * 68 + "\n")
 
     def _poll_moodle_token(window: webview.Window) -> None:
         if timeout > 0:
-            time.sleep(min(0.8, timeout))
+            time.sleep(min(0.6, timeout))
         start_t = time.time()
-        logged_in_since: float | None = None
-        managetoken_requested = False
+        redirected_to_keys = False
+        empty_keys_checks = 0
 
         while not is_done.is_set() and time.time() - start_t < timeout:
             try:
-                # 1. Check current URL for custom scheme / token= (cross-platform safety net)
                 cur_url = str(window.get_current_url() or "")
-                if "://token=" in cur_url.lower():
+                lower_url = cur_url.lower()
+
+                # 1. Custom scheme / token= safety net
+                if "://token=" in lower_url:
                     tok = parse_moodle_launch_token(cur_url)
                     if tok:
                         _finish_with_token(tok)
                         return
 
-                # 2. Fallback: if user is logged into Moodle on a non-login page (e.g. launch.php
-                # redirected to dashboard or mobile services are disabled), fetch /user/managetoken.php
                 cur_host = (urlparse(cur_url).hostname or "").lower()
                 if moodle_host and cur_host == moodle_host:
-                    lower_url = cur_url.lower()
-                    is_auth_page = "/login/" in lower_url or "launch.php" in lower_url
-                    if not is_auth_page:
+                    # 2. Directly on /user/managetoken.php -> extract Moodle mobile web service key
+                    if "/user/managetoken.php" in lower_url:
+                        html = window.evaluate_js(
+                            "document.documentElement ? document.documentElement.outerHTML : ''"
+                        )
+                        if isinstance(html, str) and html:
+                            tok = extract_moodle_token_from_managetoken_html(html)
+                            if tok:
+                                _finish_with_token(tok)
+                                return
+
+                        ready_and_logged_in = window.evaluate_js(
+                            "Boolean(document.readyState === 'complete' && window.M && window.M.cfg && window.M.cfg.sesskey)"
+                        )
+                        if ready_and_logged_in:
+                            empty_keys_checks += 1
+                            if empty_keys_checks >= 3:
+                                print(
+                                    f"Moodle Mobile Web Services appear to be disabled on {norm_url} "
+                                    "(no Security Keys found on /user/managetoken.php).",
+                                    file=sys.stderr,
+                                )
+                                is_done.set()
+                                try:
+                                    window.destroy()
+                                except Exception:
+                                    pass
+                                return
+
+                    # 3. Logged in on another Moodle page (e.g. /my/ Dashboard because SSO ignored wantsurl)
+                    elif "/login/" not in lower_url and not redirected_to_keys:
                         has_sesskey = window.evaluate_js(
                             "Boolean(window.M && window.M.cfg && window.M.cfg.sesskey)"
                         )
                         if has_sesskey:
-                            if logged_in_since is None:
-                                logged_in_since = time.time()
-                            elif not managetoken_requested and (time.time() - logged_in_since) >= 2.0:
-                                managetoken_requested = True
-                                window.evaluate_js(
-                                    """(function() {
-                                        fetch('/user/managetoken.php', {credentials: 'include'})
-                                            .then(function(r) { return r.text(); })
-                                            .then(function(t) { window.__deadliner_managetoken_html = t; })
-                                            .catch(function() { window.__deadliner_managetoken_html = ''; });
-                                    })()"""
-                                )
-                            elif managetoken_requested:
-                                html = window.evaluate_js("window.__deadliner_managetoken_html || ''")
-                                if isinstance(html, str) and html:
-                                    tok = extract_moodle_token_from_managetoken_html(html)
-                                    if tok:
-                                        _finish_with_token(tok)
-                                        return
+                            redirected_to_keys = True
+                            window.load_url(managetoken_url)
             except Exception:
                 pass
             time.sleep(0.4)
@@ -372,7 +400,7 @@ def login_moodle_webview(
     try:
         window = webview.create_window(
             title="Deadliner — Moodle Google SSO Login",
-            url=launch_url,
+            url=managetoken_url,
             width=900,
             height=680,
             min_size=(600, 480),

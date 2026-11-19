@@ -437,11 +437,21 @@
 
     const onlineLabel = state.lang === "ua" ? "Підключено" : "Connected";
     const offlineLabel = state.lang === "ua" ? "Не підключено" : "Disconnected";
+    const expiredLabel = state.lang === "ua" ? "Токен недійсний" : "Token Expired";
 
-    const setSb = (dotId, textId, badgeId, isOnline) => {
+    const setSb = (dotId, textId, badgeId, isOnline, hasAuthErr) => {
       const d = document.getElementById(dotId);
       const tx = document.getElementById(textId);
       const b = document.getElementById(badgeId);
+      if (hasAuthErr) {
+        if (d) d.className = "dot dot-tomato";
+        if (tx) tx.textContent = expiredLabel;
+        if (b) {
+          b.className = "tag tag-tomato";
+          b.textContent = expiredLabel;
+        }
+        return;
+      }
       if (d) d.className = "dot " + (isOnline ? "dot-sage" : "dot-muted");
       if (tx) tx.textContent = isOnline ? onlineLabel : offlineLabel;
       if (b) {
@@ -450,9 +460,12 @@
       }
     };
 
-    setSb("sbDotMoodle", "sbTextMoodle", "connMoodleBadge", mConn);
-    setSb("sbDotGoogle", "sbTextGoogle", "connGoogleBadge", gConn);
-    setSb("sbDotKse", "sbTextKse", "connKseBadge", kConn);
+    const mErr = !!(state.connections.moodle && state.connections.moodle.auth_error);
+    const kErr = !!(state.connections.kse && state.connections.kse.auth_error);
+
+    setSb("sbDotMoodle", "sbTextMoodle", "connMoodleBadge", mConn, mErr);
+    setSb("sbDotGoogle", "sbTextGoogle", "connGoogleBadge", gConn, false);
+    setSb("sbDotKse", "sbTextKse", "connKseBadge", kConn, kErr);
 
     const moodleUrlInput = document.getElementById("moodleUrlInput");
     if (moodleUrlInput && state.connections.moodle && state.connections.moodle.base_url) {
@@ -809,6 +822,7 @@
     setBusy(true, "status_fetching");
     try {
       const res = await api.fetch_deadlines();
+      if (res.connections) state.connections = res.connections;
       if (res.analytics) state.analytics = res.analytics;
       if (res.ok) {
         state.deadlines = res.deadlines || [];
