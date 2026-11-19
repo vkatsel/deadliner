@@ -29,8 +29,8 @@ def classify_error(exc_or_msg: Exception | str, source: str = "") -> dict:
         code = "AUTH_ERROR"
         if "moodle" in lower or source == "moodle":
             hint = (
-                "Verify your Moodle username and local password (not Google SSO password) "
-                "in the Connections tab."
+                "Open Connections -> Moodle LMS and click 'Sign in via Moodle WebView (Google SSO)', "
+                "or paste your Moodle Security Key token."
             )
         elif "kse" in lower or source == "kse":
             hint = (
@@ -674,6 +674,78 @@ class DeadlinerGuiApi:
 
         scheduler.append_sync_log(f"[AUTH] Connected Moodle account ({norm_url})")
         return {"ok": True, "base_url": norm_url, "state": self.get_initial_state()}
+
+    @safe_api_method
+    def connect_moodle_webview(self, base_url: str = "", clean: bool = False) -> dict:
+        """Launch Moodle native WebView Google SSO login in an isolated subprocess and reload credentials."""
+        norm_url = auth.normalize_moodle_url(base_url)
+        cmd = [sys.executable, "-m", "deadliner", "login", "moodle", "--url", norm_url]
+        if clean:
+            cmd.append("--clean")
+
+        try:
+            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=200)
+        except subprocess.TimeoutExpired:
+            return {
+                "ok": False,
+                "error": "Moodle login window timed out after 3 minutes.",
+                "error_code": "AUTH_TIMEOUT",
+                "hint": "Click 'Sign in via Moodle WebView' to try again, or paste your Security Key token below.",
+            }
+        except Exception as e:
+            return {
+                "ok": False,
+                "error": f"Failed to launch Moodle login window: {e}",
+                "error_code": "PROCESS_ERROR",
+                "hint": "You can also paste your Moodle Security Key token directly in the fallback field below.",
+            }
+
+        saved_url, saved_token, _, _ = cli._load_credentials()
+        if proc.returncode == 0 and saved_token:
+            scheduler.append_sync_log(f"[AUTH] Connected Moodle via Native Google SSO ({saved_url or norm_url})")
+            return {"ok": True, "base_url": saved_url or norm_url, "state": self.get_initial_state()}
+
+        stderr_msg = (proc.stderr or proc.stdout or "").strip()
+        return {
+            "ok": False,
+            "error": stderr_msg or "Moodle login window was closed before completing sign-in.",
+            "error_code": "AUTH_CANCELLED",
+            "hint": "Sign in with your @kse.org.ua Google account inside the window, or paste your Security Key below.",
+        }
+
+    @safe_api_method
+    def save_moodle_token(self, base_url: str, raw_token: str) -> dict:
+        """Validate and save a pasted Moodle Security Key token directly from the GUI."""
+        token = (raw_token or "").strip()
+        if not token:
+            return {
+                "ok": False,
+                "field": "moodleTokenInput",
+                "error": "Please paste your Moodle Security Key token first.",
+                "error_code": "VALIDATION_ERROR",
+            }
+
+        norm_url = auth.normalize_moodle_url(base_url)
+        is_valid, info = auth.verify_moodle_token(norm_url, token)
+        if not is_valid:
+            return {
+                "ok": False,
+                "field": "moodleTokenInput",
+                "error": f"Moodle token verification failed: {info}",
+                "error_code": "AUTH_ERROR",
+                "hint": f"Copy the 'Moodle mobile web service' key from {norm_url}/user/managetoken.php.",
+            }
+
+        if not auth.save_moodle_config(norm_url, token, cli.CONFIG_PATH):
+            return {
+                "ok": False,
+                "error": f"Failed to write configuration to {cli.CONFIG_PATH}.",
+                "error_code": "IO_ERROR",
+                "hint": "Check file permissions for your home directory.",
+            }
+
+        scheduler.append_sync_log(f"[AUTH] Connected Moodle via Security Key ({norm_url})")
+        return {"ok": True, "base_url": norm_url, "user_name": info, "state": self.get_initial_state()}
 
     @safe_api_method
     def connect_google(

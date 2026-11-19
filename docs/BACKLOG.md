@@ -1,8 +1,8 @@
 # Deadliner Product Backlog & Engineering Roadmap
 
-_Last Updated: 2026-11-04_  
+_Last Updated: 2026-11-19_  
 _Current Milestone: Deadliner v2.0_  
-_Total Automated Tests: 185+ passing_
+_Total Automated Tests: 202 passing_
 
 ---
 
@@ -11,6 +11,7 @@ _Total Automated Tests: 185+ passing_
 | Feature / Issue                           | Description                                                                                                                                                                                 | Component                                                       | Status     |
 | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | ---------- |
 | **Native KSE Web Login**                  | Embedded secure WebView (Edge WebView2 / WebKit) for `schedule.kse.ua` with Google OAuth popup handling and desktop Chrome User-Agent spoofing. Eliminates all DevTools/F12 manual pasting. | `kse_auth.py`                                                   | 🟢 Shipped |
+| **Native Moodle Google SSO Login**        | Embedded PyWebView Google SSO handshake via `admin/tool/mobile/launch.php` with custom-scheme interception (`moodlemobile://token=`), `/user/managetoken.php` fallback, and Desktop GUI integration. | `auth.py`, `kse_auth.py`, `gui_bridge.py`                       | 🟢 Shipped |
 | **Safety-Net OAuth Code Exchange**        | Automatic listener for GIS `authorization_response` postMessage + direct exchange with `api.kse.today/auth/google`.                                                                         | `kse_auth.py`                                                   | 🟢 Shipped |
 | **Token Rotation & 401 Auto-Retry**       | Handles KSE `refreshToken` rotation, mixed camelCase/snake*case payloads, and automatic 401 session recovery in `fetch_kse_schedule`. *(From TO*FIX #1)*                                    | `kse_auth.py`, `kse_fetcher.py`                                 | 🟢 Shipped |
 | **Event Type Safeguard & Reconciliation** | Tag events with `extendedProperties.private.deadliner_type` (`deadline` vs `schedule`) to ensure class schedule sync never prunes deadline events. _(From TO_FIX #2)_                       | `calendar_sync.py`                                              | 🟢 Shipped |

@@ -417,21 +417,46 @@
               <span class="panel-card-title">1. Moodle LMS</span>
               <span class="tag" id="connMoodleBadge">Disconnected</span>
             </div>
+            <p style="font-size:13.5px; color:var(--text-secondary);" data-i18n="moodle_card_desc">
+              Sign in with your @kse.org.ua Google account via native WebView to obtain a long-lived Moodle web service token.
+            </p>
             <div class="form-row">
               <label class="form-label" for="moodleUrlInput">Moodle Base URL</label>
               <input type="text" class="input-field mono" id="moodleUrlInput" value="https://teaching.kse.org.ua">
             </div>
-            <div class="form-row">
-              <label class="form-label" for="moodleUserInput" data-i18n="moodle_user_label">Username or KSE Email</label>
-              <input type="text" class="input-field" id="moodleUserInput" placeholder="name@kse.org.ua">
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+              <button type="button" class="btn btn-primary" id="btnConnectMoodleWebview" data-i18n="btn_moodle_webview">Sign in via Moodle WebView (Google)</button>
+              <button type="button" class="btn" id="btnConnectMoodleClean" data-i18n="btn_moodle_clean">Fresh Session (--clean)</button>
             </div>
-            <div class="form-row">
-              <label class="form-label" for="moodlePassInput" data-i18n="moodle_pass_label">Moodle Password (local password, not Google SSO)</label>
-              <input type="password" class="input-field" id="moodlePassInput" placeholder="••••••••••••">
-            </div>
-            <div style="display:flex; justify-content:flex-end;">
-              <button type="button" class="btn btn-primary" id="btnConnectMoodle" data-i18n="btn_connect_moodle">Authenticate &amp; Save</button>
-            </div>
+            <details class="alt-auth-details">
+              <summary class="alt-auth-summary" data-i18n="moodle_alt_summary">Alternative methods (Security Key / Legacy Password)</summary>
+              <div class="alt-auth-body">
+                <div class="form-row">
+                  <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                    <label class="form-label" for="moodleTokenInput" data-i18n="moodle_token_label">Paste Moodle Security Key token</label>
+                    <button type="button" class="link-btn" id="btnOpenMoodleKeys" data-i18n="btn_moodle_keys">Open Security Keys ↗</button>
+                  </div>
+                  <input type="text" class="input-field mono" id="moodleTokenInput" placeholder="32-character Moodle mobile web service key">
+                </div>
+                <div style="display:flex; justify-content:flex-end;">
+                  <button type="button" class="btn" id="btnSaveMoodleToken" data-i18n="btn_save_moodle_token">Verify &amp; Save Token</button>
+                </div>
+
+                <div class="alt-auth-divider"></div>
+
+                <div class="form-row">
+                  <label class="form-label" for="moodleUserInput" data-i18n="moodle_user_label">Legacy: Username or KSE Email</label>
+                  <input type="text" class="input-field" id="moodleUserInput" placeholder="name@kse.org.ua">
+                </div>
+                <div class="form-row">
+                  <label class="form-label" for="moodlePassInput" data-i18n="moodle_pass_label">Moodle Password (local password, not Google SSO)</label>
+                  <input type="password" class="input-field" id="moodlePassInput" placeholder="••••••••••••">
+                </div>
+                <div style="display:flex; justify-content:flex-end;">
+                  <button type="button" class="btn" id="btnConnectMoodle" data-i18n="btn_connect_moodle">Authenticate &amp; Save</button>
+                </div>
+              </div>
+            </details>
           </div>
 
           <!-- 2. Google OAuth Card -->

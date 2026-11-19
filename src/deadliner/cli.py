@@ -1012,7 +1012,27 @@ def main(argv: list[str] | None = None) -> None:
 
         from deadliner.auth import _cmd_login_moodle
 
-        moodle_login = login_subparsers.add_parser("moodle", help="log in to Moodle")
+        moodle_login = login_subparsers.add_parser("moodle", help="log in to Moodle (Google SSO WebView)")
+        moodle_login.add_argument(
+            "--url",
+            default=None,
+            help="Moodle base URL (default: https://teaching.kse.org.ua)",
+        )
+        moodle_login.add_argument(
+            "--clean",
+            action="store_true",
+            help="clear cached browser session and start with a fresh login",
+        )
+        moodle_login.add_argument(
+            "--manual",
+            action="store_true",
+            help="paste Moodle Security Key token manually instead of opening WebView",
+        )
+        moodle_login.add_argument(
+            "--credentials",
+            action="store_true",
+            help="use legacy username/password login via /login/token.php",
+        )
         moodle_login.set_defaults(func=_cmd_login_moodle)
 
         google_login = login_subparsers.add_parser("google", help="authenticate with Google (Classroom + Calendar)")

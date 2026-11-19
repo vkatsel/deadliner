@@ -123,9 +123,15 @@ Configure all services in one place via `deadliner menu` -> **Option 7**, or use
 ```bash
 deadliner login moodle
 ```
-- **Moodle URL:** `https://teaching.kse.org.ua` (press Enter to accept default).
-- **Username & Password:** Enter your login credentials.
-- *Tip for Google SSO users:* If you normally sign in with the Google button on the web, ensure your account has a local password set, or consult the setup prompt tip.
+- **Native Google SSO Login:** Deadliner opens an embedded secure browser window for `https://teaching.kse.org.ua` (using Moodle's official mobile SSO handshake).
+- Click **"Google"** and sign in with your `@kse.org.ua` account.
+- Deadliner automatically captures your long-lived Moodle web service token (`moodle_mobile_app`), verifies it, closes the window, and saves it locally to `~/.deadliner.json`!
+- *Shared Browser Session:* Shares `~/.deadliner/webview_cache` with KSE Schedule, so your Google SSO session carries over seamlessly.
+- *Options & Fallbacks:*
+  - `deadliner login moodle --clean` — clear cached browser session and sign in fresh.
+  - `deadliner login moodle --url https://your.moodle.edu` — connect a custom Moodle portal.
+  - `deadliner login moodle --manual` — paste a Moodle Security Key directly from `/user/managetoken.php`.
+  - `deadliner login moodle --credentials` — legacy username/password login via `/login/token.php` (for portals with local passwords enabled).
 
 ### 2. Google OAuth (Classroom & Calendar)
 ```bash
@@ -176,7 +182,7 @@ deadliner login kse
 | `deadliner cron status` | Check status of the background scheduler and next run time |
 | `deadliner cron disable` | Remove background sync task |
 | `deadliner logs` | View recent auto-sync execution logs (`~/.deadliner/sync.log`) |
-| `deadliner login moodle` | Interactive Moodle login prompt |
+| `deadliner login moodle [--clean\|--manual\|--credentials]` | Connect Moodle via Native Google SSO WebView (or Security Key / legacy password) |
 | `deadliner login google` | Authenticate Google Calendar & Classroom via OAuth2 |
 | `deadliner login kse [--clean]` | Connect KSE schedule account (supports `--clean` to wipe session cache) |
 | `deadliner setup-path` | Permanently add `deadliner` to system PATH (Windows / Linux / macOS) |
@@ -219,7 +225,7 @@ src/deadliner/
 ```
 
 ### Running Tests
-Deadliner is backed by a comprehensive test suite (175 tests) with zero external network dependencies (mocked via `responses` and `monkeypatch`):
+Deadliner is backed by a comprehensive test suite (202 tests) with zero external network dependencies (mocked via `responses` and `monkeypatch`):
 
 ```bash
 pytest

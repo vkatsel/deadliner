@@ -333,3 +333,60 @@ def test_gui_error_classification_and_field_validation(monkeypatch):
     assert "Moodle" in r4["hint"]
 
 
+def test_gui_api_connect_moodle_webview_and_save_token(tmp_path, monkeypatch):
+    cfg_file = tmp_path / ".deadliner.json"
+    monkeypatch.setattr(cli, "CONFIG_PATH", cfg_file)
+    monkeypatch.setattr(auth, "CONFIG_PATH", cfg_file)
+    monkeypatch.setattr(gui_bridge.scheduler, "append_sync_log", lambda msg: None)
+
+    api = gui_bridge.DeadlinerGuiApi()
+
+    # 1. Empty security key token validation
+    r_empty = api.save_moodle_token("https://teaching.kse.org.ua", "   ")
+    assert r_empty["ok"] is False
+    assert r_empty["error_code"] == "VALIDATION_ERROR"
+    assert r_empty["field"] == "moodleTokenInput"
+
+    # 2. Invalid security key rejected
+    monkeypatch.setattr(auth, "verify_moodle_token", lambda url, tok: (False, "Invalid token"))
+    r_bad = api.save_moodle_token("teaching.kse.org.ua", "deadbeef")
+    assert r_bad["ok"] is False
+    assert r_bad["error_code"] == "AUTH_ERROR"
+
+    # 3. Valid security key saved
+    monkeypatch.setattr(auth, "verify_moodle_token", lambda url, tok: (True, "Ivan Student"))
+    monkeypatch.setattr(
+        cli,
+        "_load_credentials",
+        lambda: ("https://teaching.kse.org.ua", "a" * 32, "", ""),
+    )
+    r_ok = api.save_moodle_token("teaching.kse.org.ua", "a" * 32)
+    assert r_ok["ok"] is True
+    assert r_ok["user_name"] == "Ivan Student"
+    assert cfg_file.exists()
+
+    # 4. WebView SSO subprocess success
+    called_cmds = []
+
+    def fake_run(cmd, **kwargs):
+        called_cmds.append(cmd)
+        return types.SimpleNamespace(returncode=0, stdout="ok", stderr="")
+
+    monkeypatch.setattr(gui_bridge.subprocess, "run", fake_run)
+    r_wv = api.connect_moodle_webview("teaching.kse.org.ua", clean=True)
+    assert r_wv["ok"] is True
+    assert "--url" in called_cmds[0]
+    assert "--clean" in called_cmds[0]
+
+    # 5. WebView SSO subprocess cancelled
+    monkeypatch.setattr(
+        gui_bridge.subprocess,
+        "run",
+        lambda cmd, **kw: types.SimpleNamespace(returncode=1, stdout="", stderr="Window closed"),
+    )
+    r_cancel = api.connect_moodle_webview("teaching.kse.org.ua", clean=False)
+    assert r_cancel["ok"] is False
+    assert r_cancel["error_code"] == "AUTH_CANCELLED"
+
+
+

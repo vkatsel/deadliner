@@ -85,7 +85,15 @@
       btn_refresh_logs: "Refresh Logs",
       conn_heading: "Service Connections & Configuration",
       conn_subheading: "Credentials are stored strictly locally on your machine in ~/.deadliner.json",
-      moodle_user_label: "Username or KSE Email",
+      moodle_card_desc:
+        "Sign in with your @kse.org.ua Google account via native WebView to obtain a long-lived Moodle web service token.",
+      btn_moodle_webview: "Sign in via Moodle WebView (Google)",
+      btn_moodle_clean: "Fresh Session (--clean)",
+      moodle_alt_summary: "Alternative methods (Security Key / Legacy Password)",
+      moodle_token_label: "Paste Moodle Security Key token",
+      btn_moodle_keys: "Open Security Keys ↗",
+      btn_save_moodle_token: "Verify & Save Token",
+      moodle_user_label: "Legacy: Username or KSE Email",
       moodle_pass_label: "Moodle Password (local password, not Google SSO)",
       btn_connect_moodle: "Authenticate & Save",
       google_card_desc:
@@ -201,7 +209,15 @@
       btn_refresh_logs: "Оновити логи",
       conn_heading: "Підключення сервісів та налаштування",
       conn_subheading: "Токени зберігаються виключно локально на вашому комп'ютері у ~/.deadliner.json",
-      moodle_user_label: "Логін або KSE Email",
+      moodle_card_desc:
+        "Увійдіть через @kse.org.ua Google-акаунт у нативному WebView-вікні, щоб отримати довгоживучий токен Moodle.",
+      btn_moodle_webview: "Увійти через Moodle WebView (Google)",
+      btn_moodle_clean: "Чиста сесія (--clean)",
+      moodle_alt_summary: "Інші способи (Ключ безпеки / Старий пароль)",
+      moodle_token_label: "Вставте ключ безпеки (Security Key) Moodle",
+      btn_moodle_keys: "Відкрити ключі безпеки ↗",
+      btn_save_moodle_token: "Перевірити та зберегти",
+      moodle_user_label: "Застаріле: Логін або KSE Email",
       moodle_pass_label: "Пароль Moodle (локальний пароль, не Google SSO)",
       btn_connect_moodle: "Авторизувати та зберегти",
       google_card_desc:
@@ -1124,6 +1140,61 @@
     const moodleUrlInput = document.getElementById("moodleUrlInput");
     moodleUrlInput?.addEventListener("input", () => {
       moodleUrlInput.dataset.dirty = "1";
+    });
+
+    const handleMoodleWebview = async (clean) => {
+      const api = getApi();
+      if (!api) return;
+      clearFieldValidation();
+      const url = document.getElementById("moodleUrlInput")?.value || "";
+      setBusy(true);
+      try {
+        const res = await api.connect_moodle_webview(url, clean);
+        if (res.ok) {
+          if (res.state) ingestStatePayload(res.state);
+          showBanner("Moodle connected via Google SSO and token saved!", "success");
+          await doFetchDeadlines(true);
+        } else {
+          showApiError(res, "Moodle Google SSO login cancelled or failed.");
+        }
+      } finally {
+        setBusy(false);
+      }
+    };
+
+    document.getElementById("btnConnectMoodleWebview")?.addEventListener("click", () => handleMoodleWebview(false));
+    document.getElementById("btnConnectMoodleClean")?.addEventListener("click", () => handleMoodleWebview(true));
+
+    document.getElementById("btnOpenMoodleKeys")?.addEventListener("click", async () => {
+      const api = getApi();
+      const rawUrl = (document.getElementById("moodleUrlInput")?.value || "https://teaching.kse.org.ua").trim();
+      const base = rawUrl.replace(/\/+$/, "") || "https://teaching.kse.org.ua";
+      const targetUrl = (base.startsWith("http://") || base.startsWith("https://") ? base : "https://" + base) + "/user/managetoken.php";
+      if (api) await api.open_external_url(targetUrl);
+      else window.open(targetUrl, "_blank");
+    });
+
+    document.getElementById("btnSaveMoodleToken")?.addEventListener("click", async () => {
+      const api = getApi();
+      if (!api) return;
+      clearFieldValidation();
+      const url = document.getElementById("moodleUrlInput")?.value || "";
+      const rawToken = document.getElementById("moodleTokenInput")?.value || "";
+      setBusy(true);
+      try {
+        const res = await api.save_moodle_token(url, rawToken);
+        if (res.ok) {
+          if (res.state) ingestStatePayload(res.state);
+          const tokEl = document.getElementById("moodleTokenInput");
+          if (tokEl) tokEl.value = "";
+          showBanner("Moodle token verified and saved!", "success");
+          await doFetchDeadlines(true);
+        } else {
+          showApiError(res, "Invalid Moodle Security Key token.");
+        }
+      } finally {
+        setBusy(false);
+      }
     });
 
     document.getElementById("btnConnectMoodle")?.addEventListener("click", async () => {

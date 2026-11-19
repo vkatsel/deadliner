@@ -1170,6 +1170,60 @@ html, body {
   border-color: var(--border-strong);
 }
 
+/* Collapsible Alternative Auth Section */
+.alt-auth-details {
+  margin-top: 6px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-canvas);
+}
+
+.alt-auth-summary {
+  cursor: pointer;
+  padding: 9px 12px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  user-select: none;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.alt-auth-summary::-webkit-details-marker {
+  display: none;
+}
+
+.alt-auth-summary::after {
+  content: "+";
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.alt-auth-details[open] .alt-auth-summary::after {
+  content: "−";
+}
+
+.alt-auth-summary:hover {
+  color: var(--text-primary);
+}
+
+.alt-auth-body {
+  padding: 12px;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.alt-auth-divider {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 4px 0;
+}
+
 /* Bottom Status Bar */
 .statusbar {
   grid-area: statusbar;

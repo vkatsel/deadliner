@@ -208,20 +208,20 @@
             </div>
           </article>
 
-          <!-- Feature 4: Native 1-Click KSE Login -->
+          <!-- Feature 4: Native 1-Click Google SSO Login -->
           <article class="feature-card card-cyan">
             <div class="feature-icon-wrap">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
               </svg>
             </div>
-            <h3 class="feature-title">Нативний вхід KSE у 1 клік</h3>
+            <h3 class="feature-title">Нативний Google SSO у 1 клік</h3>
             <p class="feature-desc">
-              Підключіть свій університетський розклад за лічені секунди. Запустіть <code style="color: #79c0ff;">deadliner login kse</code>, авторизуйтесь через студентський Google-акаунт у захищеному нативному вікні — і Deadliner автоматично підхопить ваші пари.
+              Підключайте Moodle та розклад KSE без локальних паролів. Запустіть <code style="color: #79c0ff;">deadliner login moodle</code> або <code style="color: #79c0ff;">deadliner login kse</code>, увійдіть через студентський <code style="color: #79c0ff;">@kse.org.ua</code> Google-акаунт у захищеному нативному вікні — і Deadliner автоматично збереже довгоживучий API-токен.
             </p>
             <div class="feature-meta">
-              <span>Інтеграція schedule.kse.ua</span>
-              <span>Миттєва автентифікація</span>
+              <span>SSO для Moodle та KSE</span>
+              <span>Спільний нативний WebView</span>
             </div>
           </article>
 
@@ -603,8 +603,8 @@
       "7": {
         badge: "ОПЦІЯ 7 З 8",
         title: "Вхід / Налаштування сервісів",
-        desc: "Керування токенами автентифікації: автоматичний нативний вхід для schedule.kse.ua, OAuth-вхід Google Календаря/Classroom у браузері та налаштування Moodle.",
-        cmd: "$ deadliner login kse\n> Відкрито нативне безпечне вікно schedule.kse.ua\n> Google SSO успішно пройдено\n> Токен виявлено! Дані збережено в ~/.deadliner.json."
+        desc: "Керування токенами автентифікації: нативний Google SSO WebView для Moodle (teaching.kse.org.ua) і розкладу KSE (schedule.kse.ua), а також OAuth-вхід для Google Календаря та Classroom.",
+        cmd: "$ deadliner login moodle\n> Відкрито нативне безпечне вікно teaching.kse.org.ua\n> Google SSO успішно пройдено\n> Токен Moodle перевірено! Збережено в ~/.deadliner.json."
       },
       "8": {
         badge: "ОПЦІЯ 8 З 8",
