@@ -39,7 +39,7 @@ def authenticate_moodle_credentials(base_url: str, username: str, password: str)
     params = {"username": username.strip(), "password": password, "service": "moodle_mobile_app"}
 
     try:
-        response = requests.get(url, params=params, timeout=10)
+        response = requests.post(url, data=params, timeout=10)
         response.raise_for_status()
     except requests.exceptions.ConnectionError as e:
         raise ConnectionError(
@@ -73,7 +73,7 @@ def authenticate_moodle_credentials(base_url: str, username: str, password: str)
     ):
         raise AuthError(
             "Incorrect username or password. "
-            "Tip: Use Google SSO (`deadliner login moodle`) or check your local Moodle password."
+            "Tip: Use your Moodle username (not your full email) and local Moodle password."
         )
     raise AuthError(f"Login failed: {err}")
 
@@ -426,15 +426,15 @@ def login_moodle_webview(
 
 
 def _login_moodle_credentials_interactive(base_url_arg: str | None = None) -> int:
-    """Legacy interactive username/password Moodle login via /login/token.php."""
-    print("=== Moodle Login Setup (Credentials) ===")
+    """Interactive username/password Moodle login via POST /login/token.php."""
+    print("=== Moodle Login Setup ===")
     if base_url_arg:
         base_url = normalize_moodle_url(base_url_arg)
     else:
         raw_url = input(f"Moodle Base URL [{DEFAULT_MOODLE_URL}]: ")
         base_url = normalize_moodle_url(raw_url)
 
-    username = input("Username (your KSE email e.g. name@kse.org.ua or Moodle login): ").strip()
+    username = input("Moodle Username (e.g. vkatsel — not your email): ").strip()
     password = getpass.getpass("Password (your Moodle password, not Google SSO password): ")
 
     url = f"{base_url}/login/token.php"
@@ -442,7 +442,7 @@ def _login_moodle_credentials_interactive(base_url_arg: str | None = None) -> in
 
     print("Authenticating...")
     try:
-        response = requests.get(url, params=params, timeout=10)
+        response = requests.post(url, data=params, timeout=10)
         response.raise_for_status()
     except requests.exceptions.ConnectionError:
         print(
@@ -489,9 +489,9 @@ def _login_moodle_credentials_interactive(base_url_arg: str | None = None) -> in
         ):
             print("Error: Incorrect username or password. Please try again.", file=sys.stderr)
             print(
-                "Tip: If you normally sign into Moodle via the Google button on the web, "
-                "run `deadliner login moodle` (without --credentials) to sign in via Google SSO, "
-                "or set a local password in Moodle profile settings.",
+                "Tip: Use your Moodle username (not your full email) and local Moodle password. "
+                "If you normally sign into Moodle via the Google button on the web, "
+                "set a local password in Moodle profile settings or try `deadliner login moodle --webview`.",
                 file=sys.stderr,
             )
         else:
@@ -500,13 +500,17 @@ def _login_moodle_credentials_interactive(base_url_arg: str | None = None) -> in
 
 
 def _cmd_login_moodle(args: argparse.Namespace | None = None) -> int:
-    """Interactively log in to Moodle (Google SSO WebView by default) and save token to config."""
-    use_credentials = bool(getattr(args, "credentials", False)) if args is not None else False
+    """Interactively log in to Moodle and save token to config.
+
+    Defaults to POST /login/token.php (Moodle username + local password).
+    Supports --webview / --clean (Google SSO WebView) and --manual (Security Key paste).
+    """
+    use_webview = bool(getattr(args, "webview", False)) if args is not None else False
     use_manual = bool(getattr(args, "manual", False)) if args is not None else False
     clean = bool(getattr(args, "clean", False)) if args is not None else False
     raw_url = getattr(args, "url", None) if args is not None else None
 
-    if use_credentials:
+    if not use_webview and not use_manual and not clean:
         return _login_moodle_credentials_interactive(base_url_arg=raw_url)
 
     base_url = normalize_moodle_url(raw_url or "")

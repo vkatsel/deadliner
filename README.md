@@ -123,15 +123,12 @@ Configure all services in one place via `deadliner menu` -> **Option 7**, or use
 ```bash
 deadliner login moodle
 ```
-- **Native Google SSO Login:** Deadliner opens an embedded secure browser window for `https://teaching.kse.org.ua` (using Moodle's official mobile SSO handshake).
-- Click **"Google"** and sign in with your `@kse.org.ua` account.
-- Deadliner automatically captures your long-lived Moodle web service token (`moodle_mobile_app`), verifies it, closes the window, and saves it locally to `~/.deadliner.json`!
-- *Shared Browser Session:* Shares `~/.deadliner/webview_cache` with KSE Schedule, so your Google SSO session carries over seamlessly.
-- *Options & Fallbacks:*
-  - `deadliner login moodle --clean` — clear cached browser session and sign in fresh.
-  - `deadliner login moodle --url https://your.moodle.edu` — connect a custom Moodle portal.
+- **Moodle URL:** `https://teaching.kse.org.ua` (press Enter to accept default).
+- **Moodle Username:** Enter your Moodle **username** (e.g. `vkatsel` — **not** your full `@kse.org.ua` email) and your local Moodle password. Deadliner authenticates securely via `POST /login/token.php` and saves your long-lived `moodle_mobile_app` token locally to `~/.deadliner.json`.
+- *Alternative options (for portals with Moodle Mobile SSO / Security Keys enabled):*
+  - `deadliner login moodle --webview` (`--clean` to clear browser cache) — open native Google SSO WebView.
   - `deadliner login moodle --manual` — paste a Moodle Security Key directly from `/user/managetoken.php`.
-  - `deadliner login moodle --credentials` — legacy username/password login via `/login/token.php` (for portals with local passwords enabled).
+  - `deadliner login moodle --url https://your.moodle.edu` — connect a custom Moodle portal.
 
 ### 2. Google OAuth (Classroom & Calendar)
 ```bash

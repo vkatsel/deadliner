@@ -29,8 +29,8 @@ def classify_error(exc_or_msg: Exception | str, source: str = "") -> dict:
         code = "AUTH_ERROR"
         if "moodle" in lower or source == "moodle":
             hint = (
-                "Open Connections -> Moodle LMS and click 'Sign in via Moodle WebView (Google SSO)', "
-                "or paste your Moodle Security Key token."
+                "Verify your Moodle username (not email) and local password in Connections -> Moodle LMS, "
+                "or try an alternative sign-in method."
             )
         elif "kse" in lower or source == "kse":
             hint = (
@@ -662,7 +662,7 @@ class DeadlinerGuiApi:
             return {
                 "ok": False,
                 "field": "moodleUserInput",
-                "error": "Please enter your Moodle username or KSE email.",
+                "error": "Please enter your Moodle username (not your full email).",
                 "error_code": "VALIDATION_ERROR",
             }
         if not password:
@@ -696,7 +696,7 @@ class DeadlinerGuiApi:
     def connect_moodle_webview(self, base_url: str = "", clean: bool = False) -> dict:
         """Launch Moodle native WebView Google SSO login in an isolated subprocess and reload credentials."""
         norm_url = auth.normalize_moodle_url(base_url)
-        cmd = [sys.executable, "-m", "deadliner", "login", "moodle", "--url", norm_url]
+        cmd = [sys.executable, "-m", "deadliner", "login", "moodle", "--webview", "--url", norm_url]
         if clean:
             cmd.append("--clean")
 

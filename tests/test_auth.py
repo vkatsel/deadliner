@@ -55,7 +55,7 @@ def test_cmd_login_moodle_default_base_url_success(tmp_path, monkeypatch, capsys
     monkeypatch.setattr("getpass.getpass", lambda prompt="": "mysecretpassword")
 
     responses.add(
-        responses.GET,
+        responses.POST,
         f"{DEFAULT_MOODLE_URL}/login/token.php",
         json={"token": "mock-moodle-token-123"},
         status=200,
@@ -65,14 +65,15 @@ def test_cmd_login_moodle_default_base_url_success(tmp_path, monkeypatch, capsys
     assert exit_code == 0
 
     captured = capsys.readouterr()
-    assert "=== Moodle Login Setup (Credentials) ===" in captured.out
+    assert "=== Moodle Login Setup ===" in captured.out
     assert "Successfully logged in and saved Moodle token!" in captured.out
 
-    # Verify requests query parameters
+    # Verify POST body parameters (Moodle 4.5+ rejects credentials in GET query strings)
     assert len(responses.calls) == 1
     req = responses.calls[0].request
-    assert "username=test_user%40kse.org.ua" in req.url or "username=test_user@kse.org.ua" in req.url
-    assert "service=moodle_mobile_app" in req.url
+    body = req.body or ""
+    assert "username=test_user%40kse.org.ua" in body or "username=test_user@kse.org.ua" in body
+    assert "service=moodle_mobile_app" in body
 
     # Verify saved configuration
     assert test_cfg.exists()
@@ -92,7 +93,7 @@ def test_cmd_login_moodle_custom_base_url_without_protocol(tmp_path, monkeypatch
     monkeypatch.setattr("getpass.getpass", lambda prompt="": "pass123")
 
     responses.add(
-        responses.GET,
+        responses.POST,
         "https://moodle.university.edu/login/token.php",
         json={"token": "univ-token-999"},
         status=200,
@@ -117,7 +118,7 @@ def test_cmd_login_moodle_custom_base_url_with_protocol(tmp_path, monkeypatch, c
     monkeypatch.setattr("getpass.getpass", lambda prompt="": "devpass")
 
     responses.add(
-        responses.GET,
+        responses.POST,
         "http://localhost:8000/login/token.php",
         json={"token": "dev-token-456"},
         status=200,
@@ -146,7 +147,7 @@ def test_cmd_login_moodle_preserves_existing_config(tmp_path, monkeypatch):
     monkeypatch.setattr("getpass.getpass", lambda prompt="": "password")
 
     responses.add(
-        responses.GET,
+        responses.POST,
         f"{DEFAULT_MOODLE_URL}/login/token.php",
         json={"token": "new-moodle-token"},
         status=200,
@@ -174,7 +175,7 @@ def test_cmd_login_moodle_corrupt_existing_config_handled(tmp_path, monkeypatch)
     monkeypatch.setattr("getpass.getpass", lambda prompt="": "password")
 
     responses.add(
-        responses.GET,
+        responses.POST,
         f"{DEFAULT_MOODLE_URL}/login/token.php",
         json={"token": "brand-new-token"},
         status=200,
@@ -195,7 +196,7 @@ def test_cmd_login_moodle_invalid_credentials_prints_tip(monkeypatch, capsys):
     monkeypatch.setattr("getpass.getpass", lambda prompt="": "wrongpass")
 
     responses.add(
-        responses.GET,
+        responses.POST,
         f"{DEFAULT_MOODLE_URL}/login/token.php",
         json={
             "error": "Invalid login, please check your username and password",
@@ -209,7 +210,7 @@ def test_cmd_login_moodle_invalid_credentials_prints_tip(monkeypatch, capsys):
 
     captured = capsys.readouterr()
     assert "Error: Incorrect username or password." in captured.err
-    assert "Tip: If you normally sign into Moodle via the Google button" in captured.err
+    assert "Tip: Use your Moodle username (not your full email)" in captured.err
     assert "local password" in captured.err
 
 
@@ -221,7 +222,7 @@ def test_cmd_login_moodle_wrong_username_password_variant_prints_tip(monkeypatch
     monkeypatch.setattr("getpass.getpass", lambda prompt="": "wrongpass")
 
     responses.add(
-        responses.GET,
+        responses.POST,
         f"{DEFAULT_MOODLE_URL}/login/token.php",
         json={"error": "wrong username or password"},
         status=200,
@@ -232,7 +233,7 @@ def test_cmd_login_moodle_wrong_username_password_variant_prints_tip(monkeypatch
 
     captured = capsys.readouterr()
     assert "Error: Incorrect username or password." in captured.err
-    assert "Tip: If you normally sign into Moodle via the Google button" in captured.err
+    assert "Tip: Use your Moodle username (not your full email)" in captured.err
 
 
 @responses.activate
@@ -243,7 +244,7 @@ def test_cmd_login_moodle_other_moodle_error(monkeypatch, capsys):
     monkeypatch.setattr("getpass.getpass", lambda prompt="": "pass")
 
     responses.add(
-        responses.GET,
+        responses.POST,
         f"{DEFAULT_MOODLE_URL}/login/token.php",
         json={"error": "Service moodle_mobile_app is disabled"},
         status=200,
@@ -264,7 +265,7 @@ def test_cmd_login_moodle_connection_error(monkeypatch, capsys):
     monkeypatch.setattr("getpass.getpass", lambda prompt="": "pass")
 
     responses.add(
-        responses.GET,
+        responses.POST,
         f"{DEFAULT_MOODLE_URL}/login/token.php",
         body=requests.exceptions.ConnectionError("Failed to connect"),
     )
@@ -284,7 +285,7 @@ def test_cmd_login_moodle_timeout(monkeypatch, capsys):
     monkeypatch.setattr("getpass.getpass", lambda prompt="": "pass")
 
     responses.add(
-        responses.GET,
+        responses.POST,
         f"{DEFAULT_MOODLE_URL}/login/token.php",
         body=requests.exceptions.Timeout("Request timed out"),
     )
@@ -304,7 +305,7 @@ def test_cmd_login_moodle_http_error(monkeypatch, capsys):
     monkeypatch.setattr("getpass.getpass", lambda prompt="": "pass")
 
     responses.add(
-        responses.GET,
+        responses.POST,
         f"{DEFAULT_MOODLE_URL}/login/token.php",
         status=404,
     )
@@ -324,7 +325,7 @@ def test_cmd_login_moodle_invalid_json(monkeypatch, capsys):
     monkeypatch.setattr("getpass.getpass", lambda prompt="": "pass")
 
     responses.add(
-        responses.GET,
+        responses.POST,
         f"{DEFAULT_MOODLE_URL}/login/token.php",
         body="<html>Not JSON</html>",
         content_type="text/html",
@@ -363,7 +364,7 @@ def test_cmd_login_moodle_save_config_failure(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr("getpass.getpass", lambda prompt="": "pass")
 
     responses.add(
-        responses.GET,
+        responses.POST,
         f"{DEFAULT_MOODLE_URL}/login/token.php",
         json={"token": "mock-token"},
         status=200,
@@ -527,7 +528,7 @@ def test_cmd_login_moodle_default_webview_success(tmp_path, monkeypatch, capsys)
         status=200,
     )
 
-    rc = _cmd_login_moodle(argparse.Namespace(url=None, clean=False, manual=False, credentials=False))
+    rc = _cmd_login_moodle(argparse.Namespace(url=None, webview=True, clean=False, manual=False, credentials=False))
     assert rc == 0
 
     out = capsys.readouterr().out

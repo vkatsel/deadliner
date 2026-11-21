@@ -377,6 +377,7 @@ def test_gui_api_connect_moodle_webview_and_save_token(tmp_path, monkeypatch):
     monkeypatch.setattr(gui_bridge.subprocess, "run", fake_run)
     r_wv = api.connect_moodle_webview("teaching.kse.org.ua", clean=True)
     assert r_wv["ok"] is True
+    assert "--webview" in called_cmds[0]
     assert "--url" in called_cmds[0]
     assert "--clean" in called_cmds[0]
 
