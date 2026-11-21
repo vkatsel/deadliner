@@ -129,15 +129,18 @@ DESKTOP_CHROME_UA = (
 )
 
 
-def _patch_edgechromium_for_oauth() -> None:
+def _patch_edgechromium_for_oauth(on_custom_scheme=None) -> None:
     """Configure Edge WebView2 to support native Google OAuth popup flows.
 
     1. Sets Handled=False on NewWindowRequested so WebView2 opens the OAuth
        popup with window.opener preserved. This allows Google's authorization
        completion script (window.opener.postMessage) to communicate directly
-       back to schedule.kse.ua and auto-close the popup window.
+       back to the parent site and auto-close the popup window.
     2. Injects a standard desktop Chrome User-Agent into AdditionalBrowserArguments
        so Google does not flag the environment as an embedded webview.
+    3. Optionally intercepts custom URL scheme navigations (e.g. moodlemobile://)
+       via `on_custom_scheme(uri) -> bool` and cancels them so Windows does not
+       prompt for an external protocol handler.
     """
     try:
         from webview.platforms import edgechromium
@@ -148,68 +151,89 @@ def _patch_edgechromium_for_oauth() -> None:
 
         edgechromium.EdgeChrome.on_new_window_request = patched_on_new_window_request
 
-        orig_init = edgechromium.EdgeChrome.__init__
-
-        def patched_edge_init(self, form, window, cache_dir):
-            self.pywebview_window = window
-            self.webview = edgechromium.WebView2()
-            props = edgechromium.CoreWebView2CreationProperties()
-
-            runtime_path = edgechromium.webview_settings.get("WEBVIEW2_RUNTIME_PATH")
-            if runtime_path:
-                if not edgechromium.os.path.isabs(runtime_path):
-                    runtime_path = edgechromium.os.path.join(edgechromium.get_app_root(), runtime_path)
-                if edgechromium.os.path.exists(runtime_path):
-                    props.BrowserExecutableFolder = runtime_path
-
-            props.UserDataFolder = cache_dir
-            self.user_data_folder = props.UserDataFolder
-            props.set_IsInPrivateModeEnabled(edgechromium._state["private_mode"])
-
-            # Pure desktop Chrome User-Agent without WebView or Edg markers
-            props.AdditionalBrowserArguments = (
-                f'--disable-features=ElasticOverscroll --user-agent="{DESKTOP_CHROME_UA}"'
+        if not hasattr(edgechromium.EdgeChrome, "_deadliner_orig_on_navigation_start"):
+            edgechromium.EdgeChrome._deadliner_orig_on_navigation_start = (
+                edgechromium.EdgeChrome.on_navigation_start
             )
 
-            if edgechromium.webview_settings.get("ALLOW_FILE_URLS"):
-                props.AdditionalBrowserArguments += " --allow-file-access-from-files"
+        orig_nav_start = edgechromium.EdgeChrome._deadliner_orig_on_navigation_start
 
-            if edgechromium.webview_settings.get("REMOTE_DEBUGGING_PORT") is not None:
-                props.AdditionalBrowserArguments += (
-                    f' --remote-debugging-port={edgechromium.webview_settings["REMOTE_DEBUGGING_PORT"]}'
+        def patched_on_navigation_start(self, sender, args):
+            if on_custom_scheme is not None:
+                try:
+                    uri = str(getattr(args, "Uri", "") or "")
+                    if uri and on_custom_scheme(uri):
+                        args.Cancel = True
+                        return
+                except Exception as nav_err:
+                    logger.debug(f"Custom scheme interceptor error: {nav_err}")
+            return orig_nav_start(self, sender, args)
+
+        edgechromium.EdgeChrome.on_navigation_start = patched_on_navigation_start
+
+        if not hasattr(edgechromium.EdgeChrome, "_deadliner_patched_init"):
+            edgechromium.EdgeChrome._deadliner_patched_init = True
+
+            def patched_edge_init(self, form, window, cache_dir):
+                self.pywebview_window = window
+                self.webview = edgechromium.WebView2()
+                props = edgechromium.CoreWebView2CreationProperties()
+
+                runtime_path = edgechromium.webview_settings.get("WEBVIEW2_RUNTIME_PATH")
+                if runtime_path:
+                    if not edgechromium.os.path.isabs(runtime_path):
+                        runtime_path = edgechromium.os.path.join(edgechromium.get_app_root(), runtime_path)
+                    if edgechromium.os.path.exists(runtime_path):
+                        props.BrowserExecutableFolder = runtime_path
+
+                props.UserDataFolder = cache_dir
+                self.user_data_folder = props.UserDataFolder
+                props.set_IsInPrivateModeEnabled(edgechromium._state["private_mode"])
+
+                # Pure desktop Chrome User-Agent without WebView or Edg markers
+                props.AdditionalBrowserArguments = (
+                    f'--disable-features=ElasticOverscroll --user-agent="{DESKTOP_CHROME_UA}"'
                 )
 
-            self.webview.CreationProperties = props
+                if edgechromium.webview_settings.get("ALLOW_FILE_URLS"):
+                    props.AdditionalBrowserArguments += " --allow-file-access-from-files"
 
-            self.form = form
-            form.Controls.Add(self.webview)
+                if edgechromium.webview_settings.get("REMOTE_DEBUGGING_PORT") is not None:
+                    props.AdditionalBrowserArguments += (
+                        f' --remote-debugging-port={edgechromium.webview_settings["REMOTE_DEBUGGING_PORT"]}'
+                    )
 
-            self.js_results = {}
-            self.js_result_semaphore = edgechromium.Semaphore(0)
-            self.webview.Dock = edgechromium.WinForms.DockStyle.Fill
-            self.webview.BringToFront()
-            self.webview.CoreWebView2InitializationCompleted += self.on_webview_ready
-            self.webview.NavigationStarting += self.on_navigation_start
-            self.webview.NavigationCompleted += self.on_navigation_completed
-            self.webview.WebMessageReceived += self.on_script_notify
-            self.syncContextTaskScheduler = edgechromium.TaskScheduler.FromCurrentSynchronizationContext()
-            self.webview.DefaultBackgroundColor = edgechromium.Color.FromArgb(
-                255,
-                int(window.background_color.lstrip("#")[0:2], 16),
-                int(window.background_color.lstrip("#")[2:4], 16),
-                int(window.background_color.lstrip("#")[4:6], 16),
-            )
+                self.webview.CreationProperties = props
 
-            if window.transparent:
-                self.webview.DefaultBackgroundColor = edgechromium.Color.Transparent
+                self.form = form
+                form.Controls.Add(self.webview)
 
-            self.url = None
-            self.ishtml = False
-            self.html = edgechromium.DEFAULT_HTML
+                self.js_results = {}
+                self.js_result_semaphore = edgechromium.Semaphore(0)
+                self.webview.Dock = edgechromium.WinForms.DockStyle.Fill
+                self.webview.BringToFront()
+                self.webview.CoreWebView2InitializationCompleted += self.on_webview_ready
+                self.webview.NavigationStarting += self.on_navigation_start
+                self.webview.NavigationCompleted += self.on_navigation_completed
+                self.webview.WebMessageReceived += self.on_script_notify
+                self.syncContextTaskScheduler = edgechromium.TaskScheduler.FromCurrentSynchronizationContext()
+                self.webview.DefaultBackgroundColor = edgechromium.Color.FromArgb(
+                    255,
+                    int(window.background_color.lstrip("#")[0:2], 16),
+                    int(window.background_color.lstrip("#")[2:4], 16),
+                    int(window.background_color.lstrip("#")[4:6], 16),
+                )
 
-            self.webview.EnsureCoreWebView2Async(None)
+                if window.transparent:
+                    self.webview.DefaultBackgroundColor = edgechromium.Color.Transparent
 
-        edgechromium.EdgeChrome.__init__ = patched_edge_init
+                self.url = None
+                self.ishtml = False
+                self.html = edgechromium.DEFAULT_HTML
+
+                self.webview.EnsureCoreWebView2Async(None)
+
+            edgechromium.EdgeChrome.__init__ = patched_edge_init
     except Exception as e:
         logger.debug(f"EdgeChromium patching not applicable: {e}")
 
@@ -549,6 +573,32 @@ def is_kse_token_expired(token: str) -> bool:
             exp_num = exp_num / 1000.0
         return time.time() >= (exp_num - 60)
     except (ValueError, TypeError):
+        return False
+
+
+def verify_kse_token(token: str) -> bool:
+    """Verify a KSE JWT against KSE_SCHEDULE_VERIFY_URL, including null-event trap detection."""
+    if not token or is_kse_token_expired(token):
+        return False
+
+    from datetime import date
+
+    today_str = date.today().isoformat()
+    try:
+        res = requests.get(
+            KSE_SCHEDULE_VERIFY_URL,
+            headers={"Authorization": f"Bearer {token}"},
+            params={"from": today_str, "till": today_str},
+            timeout=10,
+        )
+        if res.status_code != 200:
+            return False
+        verify_data = res.json() if res.content else {}
+        events_list = verify_data.get("events", []) if isinstance(verify_data, dict) else []
+        if isinstance(events_list, list) and len(events_list) > 0 and all(item is None for item in events_list):
+            return False
+        return True
+    except Exception:
         return False
 
 

@@ -124,8 +124,11 @@ Configure all services in one place via `deadliner menu` -> **Option 7**, or use
 deadliner login moodle
 ```
 - **Moodle URL:** `https://teaching.kse.org.ua` (press Enter to accept default).
-- **Username & Password:** Enter your login credentials.
-- *Tip for Google SSO users:* If you normally sign in with the Google button on the web, ensure your account has a local password set, or consult the setup prompt tip.
+- **Moodle Username:** Enter your Moodle **username** (e.g. `vkatsel` — **not** your full `@kse.org.ua` email) and your local Moodle password. Deadliner authenticates securely via `POST /login/token.php` and saves your long-lived `moodle_mobile_app` token locally to `~/.deadliner.json`.
+- *Alternative options (for portals with Moodle Mobile SSO / Security Keys enabled):*
+  - `deadliner login moodle --webview` (`--clean` to clear browser cache) — open native Google SSO WebView.
+  - `deadliner login moodle --manual` — paste a Moodle Security Key directly from `/user/managetoken.php`.
+  - `deadliner login moodle --url https://your.moodle.edu` — connect a custom Moodle portal.
 
 ### 2. Google OAuth (Classroom & Calendar)
 ```bash
@@ -176,7 +179,7 @@ deadliner login kse
 | `deadliner cron status` | Check status of the background scheduler and next run time |
 | `deadliner cron disable` | Remove background sync task |
 | `deadliner logs` | View recent auto-sync execution logs (`~/.deadliner/sync.log`) |
-| `deadliner login moodle` | Interactive Moodle login prompt |
+| `deadliner login moodle [--clean\|--manual\|--credentials]` | Connect Moodle via Native Google SSO WebView (or Security Key / legacy password) |
 | `deadliner login google` | Authenticate Google Calendar & Classroom via OAuth2 |
 | `deadliner login kse [--clean]` | Connect KSE schedule account (supports `--clean` to wipe session cache) |
 | `deadliner setup-path` | Permanently add `deadliner` to system PATH (Windows / Linux / macOS) |
@@ -219,7 +222,7 @@ src/deadliner/
 ```
 
 ### Running Tests
-Deadliner is backed by a comprehensive test suite (175 tests) with zero external network dependencies (mocked via `responses` and `monkeypatch`):
+Deadliner is backed by a comprehensive test suite (202 tests) with zero external network dependencies (mocked via `responses` and `monkeypatch`):
 
 ```bash
 pytest

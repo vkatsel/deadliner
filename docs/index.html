@@ -208,20 +208,20 @@
             </div>
           </article>
 
-          <!-- Feature 4: Native 1-Click KSE Login -->
+          <!-- Feature 4: Native 1-Click Google SSO Login -->
           <article class="feature-card card-cyan">
             <div class="feature-icon-wrap">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
               </svg>
             </div>
-            <h3 class="feature-title">Native 1-Click KSE Login</h3>
+            <h3 class="feature-title">Native 1-Click Google SSO</h3>
             <p class="feature-desc">
-              Connect your university schedule effortlessly. Simply launch <code style="color: #79c0ff;">deadliner login kse</code>, sign in with your student Google account in the secure native window, and Deadliner automatically captures your timetable.
+              Connect both Moodle and KSE Schedule effortlessly without local passwords. Run <code style="color: #79c0ff;">deadliner login moodle</code> or <code style="color: #79c0ff;">deadliner login kse</code>, sign in with your <code style="color: #79c0ff;">@kse.org.ua</code> Google account in the secure native window, and Deadliner automatically captures your long-lived API token.
             </p>
             <div class="feature-meta">
-              <span>schedule.kse.ua Integration</span>
-              <span>Instant Web Auth</span>
+              <span>Moodle &amp; KSE Schedule SSO</span>
+              <span>Shared Native WebView</span>
             </div>
           </article>
 
@@ -603,8 +603,8 @@
       "7": {
         badge: "OPTION 7 OF 8",
         title: "Login / Configure Services",
-        desc: "Manage authentication tokens with native secure window capture for schedule.kse.ua, browser OAuth flow for Google Calendar and Classroom, and Moodle credentials.",
-        cmd: "$ deadliner login kse\n> Native secure window opened to schedule.kse.ua\n> Google SSO completed in native window\n> Credentials detected! Saved to ~/.deadliner.json."
+        desc: "Manage authentication tokens with native Google SSO WebView login for Moodle (teaching.kse.org.ua) and KSE Schedule (schedule.kse.ua), plus browser OAuth for Google Calendar and Classroom.",
+        cmd: "$ deadliner login moodle\n> Native secure window opened to teaching.kse.org.ua\n> Google SSO completed in native window\n> Moodle token verified! Saved to ~/.deadliner.json."
       },
       "8": {
         badge: "OPTION 8 OF 8",
